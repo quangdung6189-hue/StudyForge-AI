@@ -1,0 +1,471 @@
+PROMPT MASTER — STUDYFORGE AI / GEMINI + CODEX CLI + LUCIAN UX/UI
+Bản cập nhật theo yêu cầu: team qua terminal, phân chia code, database, bảo mật và bắt buộc đăng ký/đăng nhập.
+Môi trường: Windows. Gửi TOÀN BỘ nội dung phần PROMPT MASTER bên dưới cho Gemini trong Antigravity có quyền chạy lệnh ở workspace.
+Ngày kiểm tra tài liệu tham khảo: 21/10/2026.
+
+CÁCH DÙNG
+- Mở một thư mục dự án trong Antigravity; dán prompt vào agent Gemini có công cụ file/terminal.
+- Nếu Gemini chỉ là cửa sổ chat web không có tool terminal, nó không thể tự chạy Codex; cần dùng agent có quyền thực thi hoặc runner được kết nối thực.
+- “ChatGPT trong terminal” ở đây triển khai bằng Codex CLI. Đây là phiên làm việc riêng, không mặc định kế thừa lịch sử hội thoại ChatGPT trên web.
+- Lần đầu có thể cần chủ tài khoản tự hoàn tất đăng nhập/ủy quyền. Không suy đoán gói ChatGPT hiện có chắc chắn hỗ trợ Codex.
+- Các lệnh dưới đây là lệnh để agent thực thi trên máy bạn khi triển khai, chưa được chạy/cài đặt trong máy Windows của bạn bởi việc tạo tài liệu này.
+
+==================== BẮT ĐẦU PROMPT MASTER ====================
+
+Bạn là Gemini đang làm việc trong Google Antigravity. Hãy làm Coordinator, UX/UI Designer và Frontend Integrator cho StudyForge AI: website tiếng Việt biến tài liệu thành bài kiểm tra và không gian ôn tập cho học sinh, sinh viên, giáo viên.
+
+Tôi yêu cầu bạn kết hợp Codex CLI để làm team thực sự: giao nhiệm vụ qua terminal, nhận kết quả bằng file, kiểm tra diff/test rồi tiếp tục. Codex xây khung, database, backend và logic quan trọng; bạn xây UX/UI theo skill lucian-uxui, kết nối chức năng và điều phối. Khi tích hợp xong phải có một lượt Codex review toàn bộ repository và một lượt xác minh sau khi sửa lỗi.
+
+Bạn được phép đọc/ghi code trong workspace, chạy terminal, cài dependency cần thiết, dùng Git branch/worktree và chạy test trong môi trường phát triển. Thực hiện phần việc đã được giao mà không hỏi lại cho từng bước thông thường. Khi cần người dùng đăng nhập hoặc thiếu một quyền/công cụ thật, nêu đúng bước bị chặn và tiếp tục những việc độc lập.
+Đây là quyền cho công việc phát triển trong workspace, không bao gồm xóa dữ liệu thật hoặc sử dụng bí mật production ngoài phạm vi đã cấp.
+
+PHẦN A — THIẾT LẬP TEAM TRƯỚC KHI VIẾT SẢN PHẨM
+
+A1. KHẢO SÁT MÔI TRƯỜNG
+Kiểm tra Windows PowerShell hoặc WSL đang dùng; Node/npm/pnpm, Git, Docker và Codex.
+Ghi version, trạng thái công cụ và workspace vào docs/ENVIRONMENT.md. Không in các biến môi trường hoặc file có secret.
+Đọc AGENTS.md và quy tắc repo hiện có trước khi thay đổi. Nếu chưa có dự án, khởi tạo Git và cấu trúc phù hợp.
+Không giả định Antigravity có IDE/terminal nhúng; dùng tool chạy lệnh mà agent thực sự được cấp.
+Không có quyền terminal thì báo giới hạn, không tuyên bố đã gọi Codex.
+
+A2. CÀI VÀ ĐỌC SKILL LUCIAN ĐÚNG NHƯ ẢNH
+Ảnh hướng dẫn dùng repository Seokwoooo/lucian-uxui.
+
+Lệnh cài trong thư mục dự án:
+    npx skills add Seokwoooo/lucian-uxui
+
+Đọc trợ giúp installer nếu cần để chọn đúng agent và project scope; không tự đoán tham số của installer.
+Sau khi cài, tìm đường dẫn SKILL.md thật và đọc toàn bộ, cùng references/porting.md.
+Nếu installer chưa hỗ trợ nhận diện Antigravity, sử dụng SKILL.md trong vị trí dự án mà agent được phép đọc, theo cơ chế skills của phiên bản cài đặt. Không nhầm lệnh plugin Claude Code thành lệnh Antigravity.
+Codex có thể nhận skill trong .agents/skills/lucian-uxui/ theo hướng dẫn repository. Kiểm tra file tồn tại trước khi gọi.
+
+Quy trình bắt buộc khi làm UI:
+1. Khảo sát framework, theme và ngôn ngữ dự án.
+2. Tách UI thành phần: signup/login, sidebar, file input/dropzone, form điều chỉnh đề, tabs, modal, toast, loading, empty/error states, quiz navigation và kết quả.
+3. Dùng CLI đi kèm để search theo từng phần. Đừng bịa ID component.
+4. Chỉ get các element được chọn; chạy tokens một lần; đọc hướng dẫn port.
+5. Giữ cấu trúc, CSS scoped, radius/shadow/motion gốc của element; không viết lại CSS gốc thành Tailwind utilities. Tailwind dùng cho bố cục ứng dụng quanh component.
+6. Map đầy đủ --ux-* tokens vào theme light/dark; giữ base rules và tùy chỉnh font tiếng Việt.
+7. Chuyển script thành lifecycle React với cleanup event listener/timer/observer/animation; tránh effect chạy lặp trong StrictMode và hydration mismatch.
+8. Dùng state/props và event handler thật; sample form phải nối tới auth/backend thật.
+9. Giữ chú thích MIT ở đầu component, đổi cú pháp comment cho hợp TSX.
+10. Test 375px, theme switch, keyboard và reduced motion. Báo cáo ID/link thật trong docs/UI_ELEMENTS.md.
+
+Cú pháp CLI theo đường dẫn thật:
+    node <skill-dir>/scripts/lucian-uxui.mjs search sign in
+    node <skill-dir>/scripts/lucian-uxui.mjs get <ID-thật-đã-chọn>
+    node <skill-dir>/scripts/lucian-uxui.mjs tokens
+Chỉ các giá trị trong dấu <> là placeholder, không chạy nguyên văn chúng.
+Không có component phù hợp thì tạo mới theo tokens và ghi rõ. Không truy cập được skill thì báo lỗi chính xác, không tự nhận đã áp dụng.
+
+A3. KẾT NỐI CODEX QUA TERMINAL
+Kiểm tra trước:
+    codex --version
+    codex exec --help
+    codex login status
+
+Nếu chưa có Codex, cài theo tài liệu chính thức, ví dụ:
+    npm install -g @openai/codex
+
+Nếu chưa xác thực:
+    codex login
+
+Chủ tài khoản tự hoàn tất OAuth hoặc cấu hình API theo quyền sẵn có. Không yêu cầu họ dán mật khẩu/token vào chat. Không thu thập cookie trình duyệt.
+Đăng nhập tài khoản và API key là hai phương án khác nhau; không khẳng định thuê bao ChatGPT cấp API credit.
+Không tự bịa tên model; dùng model được tài khoản/CLI hỗ trợ và ghi cấu hình đã chọn.
+Kiểm tra flags theo bản cài. Dùng workspace-write cho nhiệm vụ sửa code, read-only cho review; không tắt sandbox toàn máy.
+
+Tạo trước thư mục team/prompts và team/reports bằng PowerShell. Mỗi task có file UTF-8 riêng.
+Ví dụ gọi từ root repo, sau khi đã tạo file nhiệm vụ:
+    Get-Content -Raw -Encoding UTF8 .\team\prompts\01-architecture.md | codex exec --sandbox workspace-write --output-last-message .\team\reports\01-architecture.md -
+
+Khi nhận báo cáo:
+- Chờ tiến trình kết thúc; kiểm tra exit code, file có tồn tại/nội dung, Git diff và test. Không dùng chỉ sự tồn tại của file làm bằng chứng thành công.
+- File đầu ra và log phải gắn task ID/lần chạy để không nhầm kết quả cũ.
+- Lệnh trên truyền prompt qua stdin; không tạo một chuỗi lệnh tùy ý từ câu trả lời model.
+- Không dùng Invoke-Expression/eval để chạy nguyên văn output AI.
+- Khi cần lưu event JSONL, dùng --json nếu phiên bản hỗ trợ; bảo vệ log và không commit dữ liệu nhạy cảm.
+- Wrapper phải xử lý encoding tiếng Việt, timeout, trạng thái blocked/failed, phiên chạy đang tồn tại và hủy/tiếp tục.
+- Đừng spawn nhiều phiên Codex lặp lại khi phiên cũ chưa kết thúc.
+
+A4. PHÂN CHIA TRÁCH NHIỆM
+Đây là phương án phân công của dự án, không phải khẳng định model nào luôn giỏi hơn model khác.
+
+Codex — Architect và Backend:
+- Chốt khung Next.js/workspace, TypeScript và hợp đồng dữ liệu.
+- PostgreSQL/Prisma, auth, permission, migration, seed, transaction.
+- API/services/DAL, AI gateway, jobs, storage, shuffle, deadline và chấm điểm.
+- Các integration test trọng tâm; cấu hình build/CI.
+- Là chủ sở hữu thay đổi migration, dependency manifest/lockfile và cấu hình workspace chung khi làm song song.
+
+Gemini — Coordinator, UX/UI và Frontend:
+- Hành trình người dùng và thiết kế màn hình bằng lucian-uxui.
+- App shell, component, responsive, accessibility, loading/error.
+- Kết nối frontend với API đã chốt; không tạo backend giả để hoàn thành màn hình.
+- Chạy ứng dụng, kiểm tra bằng trình duyệt và điều phối sửa lỗi.
+- Cần đổi API/schema/dependency chung thì ghi yêu cầu cho Codex, không phá hợp đồng ngầm.
+
+Codex — Reviewer, bằng phiên review riêng sau tích hợp:
+- Đọc mã của cả hai bên, ưu tiên finding có bằng chứng.
+- Review toàn repo và các luồng quyền, auth, lộ đáp án, upload, worker, token/chi phí AI, migrations và cấu hình deployment.
+- Phân loại mức độ, file/vị trí, cách tái hiện, tác động và cách sửa.
+- Vai trò reviewer riêng giúp kiểm tra chéo nhưng không bảo đảm không còn bug.
+
+Gemini — Integrator:
+- Là đầu mối merge/cherry-pick và giải quyết conflict.
+- Đọc QA report, giao sửa đúng người, chạy lại check rồi gọi Codex review lại.
+
+A5. QUY TẮC PHỐI HỢP VÀ BÀN GIAO
+Tạo AGENTS.md và docs/PRD.md, ARCHITECTURE.md, API_CONTRACTS.md, TASKS.md, HANDOFF.md, DECISIONS.md, QA_REPORT.md.
+Đặt hướng dẫn tương ứng vào vị trí rules của Antigravity nếu bản cài cần; bảo đảm hai agent đọc cùng hợp đồng dự án.
+Mỗi task có ID, mục tiêu, input/output, chủ sở hữu, file scope, phụ thuộc, test và tiêu chí done.
+Task lifecycle: todo → ready → running → review → done; có failed/blocked.
+Task phụ thuộc phải chạy tuần tự. Chỉ song song việc độc lập sau khi chốt schema/API.
+Ưu tiên handoff tuần tự trong workspace đầu tiên để dễ kiểm soát. Khi chạy song song thật, dùng Git worktree/branch riêng; tài liệu chung được tích hợp bởi một đầu mối.
+Không để hai agent sửa cùng file, lockfile hoặc migration đồng thời.
+Không xóa uncommitted changes của người dùng.
+Mỗi bàn giao có commit/diff, file đổi, contract đổi, lệnh test, kết quả thật và việc tiếp theo.
+Team orchestration là công cụ phát triển, không được nhúng Codex CLI/terminal vào website để học sinh điều khiển.
+
+PHẦN B — ĐẶC TẢ WEBSITE PHẢI TRIỂN KHAI
+
+1. KẾT QUẢ SẢN PHẨM
+
+Luồng trung tâm:
+Tải tài liệu → xem và sửa nội dung trích xuất → chọn công cụ học tập → cấu hình → AI tạo bản nháp → kiểm tra/duyệt → tự học hoặc phát hành bài kiểm tra → xem kết quả và luyện lại câu sai.
+
+Phải có hai thao tác riêng:
+- Nhập đề có sẵn: giữ nguyên câu hỏi, phương án và cấu trúc; trích đáp án nếu có.
+- Tạo câu hỏi từ tài liệu kiến thức: sinh câu hỏi mới có giải thích và dẫn nguồn.
+
+Nếu tài liệu không có đáp án, không được gắn nhãn đáp án gốc. Phải ghi “AI đề xuất” và cho người tạo duyệt. Nếu tài liệu không đủ hỗ trợ số câu yêu cầu, thông báo và đề xuất giảm số lượng.
+
+2. TÀI KHOẢN BẮT BUỘC VÀ PHÂN QUYỀN
+
+Chỉ landing page, trang đăng ký/đăng nhập, xác minh email, đặt lại mật khẩu và trang thông tin chính sách là công khai.
+TẤT CẢ tính năng sản phẩm yêu cầu tài khoản đã đăng nhập: upload, tạo đề, xem tài liệu, flashcard, chat, tham gia đề qua link/mã, làm bài, xem kết quả và xuất file. Không có guest mode.
+
+Triển khai bằng thư viện auth được duy trì, ưu tiên Better Auth với PostgreSQL/Prisma nếu tài liệu và phiên bản tương thích. Không tự viết thuật toán mật mã hoặc tự tạo hệ thống auth sơ sài.
+- Đăng ký email/mật khẩu, xác minh email, đăng nhập, đăng xuất, quên và đặt lại mật khẩu.
+- Production yêu cầu xác minh email; token xác minh/reset có thời hạn và dùng một lần.
+- Mật khẩu băm bằng cơ chế an toàn của thư viện; không lưu plaintext, không mã hóa có thể giải ngược.
+- Session phía server, cookie HttpOnly/Secure trong production/SameSite phù hợp, bảo vệ CSRF và kiểm tra origin cho thao tác thay đổi dữ liệu.
+- Thu hồi session sau đổi/reset mật khẩu theo chính sách; có thể đăng xuất mọi thiết bị.
+- Rate limit đăng nhập/đăng ký/reset; tránh lộ việc một email đã tồn tại qua thông báo công khai.
+- Email development dùng Mailpit hoặc hộp thư test. Production dùng nhà cung cấp email thật với cấu hình môi trường; không báo đã gửi nếu dịch vụ thất bại.
+- Sau đăng nhập quay lại đường dẫn nội bộ đã kiểm tra; chặn open redirect.
+
+Vai trò:
+- Student: tài liệu và bài tự học cá nhân, đề được giao, tiến độ cá nhân.
+- Teacher: quản lý tài liệu, ngân hàng câu hỏi, lớp và đề mình sở hữu/được cấp quyền.
+- Admin: quản trị hệ thống và cấu hình provider; chỉ cấp bằng quy trình quản trị, không từ trường role do client gửi.
+- Người dùng thường không tự đổi role thành admin qua API.
+
+Mọi route handler, Server Action và lớp truy cập dữ liệu đều kiểm tra session cùng quyền tài nguyên. Layout, route group hoặc proxy/middleware chỉ là lớp điều hướng bổ sung, không thay thế kiểm tra quyền.
+API trả 401 nếu chưa đăng nhập; trả 403/404 theo chính sách khi không có quyền. User A không truy cập tài liệu, job, đề riêng, lượt làm hoặc điểm của B chỉ bằng đổi ID.
+Link/mã tham gia chỉ định vị đề, không tự cấp quyền xem dữ liệu. Kiểm tra lịch, phạm vi chia sẻ và membership trước khi cho làm.
+Dữ liệu nhạy cảm không nằm trong static public, cache dùng chung hay payload client.
+
+3. TÀI LIỆU VÀ TRÍCH XUẤT
+
+MVP hỗ trợ PDF có văn bản, PDF scan, DOCX, TXT, JPG, PNG.
+Các định dạng bổ sung: PPTX, CSV, XLSX và DOC cũ. Chỉ công bố định dạng đã triển khai và kiểm thử; DOC cũ cần bước chuyển đổi thật hoặc hướng dẫn đổi sang DOCX.
+
+- Kéo thả nhiều file, hiển thị giới hạn và kiểm tra dung lượng, số trang, loại file thật.
+- OCR tiếng Việt/Anh cho tài liệu scan; hiển thị cảnh báo vùng nhận dạng khó.
+- Giữ dấu tiếng Việt, số thứ tự, phương án A/B/C/D, bảng và ký hiệu quan trọng.
+- Lưu đoạn trích với documentId, chunkId, trang hoặc vị trí cấu trúc. DOCX dùng tiêu đề/đoạn nếu chưa có bản render phân trang.
+- Cho chọn trang, chương, mục; loại bỏ bìa, mục lục, lời giải và tự luận tùy mục đích.
+- Cho xem và sửa văn bản trước khi tạo bài; cho xác nhận các đoạn OCR không chắc.
+- Có trạng thái queued, extracting, needs_review, generating, validating, completed, failed.
+- Xử lý file lỗi, PDF có mật khẩu, tài liệu rỗng; lỗi cụ thể và có thể thử lại.
+- Worker nền có timeout, retry giới hạn và idempotency; tải lại trình duyệt không tạo tác vụ trùng.
+
+4. CÔNG CỤ TẠO BÀI VÀ NGÂN HÀNG CÂU HỎI
+
+- Trắc nghiệm một đáp án, nhiều đáp án, đúng/sai.
+- Mở rộng: điền khuyết, ghép cặp, sắp xếp, trả lời ngắn, tự luận có rubric.
+- Chọn số câu, chủ đề, chương, độ khó và tỷ lệ nhận biết/thông hiểu/vận dụng.
+- Tách “giữ nguyên đề gốc” và “AI diễn đạt/tạo mới”; không âm thầm thay đổi câu gốc.
+- Trình biên tập sửa câu, phương án, điểm, đáp án, lời giải và nguồn.
+- Thêm/xóa/nhân bản, kéo thả, tạo lại một câu, phát hiện câu gần trùng.
+- Hỗ trợ công thức toán có thể đọc bằng công nghệ hỗ trợ; bảo toàn hình minh họa có liên kết tới câu.
+- Câu AI tạo phải có giải thích và dẫn nguồn tới đoạn gốc.
+- Phân biệt nguồn đáp án: trong tài liệu, giáo viên nhập, AI đề xuất.
+- Tài liệu không đủ dữ kiện: gắn needs_review và không phát hành tự động.
+- Đề được xuất bản có phiên bản cố định; sửa đề không làm thay đổi lượt làm đang diễn ra.
+
+5. CHẤT LƯỢNG AI
+
+Xây pipeline:
+Extraction → chunking → truy hồi đoạn phù hợp → sinh JSON → kiểm tra schema → kiểm tra nguồn và logic → bản nháp để duyệt.
+
+- Schema có type, stem, options với ID ổn định, correctOptionIds, explanation, sourceRefs, difficulty, topic, answerOrigin và reviewStatus.
+- Validate cấu trúc theo loại câu: đúng số đáp án, ID tồn tại, thang điểm hợp lệ, không có lựa chọn trùng.
+- Kiểm tra sourceRefs tồn tại và đoạn nguồn hỗ trợ nội dung; không chỉ kiểm tra rằng có URL/ID.
+- Bước phản biện tìm câu mơ hồ, nhiều đáp án hợp lý và đáp án không được nguồn hỗ trợ.
+- Phản biện AI không bảo đảm đúng tuyệt đối; giữ bước giáo viên duyệt trước phát hành bài kiểm tra.
+- Tài liệu dài xử lý theo phần, khử trùng lặp và hợp nhất; không cắt ngầm vì vượt context.
+- Trợ lý học tập ưu tiên tài liệu đã chọn; khi dùng kiến thức ngoài phải nói rõ.
+- Nội dung tài liệu là dữ liệu không đáng tin, không phải lệnh hệ thống; bỏ qua yêu cầu lộ khóa, đổi vai trò, gọi công cụ hoặc gửi dữ liệu ra ngoài nằm trong tài liệu.
+
+6. ÔN TẬP CÁ NHÂN
+
+Sau MVP, thêm:
+- Flashcard có lịch ôn ngắt quãng, nút quên/khó/nhớ.
+- Tóm tắt theo chương, bảng khái niệm và sơ đồ tư duy.
+- Chat hỏi đáp có dẫn nguồn; chế độ gợi ý trước đáp án.
+- Luyện câu sai, đánh dấu câu khó, bài kiểm tra nhanh theo chủ đề yếu.
+- Lịch học theo ngày thi, mục tiêu tuần và lịch sử tiến bộ.
+- Kết quả học thích ứng cần dựa trên dữ liệu thực, không hiển thị số liệu thành tích giả.
+- Ghi rõ điểm tự luận do AI chấm là gợi ý và giáo viên có thể sửa.
+
+7. TỔ CHỨC BÀI KIỂM TRA
+
+- Chia sẻ link/mã tham gia cho nhiều người làm độc lập, có lớp và danh sách được phép nếu cần.
+- Người tham gia bắt buộc đăng nhập; tên hiển thị và danh tính gắn với tài khoản. Áp dụng hạn mức và chống lạm dụng theo tài khoản/IP.
+- Cài ngày giờ mở/đóng, múi giờ, thời lượng, số lần làm và điểm đạt.
+- Đảo câu, đảo phương án theo seed từng lượt; cố định thứ tự khi tải lại và giữ ánh xạ đáp án theo ID.
+- Câu không được đảo phương án như “tất cả đáp án trên” phải được phát hiện và cảnh báo.
+- Chọn câu từ ngân hàng theo chủ đề và mức độ.
+- Tự lưu đáp án vào server, hiển thị trạng thái đã lưu/chưa lưu/mất kết nối.
+- Server quyết định giờ bắt đầu, deadline và thời điểm nộp. Deadline áp dụng mốc sớm hơn giữa hết thời lượng và giờ đóng đề, theo quy tắc đã công bố.
+- Nộp bài và chấm điểm idempotent; xử lý nộp trùng, hết giờ, mở nhiều tab và kết nối lại.
+- Trong chế độ thi không trả đáp án, lời giải hoặc trường bí mật cho trình duyệt trước thời điểm được phép.
+- Cài khi nào xem điểm, đáp án và lời giải; chế độ luyện có thể giải thích ngay.
+- Chế độ tập trung và ghi nhận rời tab chỉ là tín hiệu; không quảng cáo là chống gian lận tuyệt đối.
+
+8. BÁO CÁO VÀ XUẤT DỮ LIỆU
+
+- Điểm, thời gian, tỷ lệ đúng theo chương và chủ đề.
+- Báo cáo câu sai phổ biến và câu có thể có vấn đề.
+- Phân quyền bảng kết quả; danh sách lớp không công khai mặc định.
+- Xuất PDF/Word bản đề và bản đáp án riêng; xuất CSV/XLSX kết quả sau khi tính năng hoạt động.
+- PDF phải nhúng font tiếng Việt; kiểm tra thực tế ngắt trang và công thức.
+- Bản xuất không chứa dữ liệu ngoài quyền của người yêu cầu.
+
+9. UX/UI GIÁO DỤC VỚI LUCIAN
+
+Gemini phụ trách thiết kế trải nghiệm và giao diện theo quy trình lucian-uxui ở phần A.
+- Tên gợi ý StudyForge AI, tagline “Biến tài liệu thành cách học của bạn”.
+- Dùng theme tokens thực từ skill. Có thể chọn indigo/teal làm thương hiệu và map vào --ux-*; không tự coi palette ví dụ là token gốc của Lucian.
+- Font hỗ trợ tiếng Việt như Be Vietnam Pro; kiểm tra khi thay font có làm vỡ component.
+- Desktop sidebar: Tổng quan, Tài liệu, Tạo bài, Ngân hàng câu hỏi, Ôn luyện, Lớp học, Kết quả.
+- Mobile ưu tiên Tài liệu, Học, Bài kiểm tra, Hồ sơ; mọi nội dung chính đọc được ở 375px.
+- Đăng ký/đăng nhập phải có kiểm tra dữ liệu, loading, lỗi trường, lỗi server và link reset mật khẩu.
+- Màn tạo bài: tài liệu bên trái, cấu hình bên phải; mobile chia bước dễ theo dõi.
+- Hiển thị phạm vi tài liệu và ước tính hạn mức trước khi chạy AI.
+- Màn làm bài: tiến độ, thời gian, đánh dấu, danh sách câu và trạng thái đồng bộ.
+- Màn kết quả: điểm, giải thích, nguồn và “Luyện lại câu sai”.
+- Đủ empty/loading/error/success/offline/quota-exhausted/job-waiting states.
+- Giữ motion, radius, shadow và cấu trúc của component lấy từ skill; điều chỉnh bố cục bên ngoài cho mục tiêu học tập.
+- Keyboard navigation, focus thấy rõ, reduced motion; kiểm tra tương phản để đạt mục tiêu WCAG 2.2 AA.
+- Seed mẫu: Sinh học 8, Địa lí 8 và một học phần đại học, ghi rõ dữ liệu minh họa. Seed không được tạo guest bypass.
+
+10. KIẾN TRÚC, DATABASE VÀ RANH GIỚI FILE
+
+Stack mặc định nếu chưa có dự án:
+- pnpm workspace; Next.js App Router, React, TypeScript cho web và backend phục vụ web.
+- Tailwind cho layout ứng dụng; CSS scoped gốc cho component Lucian.
+- PostgreSQL + Prisma cho schema, migration và giao dịch.
+- Better Auth hoặc thư viện auth đã xác minh; chọn một cơ chế nhất quán.
+- Redis + BullMQ; worker TypeScript cho trích xuất/sinh đề/chấm tác vụ phù hợp.
+- Object storage tương thích S3, bucket riêng tư; MinIO cho local.
+- OCR tiếng Việt bằng công cụ được kiểm chứng, có thể tách dịch vụ Python khi triển khai OCR.
+- Docker Compose local, Mailpit cho email thử nghiệm, CI cho kiểm tra.
+- pgvector khi triển khai truy hồi ngữ nghĩa; không bắt buộc cho MVP ngắn.
+Chốt phiên bản tương thích theo tài liệu chính thức, khóa dependency và không cài chồng nhiều thư viện cùng chức năng.
+
+Cấu trúc dự kiến (đường dẫn tính từ root repository):
+apps/web/src/app/(public)/                 landing và nội dung công khai
+apps/web/src/app/(auth)/                   signup/login/verify/reset
+apps/web/src/app/(workspace)/              dashboard/documents/quizzes/study/classes/results
+apps/web/src/app/api/                      route handlers có xác thực/ủy quyền
+apps/web/src/features/                     UI theo tính năng, hooks và API client
+apps/web/src/components/lucian/            component Lucian đã port và CSS scoped
+apps/web/src/components/layout/            app shell, nav và bố cục
+apps/web/src/styles/                       globals và mapping theme tokens
+apps/web/src/server/auth/                  adapter auth, session và permission helpers
+apps/web/src/server/dal/                   truy vấn có kiểm tra quyền, DTO tối thiểu
+apps/web/src/server/services/              use cases web, không đặt logic trong component
+apps/worker/src/processors/                jobs parsing/AI/export; không phụ thuộc Next runtime
+apps/worker/src/index.ts                   khởi động worker
+packages/contracts/src/                   schema Zod, request/response DTO công khai
+packages/core/src/                        domain rules, grading, deadline, shuffle
+packages/db/prisma/                       schema.prisma, migrations, seed
+packages/db/src/                          Prisma client dùng phía server
+packages/ai/src/                          adapter gateway, prompts, validation, capabilities
+packages/storage/src/                     private storage và signed URL phía server
+packages/queue/src/                       contract và kết nối hàng đợi phía server
+services/ocr/                             chỉ tạo khi có OCR service thật
+scripts/                                  khởi động, doctor, backup/restore, team runner
+tests/integration/                        kiểm tra quyền, chấm điểm, DB, jobs
+tests/e2e/                                luồng sản phẩm Playwright
+docs/                                     đặc tả, hợp đồng, chạy/deploy, security, review
+team/prompts/                             nhiệm vụ giao cho Codex
+team/reports/                             báo cáo trả về, không chứa bí mật
+team/artifacts/                           JSONL và bằng chứng phát triển, gitignore nếu nhạy cảm
+infra/                                    Dockerfiles, compose, cấu hình triển khai
+AGENTS.md, README.md, .env.example, package.json, pnpm-workspace.yaml
+
+Đây là cấu trúc khởi điểm; chỉ tạo file có trách nhiệm và cách dùng cụ thể. Giữ Next conventions thật như page.tsx, layout.tsx và route.ts. Route groups không tự tạo cơ chế bảo mật.
+Không đưa business logic, Prisma hoặc khóa AI vào component/client bundle.
+packages/contracts chỉ chứa dữ liệu được phép dùng chung; đáp án nội bộ không được đưa vào DTO làm bài.
+packages/core không phụ thuộc React/Next; worker gọi cùng logic domain, không import route handler.
+Server Action/Route Handler → auth + validate → service → DAL/domain/queue → DB/storage/gateway.
+Job payload nhận user/document context từ server, không tin userId do trình duyệt tự khai.
+Dùng dependency rules/lint để phát hiện client import server-only packages.
+
+Database:
+- User, Account, Session, Verification theo auth library.
+- Class, Membership, Document, DocumentChunk, ProcessingJob.
+- QuestionBank, Question, QuestionOption, SourceReference, Quiz, QuizVersion.
+- Assignment, Attempt, AttemptQuestionOrder, AttemptAnswer, Grade.
+- Flashcard/ReviewSchedule khi triển khai ôn tập.
+- AIUsageEvent, AuditEvent.
+Mỗi tài nguyên có owner/scope phù hợp, khóa ngoại, index và unique constraints theo nghiệp vụ.
+attempt gắn với QuizVersion cố định; ID phương án ổn định. Thao tác nộp/chấm idempotent dùng transaction/unique key, không dựa vào client.
+Migration không reset dữ liệu production. Backup có hướng dẫn restore và kiểm tra khôi phục.
+Tài khoản DB theo nguyên tắc quyền tối thiểu; không mở DB/Redis/storage admin trực tiếp ra Internet.
+
+Triển khai:
+Tách web, worker, database, object storage và 9Router theo nhu cầu runtime.
+Static hosting không chạy được toàn bộ OCR/worker/backend.
+9Router trên máy Windows không thể gọi bằng localhost từ web đang chạy ở cloud. Production phải có kết nối server thật và thời gian hoạt động phù hợp.
+Không quảng cáo “production ready” khi còn thiếu auth/email/worker/storage hoặc chưa kiểm tra deployment.
+
+11. TÍCH HỢP 9ROUTER VÀ BẢO MẬT
+
+Tôi muốn dùng 9Router làm AI gateway và kết nối nhiều nguồn Gemini/tài khoản Antigravity mà tôi có quyền sử dụng.
+
+- Xác minh đúng repository, phiên bản 9Router và cơ chế nhà cung cấp hiện đang hỗ trợ.
+- Không mặc định mọi gói thuê bao hoặc tài khoản đăng nhập đều cung cấp API cho ứng dụng web.
+- Tách Antigravity là công cụ lập trình khỏi quyền truy cập model dùng trong sản phẩm.
+- Chỉ cấu hình tài khoản được phép theo cơ chế xác thực của nhà cung cấp; không lấy cookie hoặc token từ hồ sơ trình duyệt.
+- Không thiết kế đổi tài khoản để né quota, khóa tài khoản hay hạn chế của nhà cung cấp.
+- Toàn bộ lời gọi AI: trình duyệt → backend/worker có xác thực → 9Router riêng tư → provider.
+- Frontend không nhận khóa 9Router, khóa provider hoặc token OAuth. Không đặt khóa trong NEXT_PUBLIC_*, localStorage hoặc bundle.
+- Trong production, bắt buộc xác thực Bearer trên gateway, thay mọi mật khẩu/secret mặc định; kiểm tra tên cấu hình của bản cài, ví dụ REQUIRE_API_KEY nếu được hỗ trợ.
+- Dashboard router chỉ dành cho quản trị; giới hạn mạng/VPN, HTTPS khi đi qua mạng và khóa riêng cho từng ứng dụng.
+- Biến môi trường ứng dụng: AI_BASE_URL, AI_API_KEY, AI_MODEL_GENERATE, AI_MODEL_REVIEW, AI_MODEL_CHAT.
+- Với Docker cùng mạng nội bộ, endpoint có thể dùng tên dịch vụ; với cloud dùng địa chỉ riêng có thể truy cập từ backend, không dùng localhost của máy khác.
+- Khi có hỗ trợ, gọi danh sách model từ gateway; không bịa model ID.
+- Kiểm tra từng năng lực: chat, streaming, JSON/schema, vision, embeddings, tool calls. Tương thích OpenAI không đồng nghĩa hỗ trợ mọi API của OpenAI.
+- Định tuyến theo loại tác vụ và năng lực: chat nhanh, sinh đề, phản biện, OCR/vision nếu thực sự có.
+- Tài khoản/provider lỗi thì cooldown; 429 tôn trọng Retry-After và quota. Retry hữu hạn, exponential backoff; không chạy vòng lặp.
+- Fallback chỉ tới cấu hình được cho phép, còn hạn mức, đủ năng lực và phù hợp lựa chọn xử lý dữ liệu của người dùng.
+- Đặt giới hạn ngân sách theo tác vụ/người dùng/ngày và circuit breaker.
+- Ghi request ID, model, độ trễ, token/chi phí nếu provider cung cấp; nếu không có thì ghi chưa xác định.
+- Log không chứa secret hoặc toàn văn tài liệu theo mặc định. Cache phải cách ly theo chủ sở hữu/quyền và phiên bản tài liệu.
+- Admin có thể kiểm tra kết nối và trạng thái nhưng màn hình thường chỉ thấy nhãn model, không thấy khóa.
+- Chế độ demo chạy không cần API thật và ghi rõ “Dữ liệu mẫu”; không hiển thị thành công giả.
+
+12. AN TOÀN FILE VÀ DỮ LIỆU
+
+- Kiểm tra MIME/signature, dung lượng, số trang, giới hạn giải nén để tránh zip bomb.
+- Không chạy macro, script hay nội dung đính kèm trong tài liệu.
+- Parser/OCR chạy với quyền tối thiểu, giới hạn RAM/CPU/thời gian; quét mã độc ở production.
+- Sanitize HTML/Markdown do AI sinh trước khi render.
+- Chặn đường dẫn tùy ý và SSRF; chỉ admin được cấu hình endpoint theo allowlist.
+- Rate limit upload, tạo đề, chat và tham gia thi.
+- Signed URL có thời hạn; kiểm tra quyền trước khi cấp.
+- Có lựa chọn xóa file và dữ liệu liên quan, chính sách lưu trữ rõ; xóa cả embedding/cache theo quy trình.
+- Thông báo nội dung nào gửi tới nhà cung cấp AI; không yêu cầu học sinh nhập bí mật hoặc dữ liệu cá nhân không cần thiết.
+
+PHẦN C — TRÌNH TỰ TRIỂN KHAI VÀ CHẤT LƯỢNG
+
+C1. THỨ TỰ BẮT BUỘC
+Mốc 0: Gemini khảo sát, cài/đọc Lucian, kiểm tra Codex và xác thực, tạo tài liệu/team task. Thực sự gọi Codex cho nhiệm vụ khung.
+Mốc 1: Codex chốt kiến trúc, contracts, workspace, database, auth và skeleton. Gemini đọc bàn giao, kiểm tra chạy được.
+Mốc 2: Codex làm upload/parsing/AI/quiz/grading; Gemini làm UX/UI từ skill theo contract. Chỉ song song nếu file tách biệt.
+Mốc 3: Gemini tích hợp luồng tài khoản → tài liệu → tạo nháp → duyệt → chia sẻ → làm → nộp → điểm; mọi phần phải lưu DB thật.
+Mốc 4: Codex review toàn bộ code đã tích hợp. Gemini/Codex sửa findings, chạy lại test rồi Codex xác minh lại.
+Mốc 5: hoàn thiện OCR, lịch thi, lớp học, ôn tập, export và báo cáo theo ưu tiên; mỗi phần tiếp tục qua vòng review.
+Không dừng ở khung đẹp hoặc demo giả. Chưa có secret/dịch vụ thì ghi rõ phần chờ cấu hình và tiếp tục công việc độc lập. Không bịa kết nối production.
+
+C2. GỌI CODEX KIỂM TRA CUỐI
+Tạo team/prompts/90-final-review.md với nội dung ở mẫu cuối tài liệu.
+Dừng thay đổi code trong lúc review hoặc review commit cố định; ghi rõ revision và working tree được kiểm tra.
+Ví dụ từ root:
+    Get-Content -Raw -Encoding UTF8 .\team\prompts\90-final-review.md | codex exec --sandbox read-only --output-last-message .\team\reports\90-final-review.md -
+Gemini kiểm tra exit code và đọc kết quả. Tạo task sửa findings, có regression test cho lỗi nghiệp vụ quan trọng.
+Chạy lại build/typecheck/test/E2E liên quan, rồi gọi review read-only mới cho revision sau sửa.
+Read-only review không ghi sửa code; báo cáo đầu ra được CLI ghi qua tùy chọn output. Các test tạo file/build artifacts chạy bởi integrator hoặc sandbox workspace-write riêng.
+Nếu reviewer không chạy được check, phải ghi “chưa kiểm tra”, không suy ra pass.
+Không hứa “hết bug”; báo rõ phạm vi review, kết quả và rủi ro còn lại.
+
+C3. CHECKLIST NGHIỆM THU THỰC
+- Người chưa đăng nhập không gọi được API upload/tạo đề/chat/làm bài/xem điểm; link chia sẻ yêu cầu đăng nhập rồi mới mở đúng đề.
+- Xác minh email/reset mật khẩu hoạt động thật trong môi trường có email; tài khoản mới không tự lên admin.
+- Người A không truy cập tài liệu, job, đề riêng, attempts hoặc kết quả B bằng đổi ID hay signed URL đã hết hạn.
+- File PDF/DOCX tiếng Việt được trích xuất; scan được OCR hoặc báo trạng thái cần hỗ trợ đúng thực tế.
+- Tài liệu có đáp án được phân biệt với AI đề xuất; sourceRefs thật; không tự duyệt câu thiếu căn cứ.
+- Tạo, sửa, publish, tham gia và nộp một đề hoạt động xuyên suốt với DB thật.
+- Hai tài khoản cùng link có kết quả độc lập.
+- Đảo đáp án giữ grading đúng; refresh không đổi thứ tự; deadline theo server.
+- Không lộ đáp án/lời giải qua JSON, HTML, RSC payload hoặc cache trong chế độ thi.
+- Nộp trùng, retry AI và retry job không tạo kết quả/chi phí trùng ngoài kiểm soát.
+- Provider lỗi/429 hoặc JSON sai có lỗi đúng, retry hữu hạn và không treo.
+- Secret không có trong client, response, log, prompt fixture hoặc Git.
+- Build, lint/typecheck, integration và E2E quan trọng có kết quả thực; không dùng bộ test chỉ lặp lại implementation.
+- Luồng chính ở 375px không tràn ngang; keyboard, light/dark và reduced motion.
+- Component Lucian có ID nguồn, license và không còn demo handler thay cho submit thật.
+- Migrations chạy trên DB mới và nâng cấp schema; hướng dẫn backup/restore được kiểm tra phù hợp.
+- Chưa đạt tiêu chí nào phải ghi rõ; không đánh dấu done chỉ vì AI tự nhận đã xong.
+
+C4. BÀN GIAO
+- Repository có code tách file hợp lý, migration, seed, env placeholder và dependency lock.
+- README Windows PowerShell: yêu cầu hệ thống, cài, bật dịch vụ nền, migrate, seed, chạy web/worker, mở lại lần sau.
+- Script scripts/dev.ps1, doctor.ps1 và run-codex-task.ps1 hoặc tương đương có chức năng thực; không chỉ tạo file trống.
+- Hướng dẫn cấu hình email, storage và 9Router từ máy chủ; tách khóa team lập trình khỏi khóa AI sản phẩm.
+- docs/UI_ELEMENTS.md ghi element thật đã dùng, vị trí, điều chỉnh và link demo.
+- docs/QA_REPORT.md ghi revision review, test, findings đã sửa/chưa sửa và giới hạn.
+- Phân biệt rõ local chạy được, staging và production. Chỉ cung cấp link live nếu đã triển khai và kiểm tra thật.
+
+HÃY BẮT ĐẦU NGAY
+Khảo sát môi trường → kiểm tra/cài và đọc skill → kiểm tra Codex → tạo task kiến trúc → gọi Codex qua terminal → đọc bàn giao → tiếp tục xây dựng.
+Chỉ trả kế hoạch mà không bắt đầu công việc được phép là chưa hoàn thành yêu cầu.
+
+==================== KẾT THÚC PROMPT MASTER ====================
+
+MẪU NHIỆM VỤ: team/prompts/01-architecture.md
+
+Bạn là Codex, phụ trách Architect/Backend cho StudyForge AI. Đọc AGENTS.md và docs/PRD.md.
+Mục tiêu: chốt contracts/schema, dựng workspace, PostgreSQL/Prisma, auth bắt buộc và cấu trúc module; chuẩn bị API thật để Gemini tích hợp.
+Mọi tính năng sản phẩm yêu cầu tài khoản; trang landing và auth có thể công khai.
+Trước khi sửa: xem Git status và giữ nguyên thay đổi không thuộc task.
+Đưa output cụ thể vào repository: schema/migration, auth/permission/DAL, contracts, env placeholder, script local và README.
+Giữ UI scaffold tối thiểu theo contract; Gemini sẽ làm UX/UI bằng Lucian. Không thay đổi component đang được Gemini giao giữ.
+Viết test quan trọng cho đăng nhập/permission; chạy check thực tế khi môi trường cho phép.
+Báo cáo cuối: việc hoàn thành, file đổi, lệnh chạy và kết quả, blocker, contract và nhiệm vụ tiếp theo. Không tạo secret thật trong file nguồn và không tự nhận đã chạy test chưa chạy.
+
+MẪU NHIỆM VỤ: team/prompts/90-final-review.md
+
+Bạn là Codex Reviewer trong phiên riêng. Read-only review toàn repository StudyForge AI và các thay đổi của cả Codex lẫn Gemini, không chỉ file mới nhất.
+Đọc PRD, ARCHITECTURE, API_CONTRACTS, AGENTS và kết quả test. Xác định revision review.
+Kiểm tra:
+1. Signup/login/email verification/password reset/session, không có guest bypass.
+2. Mọi route handler/Server Action/DAL đều kiểm tra quyền; chống đổi ID truy cập dữ liệu khác.
+3. Private storage/signed URL, validation/parsing file, prompt injection và sanitize output.
+4. Khóa gateway/server-only boundary, hạn mức, 429/retry/fallback và log.
+5. QuizVersion, deadline, shuffle bằng ID, autosave và transaction nộp/chấm idempotent.
+6. Đáp án không rò rỉ trong JSON/HTML/RSC/cache trước thời điểm cho phép.
+7. DB constraints, migration, dependency vulnerabilities khi có dữ liệu kiểm tra và cấu hình deploy.
+8. Tích hợp API/UI, form handlers, React cleanup/hydration, mobile và accessibility.
+Mỗi finding có severity, file/vị trí, điều kiện tái hiện, tác động và hướng sửa. Phân biệt bug xác nhận với nghi vấn cần kiểm chứng.
+Nêu check đã chạy, check chưa chạy và phần không thể xác minh. Không sửa file trong lượt review.
+Không kết luận “không còn lỗi” chỉ vì build pass. Kết thúc bằng danh sách task sửa theo ưu tiên để Gemini điều phối.
+
+TÀI LIỆU THAM KHẢO
+- Lucian skill: https://github.com/Seokwoooo/lucian-uxui
+- SKILL.md: https://github.com/Seokwoooo/lucian-uxui/blob/main/skills/lucian-uxui/SKILL.md
+- Porting: https://github.com/Seokwoooo/lucian-uxui/blob/main/skills/lucian-uxui/references/porting.md
+- Codex CLI: https://developers.openai.com/codex/cli/
+- Non-interactive: https://developers.openai.com/codex/noninteractive/
+- CLI flags: https://developers.openai.com/codex/cli/reference/
+- Next.js auth: https://nextjs.org/docs/app/guides/authentication
+- Better Auth: https://better-auth.com/docs/authentication/email-password
+- 9Router: https://github.com/decolua/9router
+
+Ghi chú: Kiến trúc, phân công và trình tự trong tài liệu là đề xuất cho dự án. Lệnh/flag và tích hợp provider cần đối chiếu bản thực tế. Tài liệu này không cài đặt Codex, skill, database hoặc quyền terminal trên máy người dùng.
+
