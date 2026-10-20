@@ -1,34 +1,15 @@
-# Dependencies
 node_modules/
-.pnpm-store/
-
-# Next.js build
 .next/
-out/
-build/
 dist/
-
-# Environment files
+coverage/
+*.tsbuildinfo
 .env
-.env.local
-.env.production
+.env.*
 !.env.example
-
-# Logs and databases
-*.log
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
-*.sqlite
-*.sqlite-journal
+.data/
+.generated/
 *.db
-
-# Team execution artifacts & caches
-team/artifacts/
-.cache/
-.turbo/
-
-# OS files
-Thumbs.db
-[Dd]esktop.ini
-.DS_Store
+*.db-journal
+*.db-wal
+*.db-shm
+team/reports/*.log

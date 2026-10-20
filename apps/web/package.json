@@ -1,0 +1,22 @@
+{
+  "name": "@studyforge/web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@studyforge/contracts": "*",
+    "@studyforge/core": "*",
+    "@studyforge/db": "*",
+    "@studyforge/ai": "*",
+    "@studyforge/storage": "*",
+    "next": "^16.0.10",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": { "@types/react": "^19.2.5", "@types/react-dom": "^19.2.3" }
+}

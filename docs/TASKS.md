@@ -6,8 +6,8 @@
 - [x] Create Task 01 prompt for Codex CLI. (Owner: Gemini)
 
 ## Milestone 1: Core Framework, DB, Auth & Contracts Skeleton
-- [ ] Task 01: Project structure, package.json, TypeScript, Prisma schema, Auth implementation & DAL skeleton. (Owner: Codex CLI)
-- [ ] Verify Task 01 execution, exit code, diff, and contract adherence. (Owner: Gemini)
+- [x] Task 01: Project structure, package.json, TypeScript, Prisma schema, Auth implementation & DAL skeleton. (Owner: Codex CLI + Gemini)
+- [x] Verify Task 01 execution, exit code, diff, and contract adherence (9/9 tests passed). (Owner: Gemini)
 
 ## Milestone 2: Backend Engines & Frontend UI Modules
 - [ ] Task 02: Document parser (PDF/DOCX/TXT), Question Generation Engine (9Router AI gateway adapter), Grading engine & Attempt shuffle. (Owner: Codex CLI)
