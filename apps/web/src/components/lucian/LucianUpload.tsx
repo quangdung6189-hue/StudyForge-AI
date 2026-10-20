@@ -59,9 +59,10 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
     const formData = new FormData();
     fileList.forEach(f => formData.append('files', f));
 
+    let timer: any = null;
     try {
       // Simulate progressive visual feedback
-      const timer = setInterval(() => {
+      timer = setInterval(() => {
         setUploadingFiles(prev =>
           prev.map(item =>
             item.status === 'uploading'
@@ -76,7 +77,6 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
         body: formData,
       });
 
-      clearInterval(timer);
       const data = await res.json();
 
       if (res.ok && data.success) {
@@ -95,6 +95,8 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
       setUploadingFiles(prev =>
         prev.map(item => ({ ...item, status: 'fail' }))
       );
+    } finally {
+      if (timer) clearInterval(timer);
     }
   };
 

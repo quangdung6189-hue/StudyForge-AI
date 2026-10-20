@@ -6,6 +6,7 @@ import {
   studentQuestions,
   decodeAnswers,
   grade,
+  chunkText,
 } from '@studyforge/core';
 import type {
   UserDTO,
@@ -92,15 +93,30 @@ export async function updateOwnedDocument(userId: string, documentId: string, up
   const existing = await db.document.findFirst({ where: { id: documentId, ownerId: userId } });
   if (!existing) throw new DalError('NOT_FOUND', 'Tài liệu không tồn tại');
 
-  const updated = await db.document.update({
-    where: { id: documentId },
-    data: {
-      ...(updates.title ? { title: updates.title } : {}),
-      ...(updates.rawText !== undefined ? { rawText: updates.rawText, revision: { increment: 1 } } : {}),
-    },
-  });
+  return transaction(async tx => {
+    const updated = await tx.document.update({
+      where: { id: documentId },
+      data: {
+        ...(updates.title ? { title: updates.title } : {}),
+        ...(updates.rawText !== undefined ? { rawText: updates.rawText, revision: { increment: 1 } } : {}),
+      },
+    });
 
-  return updated;
+    if (updates.rawText !== undefined) {
+      await tx.documentChunk.deleteMany({ where: { documentId } });
+      const newChunks = chunkText(updates.rawText, 500, 50);
+      await tx.documentChunk.createMany({
+        data: newChunks.map((c, i) => ({
+          documentId,
+          chunkIndex: i,
+          content: c.content,
+          pageNumber: c.pageNumber ?? 1,
+        })),
+      });
+    }
+
+    return updated;
+  });
 }
 
 // ==================== QUIZZES DAL ====================
@@ -178,6 +194,59 @@ export async function getOwnedQuiz(userId: string, quizId: string) {
   };
 }
 
+export async function updateOwnedQuizQuestions(
+  userId: string,
+  quizId: string,
+  questions: FullQuestionDTO[]
+) {
+  return transaction(async tx => {
+    const quiz = await tx.quiz.findFirst({
+      where: { id: quizId, ownerId: userId },
+      include: { bank: true },
+    });
+    if (!quiz) throw new DalError('NOT_FOUND', 'Bài kiểm tra không tồn tại');
+    if (quiz.isPublished) throw new DalError('CONFLICT', 'Không thể sửa bài kiểm tra đã xuất bản');
+
+    await tx.questionOption.deleteMany({
+      where: { question: { bankId: quiz.bankId } },
+    });
+    await tx.question.deleteMany({
+      where: { bankId: quiz.bankId },
+    });
+
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      await tx.question.create({
+        data: {
+          id: q.id,
+          bankId: quiz.bankId,
+          position: i,
+          type: q.type,
+          stem: q.stem,
+          correctOptionIds: q.correctOptionIds as any,
+          acceptedAnswers: q.acceptedAnswers as any,
+          explanation: q.explanation,
+          points: Math.max(1, q.points || 1),
+          difficulty: q.difficulty || 'comprehension',
+          topic: q.topic || 'Chung',
+          answerOrigin: q.answerOrigin || 'teacher',
+          sourceRefs: q.sourceRefs as any,
+          reviewed: true,
+          options: {
+            create: q.options.map((opt, optIdx) => ({
+              id: opt.id,
+              text: opt.text,
+              position: optIdx,
+            })),
+          },
+        },
+      });
+    }
+
+    return { success: true };
+  });
+}
+
 export async function publishOwnedQuiz(
   userId: string,
   quizId: string,
@@ -202,7 +271,7 @@ export async function publishOwnedQuiz(
     if (!quiz.bank.questions.length) throw new DalError('CONFLICT', 'Không thể xuất bản đề thi chưa có câu hỏi');
 
     const nextVersion = quiz.publishedVersion + 1;
-    const shareCode = quiz.shareCode || randomBytes(16).toString('hex');
+    const shareCode = (quiz.shareCode || randomBytes(8).toString('hex')).toUpperCase();
     const deadlineDate = options.deadline ? new Date(options.deadline) : null;
     const duration = options.durationMinutes ?? quiz.durationMinutes;
 
@@ -262,9 +331,16 @@ export async function publishOwnedQuiz(
 // ==================== EXAM ATTEMPTS DAL (ZERO LEAK) ====================
 
 export async function startQuizAttempt(user: UserDTO, params: { quizId?: string; shareCode?: string }) {
+  const cleanShareCode = typeof params.shareCode === 'string' ? params.shareCode.trim().toUpperCase() : undefined;
+  const cleanQuizId = typeof params.quizId === 'string' ? params.quizId.trim() : undefined;
+
+  if (!cleanShareCode && !cleanQuizId) {
+    throw new DalError('NOT_FOUND', 'Cần cung cấp mã chia sẻ hoặc ID bài kiểm tra');
+  }
+
   const quiz = await db.quiz.findFirst({
     where: {
-      ...(params.shareCode ? { shareCode: params.shareCode } : { id: params.quizId }),
+      ...(cleanShareCode ? { shareCode: cleanShareCode } : { id: cleanQuizId }),
       isPublished: true,
     },
     include: {
@@ -300,6 +376,10 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
 
   if (existingAttempt) {
     const questions = studentQuestions(snapshot, existingAttempt.seed);
+    const answers: AnswerMap = {};
+    for (const a of existingAttempt.answers) {
+      answers[a.questionId] = a.values as string[];
+    }
     return {
       attemptId: existingAttempt.id,
       quizTitle: snapshot.title,
@@ -307,7 +387,12 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
       startedAt: existingAttempt.startedAt.toISOString(),
       expiresAt: existingAttempt.expiresAt.toISOString(),
       questions,
+      answers,
       isSubmitted: existingAttempt.status === 'submitted',
+      score: existingAttempt.score ?? undefined,
+      totalPoints: existingAttempt.totalPoints ?? undefined,
+      passed: existingAttempt.passed ?? undefined,
+      details: (existingAttempt.status === 'submitted' && snapshot.allowReview) ? (existingAttempt.result as any) : undefined,
     };
   }
 
@@ -337,40 +422,52 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
     startedAt: startedAt.toISOString(),
     expiresAt: expiresAt.toISOString(),
     questions,
+    answers: {},
     isSubmitted: false,
   };
 }
 
 export async function saveAttemptAnswers(userId: string, attemptId: string, answers: AnswerMap) {
-  const attempt = await db.attempt.findFirst({
-    where: { id: attemptId, userId },
-  });
+  return transaction(async tx => {
+    const attempt = await tx.attempt.findFirst({
+      where: { id: attemptId, userId },
+      include: { quizVersion: true },
+    });
 
-  if (!attempt) throw new DalError('NOT_FOUND', 'Lượt làm bài không tồn tại');
-  if (attempt.status === 'submitted') throw new DalError('CONFLICT', 'Bài thi đã được nộp');
-  if (isExpired(attempt.expiresAt)) throw new DalError('EXPIRED', 'Thời gian làm bài đã kết thúc');
+    if (!attempt) throw new DalError('NOT_FOUND', 'Lượt làm bài không tồn tại');
+    if (attempt.status === 'submitted') throw new DalError('CONFLICT', 'Bài thi đã được nộp');
+    if (isExpired(attempt.expiresAt)) throw new DalError('EXPIRED', 'Thời gian làm bài đã kết thúc');
 
-  for (const [questionId, values] of Object.entries(answers)) {
-    await db.attemptAnswer.upsert({
-      where: {
-        attemptId_questionId: {
+    const snapshot = attempt.quizVersion.snapshot as unknown as QuizSnapshot;
+    const validQuestionIds = new Set(
+      studentQuestions(snapshot, attempt.seed).map(q => q.id)
+    );
+
+    for (const [questionId, values] of Object.entries(answers)) {
+      if (!validQuestionIds.has(questionId)) {
+        continue; // Prevent unknown question IDs from poisoning the attempt
+      }
+      await tx.attemptAnswer.upsert({
+        where: {
+          attemptId_questionId: {
+            attemptId,
+            questionId,
+          },
+        },
+        create: {
           attemptId,
           questionId,
+          values: Array.isArray(values) ? values : [String(values)],
         },
-      },
-      create: {
-        attemptId,
-        questionId,
-        values: values as any,
-      },
-      update: {
-        values: values as any,
-        savedAt: new Date(),
-      },
-    });
-  }
+        update: {
+          values: Array.isArray(values) ? values : [String(values)],
+          savedAt: new Date(),
+        },
+      });
+    }
 
-  return { savedAt: new Date().toISOString(), status: 'saved' };
+    return { savedAt: new Date().toISOString(), status: 'saved' };
+  });
 }
 
 export async function submitQuizAttempt(userId: string, attemptId: string, answers?: AnswerMap) {
@@ -384,25 +481,29 @@ export async function submitQuizAttempt(userId: string, attemptId: string, answe
     });
 
     if (!attempt) throw new DalError('NOT_FOUND', 'Lượt làm bài không tồn tại');
+    const snapshot = attempt.quizVersion.snapshot as unknown as QuizSnapshot;
+
     if (attempt.status === 'submitted') {
-      // Idempotent: return existing grade
+      // Idempotent: return existing grade with details if review policy allows
       return {
         attemptId: attempt.id,
         submittedAt: attempt.submittedAt?.toISOString() || attempt.startedAt.toISOString(),
         score: attempt.score ?? 0,
         totalPoints: attempt.totalPoints ?? 0,
         passed: attempt.passed ?? false,
+        details: snapshot.allowReview ? (attempt.result as any) : undefined,
       };
     }
 
-    const snapshot = attempt.quizVersion.snapshot as unknown as QuizSnapshot;
+    const now = new Date();
+    const expired = isExpired(attempt.expiresAt, now);
 
-    // Merge answers from database and submitted argument
+    // Merge answers from database and submitted argument (only merge submitted answers if NOT expired)
     const answerMap: AnswerMap = {};
     for (const a of attempt.answers) {
       answerMap[a.questionId] = a.values as string[];
     }
-    if (answers) {
+    if (answers && !expired) {
       Object.assign(answerMap, answers);
     }
 
@@ -412,7 +513,6 @@ export async function submitQuizAttempt(userId: string, attemptId: string, answe
     // Grade using core domain logic
     const { score, totalPoints, passed, details } = grade(snapshot.questions, decodedAnswers);
 
-    const now = new Date();
     await tx.attempt.update({
       where: { id: attemptId },
       data: {

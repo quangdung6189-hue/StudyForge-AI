@@ -11,6 +11,7 @@ export async function generateQuizQuestions(params: {
   difficultyDistribution?: { recognition: number; comprehension: number; application: number };
 }): Promise<FullQuestionDTO[]> {
   const { documentTitle, chunks, mode, questionCount, types } = params;
+  const safeCount = Math.min(Math.max(1, Number(questionCount) || 1), 50);
 
   // Build document excerpt context
   const context = chunks
@@ -50,20 +51,23 @@ Hãy sinh danh sách các câu hỏi theo đúng schema.`;
   } catch (err) {
     // If AI gateway not configured or unavailable, provide high quality deterministic generation from document chunks
     // ensuring end-to-end testing and demo operations succeed without blocking the user
-    return generateLocalFallbackQuestions(documentTitle, chunks, questionCount, types);
+    return generateLocalFallbackQuestions(documentTitle, chunks, mode, safeCount, types);
   }
 }
 
 function generateLocalFallbackQuestions(
   documentTitle: string,
   chunks: Array<{ id: string; chunkIndex: number; content: string }>,
+  mode: 'extract_existing' | 'ai_generate',
   questionCount: number,
   types: Array<'single' | 'multiple' | 'boolean' | 'fill' | 'short'>
 ): FullQuestionDTO[] {
   const questions: FullQuestionDTO[] = [];
   const chunkList = chunks.length ? chunks : [{ id: randomUUID(), chunkIndex: 0, content: documentTitle }];
+  const safeCount = Math.min(Math.max(1, Number(questionCount) || 1), 50);
+  const origin = mode === 'extract_existing' ? 'document' : 'ai_suggested';
 
-  for (let i = 0; i < questionCount; i++) {
+  for (let i = 0; i < safeCount; i++) {
     const targetChunk = chunkList[i % chunkList.length];
     const sentences = targetChunk.content
       .split(/[.\n?!]/)
@@ -91,7 +95,7 @@ function generateLocalFallbackQuestions(
         points: 1,
         difficulty: i % 3 === 0 ? 'recognition' : i % 3 === 1 ? 'comprehension' : 'application',
         topic: documentTitle,
-        answerOrigin: 'ai_suggested',
+        answerOrigin: origin,
         sourceRefs: [{ chunkId: targetChunk.id, quote: quoteSentence }],
         reviewed: false,
       });
@@ -111,12 +115,38 @@ function generateLocalFallbackQuestions(
         points: 1,
         difficulty: 'comprehension',
         topic: documentTitle,
-        answerOrigin: 'ai_suggested',
+        answerOrigin: origin,
+        sourceRefs: [{ chunkId: targetChunk.id, quote: quoteSentence }],
+        reviewed: false,
+      });
+    } else if (qType === 'multiple') {
+      const opt1 = randomUUID();
+      const opt2 = randomUUID();
+      const opt3 = randomUUID();
+      const opt4 = randomUUID();
+
+      questions.push({
+        id: qId,
+        type: 'multiple',
+        stem: `Dựa vào tài liệu "${documentTitle}", các phương án nào sau đây là ĐÚNG liên quan đến: "${quoteSentence.slice(0, 50)}..."?`,
+        options: [
+          { id: opt1, text: quoteSentence },
+          { id: opt2, text: `Đặc điểm cốt lõi nêu trong bài học: ${quoteSentence.slice(0, 30)}` },
+          { id: opt3, text: 'Nội dung này trái ngược với quy luật tự nhiên nêu trong bài.' },
+          { id: opt4, text: 'Chỉ áp dụng trong một số trường hợp ngoại lệ.' },
+        ],
+        correctOptionIds: [opt1, opt2],
+        acceptedAnswers: [],
+        explanation: `Trích từ tài liệu: "${quoteSentence}". Cả hai phương án A và B đều đúng.`,
+        points: 2,
+        difficulty: 'application',
+        topic: documentTitle,
+        answerOrigin: origin,
         sourceRefs: [{ chunkId: targetChunk.id, quote: quoteSentence }],
         reviewed: false,
       });
     } else {
-      // Single or multiple choice
+      // Single choice
       const opt1 = randomUUID();
       const opt2 = randomUUID();
       const opt3 = randomUUID();
@@ -138,7 +168,7 @@ function generateLocalFallbackQuestions(
         points: 1,
         difficulty: i % 2 === 0 ? 'recognition' : 'comprehension',
         topic: documentTitle,
-        answerOrigin: 'ai_suggested',
+        answerOrigin: origin,
         sourceRefs: [{ chunkId: targetChunk.id, quote: quoteSentence }],
         reviewed: false,
       });

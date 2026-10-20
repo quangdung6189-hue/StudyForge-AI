@@ -1,17 +1,19 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/server/auth';
 import { startQuizAttempt } from '@/server/dal';
+import { AttemptStartSchema } from '@studyforge/contracts';
 
 export async function POST(req: Request) {
   try {
     const user = await requireUser();
-    const body = await req.json();
-    const { quizId, shareCode } = body;
+    const rawBody = await req.json().catch(() => ({}));
+    const parse = AttemptStartSchema.safeParse(rawBody);
 
-    if (!quizId && !shareCode) {
-      return NextResponse.json({ error: { code: 'INVALID_INPUT', message: 'Cần mã đề thi (shareCode) hoặc mã bài kiểm tra' } }, { status: 400 });
+    if (!parse.success) {
+      return NextResponse.json({ error: { code: 'INVALID_INPUT', message: 'Mã đề thi hoặc ID không hợp lệ' } }, { status: 400 });
     }
 
+    const { quizId, shareCode } = parse.data;
     const attempt = await startQuizAttempt(user, { quizId, shareCode });
     return NextResponse.json(attempt);
   } catch (err: any) {

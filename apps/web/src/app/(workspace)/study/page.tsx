@@ -7,21 +7,21 @@ export default function StudyPage() {
   const [flipped, setFlipped] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
 
-  // Sample study questions for incorrect review
+  // General spaced-repetition flashcards for study technique and methodology
   const flashcards = [
     {
-      topic: 'Sinh học 8',
-      question: 'Cấu tạo chung của một tế bào người gồm những thành phần cơ bản nào?',
-      answer: 'Gồm 3 phần chính: Màng sinh chất, chất tế bào và nhân.',
-      explanation: 'Màng sinh chất bao bọc, chất tế bào chứa các bào quan thực hiện chuyển hóa, nhân mang vật chất di truyền.',
-      citation: 'Sách giáo khoa Sinh học 8 — Chương I: Tế bào',
+      topic: 'Phương pháp học tập',
+      question: 'Nguyên lý hoạt động chính của phương pháp Lặp lại ngắt quãng (Spaced Repetition) là gì?',
+      answer: 'Gia tăng dần khoảng cách thời gian giữa các lần ôn tập nhằm củng cố trí nhớ dài hạn trước khi kiến thức bị lãng quên.',
+      explanation: 'Dựa trên đường cong lãng quên Ebbinghaus, việc chủ động gợi nhớ tại các thời điểm thích hợp giúp não bộ khắc sâu thông tin hiệu quả nhất.',
+      citation: 'Tài liệu phương pháp học tập khoa học — StudyForge AI',
     },
     {
-      topic: 'Địa lí 8',
-      question: 'Tính chất nhiệt đới gió mùa ẩm của khí hậu Việt Nam được thể hiện qua những yếu tố nào?',
-      answer: 'Nhiệt độ trung bình năm cao (>21°C), lượng mưa lớn (1500 - 2000 mm/năm) và độ ẩm không khí trên 80%.',
-      explanation: 'Hai mùa gió rõ rệt: Gió mùa mùa đông (lạnh khô nửa đầu, ẩm nửa sau) và Gió mùa mùa hạ (nóng ẩm).',
-      citation: 'Sách giáo khoa Địa lí 8 — Vị trí địa lí và khí hậu Việt Nam',
+      topic: 'Kỹ năng làm bài thi',
+      question: 'Chiến thuật làm bài thi trắc nghiệm 2 lượt mang lại lợi ích gì cho thí sinh?',
+      answer: 'Lượt 1 giải quyết ngay các câu nhận biết chắc chắn đúng; lượt 2 tập trung thời gian suy luận cho các câu hỏi vận dụng phức tạp.',
+      explanation: 'Giúp tối ưu hóa điểm số, tránh mất điểm đáng tiếc ở câu dễ và quản lý thời gian làm bài chặt chẽ.',
+      citation: 'Cẩm nang phương pháp khảo thí và làm bài thi chuẩn hóa',
     },
   ];
 

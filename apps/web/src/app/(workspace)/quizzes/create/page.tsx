@@ -22,6 +22,8 @@ export default function CreateQuizPage() {
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<any[]>([]);
   const [publishedInfo, setPublishedInfo] = useState<{ shareCode: string; shareUrl: string } | null>(null);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetch('/api/documents')
@@ -405,21 +407,116 @@ export default function CreateQuizPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {questions.map((q, idx) => (
               <div key={idx} className="q-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className={`origin-badge ${q.answerOrigin === 'document' ? 'origin-doc' : 'origin-ai'}`}>
-                    {q.answerOrigin === 'document' ? '📄 Đáp án gốc trong tài liệu' : '🤖 AI đề xuất (Cần duyệt)'}
-                  </span>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ux-ink-3)' }}>
-                    {q.points} điểm · {q.type === 'single' ? 'Trắc nghiệm đơn' : q.type === 'boolean' ? 'Đúng/Sai' : 'Điền từ'}
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className={`origin-badge ${q.answerOrigin === 'document' ? 'origin-doc' : 'origin-ai'}`}>
+                      {q.answerOrigin === 'document' ? '📄 Đáp án gốc trong tài liệu' : '🤖 AI đề xuất (Cần duyệt)'}
+                    </span>
+                    {q.reviewed && (
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ux-mint)', background: 'color-mix(in srgb, var(--ux-mint) 15%, transparent)', padding: '2px 8px', borderRadius: '6px' }}>
+                        ✓ Đã duyệt
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ux-ink-3)' }}>
+                      {q.points} điểm · {q.type === 'single' ? 'Trắc nghiệm đơn' : q.type === 'boolean' ? 'Đúng/Sai' : q.type === 'multiple' ? 'Nhiều đáp án' : 'Điền từ'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEditingIdx(editingIdx === idx ? null : idx)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--ux-line)',
+                        background: 'var(--ux-surface-2)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        color: 'var(--ux-ink-2)',
+                      }}
+                    >
+                      {editingIdx === idx ? 'Đóng' : '✏️ Sửa'}
+                    </button>
+                  </div>
                 </div>
 
-                <div style={{ fontSize: '15px', fontWeight: 700, margin: '8px 0' }}>
-                  Câu {idx + 1}: {q.stem}
-                </div>
+                {editingIdx === idx ? (
+                  <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ux-ink-2)', marginBottom: '4px' }}>
+                        Nội dung câu hỏi:
+                      </label>
+                      <textarea
+                        value={q.stem}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setQuestions(prev => prev.map((item, i) => i === idx ? { ...item, stem: val, reviewed: true } : item));
+                        }}
+                        style={{
+                          width: '100%',
+                          minHeight: '60px',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--ux-line)',
+                          background: 'var(--ux-surface)',
+                          color: 'var(--ux-ink)',
+                          fontSize: '14px',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ux-ink-2)', marginBottom: '4px' }}>
+                        Giải thích chi tiết:
+                      </label>
+                      <input
+                        type="text"
+                        value={q.explanation || ''}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setQuestions(prev => prev.map((item, i) => i === idx ? { ...item, explanation: val, reviewed: true } : item));
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--ux-line)',
+                          background: 'var(--ux-surface)',
+                          color: 'var(--ux-ink)',
+                          fontSize: '13px',
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuestions(prev => prev.map((item, i) => i === idx ? { ...item, reviewed: true } : item));
+                          setEditingIdx(null);
+                        }}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: '6px',
+                          background: 'var(--ux-mint)',
+                          color: 'white',
+                          border: 0,
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✓ Lưu & Xác nhận duyệt
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '15px', fontWeight: 700, margin: '8px 0' }}>
+                    Câu {idx + 1}: {q.stem}
+                  </div>
+                )}
 
                 {q.options?.length > 0 && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', margin: '12px 0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', margin: '12px 0' }}>
                     {q.options.map((opt: any) => {
                       const isCorrect = q.correctOptionIds?.includes(opt.id);
                       return (
@@ -460,12 +557,12 @@ export default function CreateQuizPage() {
       )}
 
       {step === 4 && publishedInfo && (
-        <div className="card-box" style={{ textAlign: 'center', padding: '48px 32px' }}>
+        <div className="card-box" style={{ textAlign: 'center', padding: '40px 20px', maxWidth: '600px', margin: '0 auto' }}>
           <div style={{ fontSize: '56px', marginBottom: '16px' }}>🎉</div>
-          <h2 style={{ fontSize: '26px', fontWeight: 900, margin: '0 0 10px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 900, margin: '0 0 10px' }}>
             Xuất bản đề thi thành công!
           </h2>
-          <p style={{ color: 'var(--ux-ink-2)', fontSize: '15px', maxWidth: '500px', margin: '0 auto 24px' }}>
+          <p style={{ color: 'var(--ux-ink-2)', fontSize: '14px', maxWidth: '480px', margin: '0 auto 24px', lineHeight: 1.5 }}>
             Đề thi đã được lưu phiên bản bất biến (immutable snapshot). Học sinh cần đăng nhập tài khoản để vào làm bài.
           </p>
 
@@ -474,29 +571,49 @@ export default function CreateQuizPage() {
               display: 'inline-flex',
               flexDirection: 'column',
               alignItems: 'center',
-              padding: '20px 32px',
+              padding: '20px 24px',
               borderRadius: '18px',
               background: 'var(--ux-surface-2)',
               border: '2px dashed var(--ux-accent)',
-              marginBottom: '32px',
+              marginBottom: '28px',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
             }}
           >
             <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ux-ink-3)', textTransform: 'uppercase' }}>
               Mã tham gia bài thi
             </span>
-            <span style={{ fontSize: '32px', fontWeight: 900, color: 'var(--ux-accent)', letterSpacing: '4px', margin: '8px 0' }}>
+            <span style={{ fontSize: 'clamp(20px, 6vw, 30px)', fontWeight: 900, color: 'var(--ux-accent)', letterSpacing: '2px', margin: '8px 0', wordBreak: 'break-all' }}>
               {publishedInfo.shareCode}
             </span>
-            <span style={{ fontSize: '12px', color: 'var(--ux-ink-3)' }}>
-              Chia sẻ mã này hoặc đường link cho học sinh
-            </span>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(publishedInfo.shareCode);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              style={{
+                marginTop: '8px',
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: '1px solid var(--ux-line)',
+                background: 'var(--ux-surface)',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: 'var(--ux-ink-2)',
+                cursor: 'pointer',
+              }}
+            >
+              {copied ? '✓ Đã sao chép mã!' : '📋 Sao chép mã'}
+            </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link
               href={`/quizzes/take?code=${publishedInfo.shareCode}`}
               style={{
-                padding: '12px 28px',
+                padding: '12px 24px',
                 borderRadius: '12px',
                 background: 'var(--ux-accent)',
                 color: 'white',

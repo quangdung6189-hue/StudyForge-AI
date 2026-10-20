@@ -18,9 +18,13 @@ export default function TakeQuizPage() {
   const [result, setResult] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
+
   // Start Exam
   const handleStart = async (codeToUse?: string) => {
-    const code = codeToUse || shareCode;
+    const raw = codeToUse || shareCode;
+    const code = raw.trim().toUpperCase();
     if (!code) return;
     setErrorMsg('');
 
@@ -38,6 +42,12 @@ export default function TakeQuizPage() {
       }
 
       setAttempt(data);
+      if (data.answers && Object.keys(data.answers).length > 0) {
+        setAnswers(data.answers);
+      }
+      if (data.isSubmitted) {
+        setResult(data);
+      }
       const remaining = Math.max(0, Math.floor((new Date(data.expiresAt).getTime() - Date.now()) / 1000));
       setTimeLeftSec(remaining);
     } catch (e: any) {
@@ -51,18 +61,16 @@ export default function TakeQuizPage() {
     }
   }, [initialCode]);
 
-  // Countdown timer
+  // Countdown timer calculated directly from server expiresAt
   useEffect(() => {
     if (!attempt || result) return;
     const interval = setInterval(() => {
-      setTimeLeftSec(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
+      const remaining = Math.max(0, Math.floor((new Date(attempt.expiresAt).getTime() - Date.now()) / 1000));
+      setTimeLeftSec(remaining);
+      if (remaining <= 0) {
+        clearInterval(interval);
+        handleSubmit();
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, [attempt, result]);
@@ -101,14 +109,15 @@ export default function TakeQuizPage() {
     });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (overrideAnswers?: Record<string, string[]>) => {
     if (!attempt || submitting) return;
     setSubmitting(true);
     try {
+      const finalAnswers = overrideAnswers || answersRef.current;
       const res = await fetch(`/api/attempts/${attempt.attemptId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers: finalAnswers }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -488,37 +497,67 @@ export default function TakeQuizPage() {
 
           <div className="q-stem">{currentQ.stem}</div>
 
-          <div className="opt-list">
-            {currentQ.options?.map((opt: any, oIdx: number) => {
-              const isSelected = selectedOptions.includes(opt.id);
-              const label = String.fromCharCode(65 + oIdx);
-              return (
-                <button
-                  key={opt.id}
-                  className={`opt-btn ${isSelected ? 'selected' : ''}`}
-                  onClick={() => handleSelectOption(currentQ.id, opt.id, currentQ.type === 'multiple')}
-                >
-                  <span
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '50%',
-                      background: isSelected ? 'var(--ux-accent)' : 'var(--ux-surface-2)',
-                      color: isSelected ? 'white' : 'var(--ux-ink-2)',
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontWeight: 800,
-                      fontSize: '13px',
-                      flexShrink: 0,
-                    }}
+          {(!currentQ.options || currentQ.options.length === 0 || currentQ.type === 'fill' || currentQ.type === 'short') ? (
+            <div style={{ marginTop: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ux-ink-2)', marginBottom: '8px' }}>
+                Nhập câu trả lời của bạn:
+              </label>
+              <input
+                type="text"
+                value={answers[currentQ.id]?.[0] || ''}
+                onChange={e => {
+                  const val = e.target.value;
+                  setAnswers(prev => ({
+                    ...prev,
+                    [currentQ.id]: [val],
+                  }));
+                }}
+                placeholder="Nhập câu trả lời tại đây..."
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--ux-line)',
+                  background: 'var(--ux-surface-2)',
+                  color: 'var(--ux-ink)',
+                  fontSize: '15px',
+                  outline: 'none',
+                }}
+              />
+            </div>
+          ) : (
+            <div className="opt-list">
+              {currentQ.options?.map((opt: any, oIdx: number) => {
+                const isSelected = selectedOptions.includes(opt.id);
+                const label = String.fromCharCode(65 + oIdx);
+                return (
+                  <button
+                    key={opt.id}
+                    className={`opt-btn ${isSelected ? 'selected' : ''}`}
+                    onClick={() => handleSelectOption(currentQ.id, opt.id, currentQ.type === 'multiple')}
                   >
-                    {label}
-                  </span>
-                  <span>{opt.text}</span>
-                </button>
-              );
-            })}
-          </div>
+                    <span
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        background: isSelected ? 'var(--ux-accent)' : 'var(--ux-surface-2)',
+                        color: isSelected ? 'white' : 'var(--ux-ink-2)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        fontWeight: 800,
+                        fontSize: '13px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {label}
+                    </span>
+                    <span>{opt.text}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '32px' }}>
             <button
@@ -556,7 +595,8 @@ export default function TakeQuizPage() {
               </button>
             ) : (
               <button
-                onClick={handleSubmit}
+                type="button"
+                onClick={() => handleSubmit()}
                 disabled={submitting}
                 style={{
                   padding: '12px 28px',
@@ -588,20 +628,23 @@ export default function TakeQuizPage() {
               const isAnswered = (answers[q.id] || []).length > 0;
               const isCurrent = idx === currentIdx;
               return (
-                <div
+                <button
+                  type="button"
                   key={q.id}
+                  aria-label={`Câu hỏi ${idx + 1}: ${isAnswered ? 'Đã trả lời' : 'Chưa làm'}`}
                   className={`palette-num ${isAnswered ? 'done' : ''} ${isCurrent ? 'current' : ''}`}
                   onClick={() => setCurrentIdx(idx)}
                 >
                   {idx + 1}
-                </div>
+                </button>
               );
             })}
           </div>
 
           <div style={{ marginTop: '24px' }}>
             <button
-              onClick={handleSubmit}
+              type="button"
+              onClick={() => handleSubmit()}
               disabled={submitting}
               style={{
                 width: '100%',

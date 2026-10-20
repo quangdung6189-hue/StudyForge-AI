@@ -94,7 +94,7 @@ export type QuizSnapshot = z.infer<typeof QuizSnapshotSchema>;
 export const QuizSummarySchema = z.strictObject({ id: IdSchema, title: z.string(), isPublished: z.boolean(), durationMinutes: z.number(), createdAt: z.iso.datetime() });
 export const QuizDetailSchema = QuizSummarySchema.extend({ description: z.string(), shareCode: z.string().nullable(), questions: QuestionListSchema });
 
-export const AttemptStartSchema = z.strictObject({ quizId: IdSchema.optional(), shareCode: z.string().trim().regex(/^[A-Za-z0-9_-]{24,64}$/).optional() })
+export const AttemptStartSchema = z.strictObject({ quizId: IdSchema.optional(), shareCode: z.string().trim().min(4).max(64).regex(/^[A-Za-z0-9_-]+$/).optional() })
   .refine(v => Boolean(v.quizId || v.shareCode), 'Provide quizId or shareCode');
 export const AnswerMapSchema = z.record(IdSchema, z.array(z.string().max(4000)).max(20)).refine(v => Object.keys(v).length <= 100, 'Too many answers');
 export const SaveAnswersSchema = z.strictObject({ answers: AnswerMapSchema });

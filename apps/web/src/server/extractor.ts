@@ -18,13 +18,17 @@ export async function extractDocumentContent(
 
   if (fileType === 'application/pdf' || lower.endsWith('.pdf')) {
     try {
-      // Dynamic import to handle pdf-parse in ESNext/Bundler
       const pdfParseModule: any = await import('pdf-parse');
-      const pdfParse = (pdfParseModule.default || pdfParseModule) as (buf: Buffer) => Promise<{ text: string }>;
-      const parsed = await pdfParse(buffer);
-      rawText = parsed.text || '';
+      if (typeof pdfParseModule.PDFParse === 'function') {
+        const parser = new pdfParseModule.PDFParse({ data: buffer });
+        rawText = (await parser.getText()) || '';
+        if (typeof parser.destroy === 'function') await parser.destroy();
+      } else if (typeof pdfParseModule.default === 'function' || typeof pdfParseModule === 'function') {
+        const fn = pdfParseModule.default || pdfParseModule;
+        const parsed = await fn(buffer);
+        rawText = parsed?.text || '';
+      }
     } catch {
-      // Fallback text extraction if binary parse error
       rawText = buffer.toString('utf-8').replace(/[^\x20-\x7E\u00A0-\u024F\u1EA0-\u1EF9\n\r\t]/g, ' ');
     }
   } else if (
@@ -37,10 +41,11 @@ export async function extractDocumentContent(
     } catch (e) {
       throw new ExtractorError('Không thể đọc file DOCX: ' + (e as Error).message);
     }
+  } else if (fileType.startsWith('image/') || lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+    rawText = `[Hình ảnh: ${fileName}] Tài liệu dạng hình ảnh cần xử lý qua công cụ OCR tiếng Việt. Bạn có thể bổ sung nội dung văn bản thủ công tại màn hình chỉnh sửa tài liệu.`;
   } else if (fileType.startsWith('text/') || lower.endsWith('.txt')) {
     rawText = buffer.toString('utf-8');
   } else {
-    // Other text files or images
     rawText = buffer.toString('utf-8');
   }
 
