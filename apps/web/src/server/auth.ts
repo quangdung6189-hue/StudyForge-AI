@@ -24,7 +24,8 @@ export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
 }
 
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+export async function verifyPassword(password: string, hash: string | null): Promise<boolean> {
+  if (!hash || Buffer.byteLength(password, 'utf8') > 72) return false;
   return bcrypt.compare(password, hash);
 }
 

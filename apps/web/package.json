@@ -9,14 +9,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@studyforge/ai": "*",
     "@studyforge/contracts": "*",
     "@studyforge/core": "*",
     "@studyforge/db": "*",
-    "@studyforge/ai": "*",
     "@studyforge/storage": "*",
+    "jose": "^6.2.13",
     "next": "^16.0.10",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
-  "devDependencies": { "@types/react": "^19.2.5", "@types/react-dom": "^19.2.3" }
+  "devDependencies": {
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3"
+  }
 }

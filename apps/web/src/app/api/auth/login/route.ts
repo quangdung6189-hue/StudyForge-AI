@@ -32,6 +32,7 @@ export async function POST(req: Request) {
       );
     }
 
+    await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     const session = await createSession(user.id);
     await setSessionCookie(session.token, session.expiresAt);
 
@@ -44,9 +45,9 @@ export async function POST(req: Request) {
         role: user.role,
       },
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json(
-      { error: { code: 'SERVER_ERROR', message: (err as Error).message } },
+      { error: { code: 'SERVER_ERROR', message: 'Không thể đăng nhập lúc này. Vui lòng thử lại.' } },
       { status: 500 }
     );
   }

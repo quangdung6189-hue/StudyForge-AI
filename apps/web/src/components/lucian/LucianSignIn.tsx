@@ -6,7 +6,11 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-export function LucianSignIn() {
+export function LucianSignIn({ googleEnabled = false, googleError = '', linkGoogle = false }: {
+  googleEnabled?: boolean;
+  googleError?: string;
+  linkGoogle?: boolean;
+}) {
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const [isRegister, setIsRegister] = useState(false);
@@ -19,7 +23,6 @@ export function LucianSignIn() {
   const [busy, setBusy] = useState(false);
   const [ok, setOk] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [triesLeft, setTriesLeft] = useState(5);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +44,6 @@ export function LucianSignIn() {
 
       if (!res.ok) {
         setBusy(false);
-        setTriesLeft(prev => Math.max(0, prev - 1));
         setErrorMsg(data.error?.message || 'Đăng nhập không thành công');
 
         // Shake animation
@@ -58,9 +60,9 @@ export function LucianSignIn() {
         router.push('/dashboard');
         router.refresh();
       }, 700);
-    } catch (err: any) {
+    } catch {
       setBusy(false);
-      setErrorMsg(err.message || 'Lỗi kết nối máy chủ');
+      setErrorMsg('Không thể kết nối máy chủ. Vui lòng thử lại.');
     }
   };
 
@@ -232,20 +234,58 @@ export function LucianSignIn() {
           cursor: pointer;
           margin-left: 4px;
         }
+        .u062 .u062-google {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          min-height: 48px;
+          padding: 10px 14px;
+          margin-bottom: 16px;
+          border: 1px solid var(--ux-line);
+          border-radius: 14px;
+          background: var(--ux-surface);
+          color: var(--ux-ink);
+          font: inherit;
+          font-weight: 700;
+          text-decoration: none;
+          text-align: center;
+        }
+        .u062 .u062-google:hover { background: var(--ux-surface-2); }
+        .u062 .u062-google:disabled { opacity: .6; cursor: not-allowed; }
+        .u062 .u062-divider { text-align: center; color: var(--ux-ink-3); font-size: 12px; margin-bottom: 16px; }
+        .u062 .u062-auth-error { color: var(--ux-danger); font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
       `}</style>
 
       <div ref={rootRef} className="ux u062">
-        <form className="u062-pane" onSubmit={handleSubmit} noValidate>
+        <form className="u062-pane" onSubmit={handleSubmit}>
           <div className="u062-logo" aria-hidden="true">SF</div>
           <h3>{isRegister ? 'Tạo tài khoản StudyForge' : 'Chào mừng trở lại'}</h3>
           <p>{isRegister ? 'Bắt đầu biến tài liệu thành bài kiểm tra & câu hỏi ôn tập' : 'Đăng nhập vào tài khoản StudyForge AI'}</p>
 
+          {googleError && <div className="u062-auth-error" role="alert">{googleError}</div>}
+          {googleEnabled ? (
+            <a className="u062-google" href={linkGoogle ? '/api/auth/google?intent=link' : '/api/auth/google'}>
+              {linkGoogle ? 'Liên kết tài khoản Google' : 'Tiếp tục với Google'}
+            </a>
+          ) : (
+            <>
+              <button className="u062-google" type="button" disabled>Tiếp tục với Google</button>
+              <span className="u062-divider">Đăng nhập Google hiện chưa khả dụng</span>
+            </>
+          )}
+          <div className="u062-divider">hoặc dùng email</div>
+
           {isRegister && (
             <>
               <div className="u062-f">
-                <label>Họ và tên</label>
+                <label htmlFor="auth-name">Họ và tên</label>
                 <div className="u062-box">
                   <input
+                    id="auth-name"
+                    name="name"
+                    autoComplete="name"
                     type="text"
                     required
                     placeholder="Nguyễn Văn A"
@@ -256,9 +296,9 @@ export function LucianSignIn() {
               </div>
 
               <div className="u062-f">
-                <label>Vai trò</label>
+                <label htmlFor="auth-role">Vai trò</label>
                 <div className="u062-box">
-                  <select value={role} onChange={e => setRole(e.target.value as any)}>
+                  <select id="auth-role" name="role" value={role} onChange={e => setRole(e.target.value as 'student' | 'teacher')}>
                     <option value="student">Học sinh / Sinh viên</option>
                     <option value="teacher">Giáo viên / Giảng viên</option>
                   </select>
@@ -268,9 +308,11 @@ export function LucianSignIn() {
           )}
 
           <div className="u062-f">
-            <label>Email</label>
+            <label htmlFor="auth-email">Email</label>
             <div className="u062-box">
               <input
+                id="auth-email"
+                name="email"
                 type="email"
                 required
                 placeholder="name@school.edu.vn"
@@ -282,11 +324,14 @@ export function LucianSignIn() {
           </div>
 
           <div className="u062-f">
-            <label>Mật khẩu</label>
+            <label htmlFor="auth-password">Mật khẩu</label>
             <div className="u062-box">
               <input
+                id="auth-password"
+                name="password"
                 type={showPassword ? 'text' : 'password'}
                 required
+                minLength={isRegister ? 12 : undefined}
                 placeholder="Tối thiểu 12 ký tự an toàn"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
@@ -308,7 +353,7 @@ export function LucianSignIn() {
               </button>
             </div>
             {capsOn && <span className="u062-caps">Đang bật Caps Lock</span>}
-            {errorMsg && <span className="u062-err">{errorMsg}</span>}
+            {errorMsg && <span className="u062-err" role="alert">{errorMsg}</span>}
           </div>
 
           <button
@@ -337,6 +382,57 @@ export function LucianSignIn() {
               {isRegister ? 'Đăng nhập ngay' : 'Tạo tài khoản mới'}
             </button>
           </div>
+          {linkGoogle && <div className="u062-toggle-mode"><a href="/dashboard">Trở lại bảng điều khiển</a></div>}
+
+          {!isRegister && (
+            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px dashed var(--ux-line)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ux-ink-3)', textAlign: 'center' }}>
+                ⚡ Điền nhanh tài khoản mẫu để trải nghiệm:
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--ux-line)',
+                    background: 'var(--ux-surface-2)',
+                    color: 'var(--ux-ink)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    setEmail('giaovien@studyforge.vn');
+                    setPassword('GiaoVien2026!');
+                    setErrorMsg('');
+                  }}
+                >
+                  👨‍🏫 Giáo viên mẫu
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--ux-line)',
+                    background: 'var(--ux-surface-2)',
+                    color: 'var(--ux-ink)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    setEmail('hocsinh@studyforge.vn');
+                    setPassword('HocSinh2026!');
+                    setErrorMsg('');
+                  }}
+                >
+                  👩‍🎓 Học sinh mẫu
+                </button>
+              </div>
+            </div>
+          )}
         </form>
       </div>
     </>

@@ -32,7 +32,6 @@ export async function POST(req: Request) {
         name,
         passwordHash,
         role,
-        emailVerifiedAt: new Date(), // Auto-verified for local development & immediate onboarding
       },
     });
 
@@ -50,8 +49,14 @@ export async function POST(req: Request) {
       },
     });
   } catch (err) {
+    if ((err as { code?: string }).code === 'P2002') {
+      return NextResponse.json(
+        { error: { code: 'EMAIL_EXISTS', message: 'Email này đã được đăng ký tài khoản' } },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
-      { error: { code: 'SERVER_ERROR', message: (err as Error).message } },
+      { error: { code: 'SERVER_ERROR', message: 'Không thể tạo tài khoản lúc này. Vui lòng thử lại.' } },
       { status: 500 }
     );
   }

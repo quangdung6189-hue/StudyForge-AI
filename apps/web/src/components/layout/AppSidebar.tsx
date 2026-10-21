@@ -160,6 +160,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <div className="sidebar-user-role">
               {user.role === 'teacher' ? 'Giáo viên' : user.role === 'admin' ? 'Quản trị' : 'Học sinh'}
             </div>
+            <Link href="/sign-in" style={{ fontSize: '12px', color: 'var(--ux-ink-2)' }}>Tài khoản & liên kết Google</Link>
           </div>
           <button
             className="sidebar-logout"

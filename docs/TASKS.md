@@ -1,5 +1,9 @@
 # StudyForge AI — Task Plan & Ownership
 
+## Google sign-in and account persistence
+- Lifecycle: todo -> ready -> running.
+- Owner: Codex. Add verified Google OAuth, persistent accounts/sessions, safe password handling, and isolated database tests. Online activation requires the project's Google OAuth credentials and PostgreSQL connection.
+
 ## Milestone 0: Environment & Protocol Setup
 - [x] Survey Windows environment, Node v24, Git, Codex CLI, Lucian skill. (Owner: Gemini)
 - [x] Create project documentation: PRD, ARCHITECTURE, CONTRACTS, AGENTS. (Owner: Gemini)

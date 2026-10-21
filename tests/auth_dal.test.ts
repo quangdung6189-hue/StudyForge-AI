@@ -18,16 +18,23 @@ describe('Auth & DAL Integration Tests', () => {
   let quizId: string;
 
   beforeAll(async () => {
-    // Clean up test records
-    await db.attempt.deleteMany();
-    await db.quizVersion.deleteMany();
-    await db.quiz.deleteMany();
-    await db.question.deleteMany();
-    await db.questionBank.deleteMany();
-    await db.documentChunk.deleteMany();
-    await db.document.deleteMany();
-    await db.session.deleteMany();
-    await db.user.deleteMany();
+    // Clean up only test records
+    const testEmails = ['teacher@test.com', 'student@test.com', 'intruder@test.com'];
+    const existingUsers = await db.user.findMany({ where: { email: { in: testEmails } } });
+    const userIds = existingUsers.map(u => u.id);
+    if (userIds.length > 0) {
+      await db.attemptAnswer.deleteMany({ where: { attempt: { userId: { in: userIds } } } }).catch(() => {});
+      await db.attempt.deleteMany({ where: { userId: { in: userIds } } }).catch(() => {});
+      await db.quizVersion.deleteMany({ where: { quiz: { ownerId: { in: userIds } } } }).catch(() => {});
+      await db.quiz.deleteMany({ where: { ownerId: { in: userIds } } }).catch(() => {});
+      await db.questionOption.deleteMany({ where: { question: { bank: { ownerId: { in: userIds } } } } }).catch(() => {});
+      await db.question.deleteMany({ where: { bank: { ownerId: { in: userIds } } } }).catch(() => {});
+      await db.questionBank.deleteMany({ where: { ownerId: { in: userIds } } }).catch(() => {});
+      await db.documentChunk.deleteMany({ where: { document: { ownerId: { in: userIds } } } }).catch(() => {});
+      await db.document.deleteMany({ where: { ownerId: { in: userIds } } }).catch(() => {});
+      await db.session.deleteMany({ where: { userId: { in: userIds } } }).catch(() => {});
+      await db.user.deleteMany({ where: { id: { in: userIds } } }).catch(() => {});
+    }
 
     const tPw = await hashPassword('TeacherSecurePass123!');
     const sPw = await hashPassword('StudentSecurePass123!');
