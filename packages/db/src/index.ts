@@ -1,10 +1,22 @@
 import { PrismaClient, Prisma } from '../.generated/postgres';
 import { PrismaClient as SQLiteClient } from '../.generated/sqlite';
 import path from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { config } from 'dotenv';
 
-const root = process.env.STUDYFORGE_ROOT ?? path.resolve(process.cwd());
+function getWorkspaceRoot(): string {
+  if (process.env.STUDYFORGE_ROOT) return process.env.STUDYFORGE_ROOT;
+  let curr = path.resolve(process.cwd());
+  while (curr && path.dirname(curr) !== curr) {
+    if (existsSync(path.join(curr, '.data', 'dev.db')) || existsSync(path.join(curr, 'StudyForge_AI_Prompts.txt'))) {
+      return curr;
+    }
+    curr = path.dirname(curr);
+  }
+  return path.resolve(process.cwd());
+}
+
+const root = getWorkspaceRoot();
 config({ path: path.join(root, '.env'), quiet: true });
 const globalDb = globalThis as unknown as { studyforgeDb?: PrismaClient };
 function createClient(): PrismaClient {
