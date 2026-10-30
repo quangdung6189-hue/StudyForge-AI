@@ -2,9 +2,18 @@ import { NextResponse } from 'next/server';
 import { db } from '@studyforge/db';
 import { LoginSchema } from '@studyforge/contracts';
 import { verifyPassword, createSession, setSessionCookie } from '@/server/auth';
+import { createHash } from 'node:crypto';
+
+const LOGIN_RATE_LIMIT = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+
+function loginBucketId(ip: string, email: string): string {
+  return createHash('sha256').update(`login:${ip}:${email.toLowerCase()}`).digest('hex');
+}
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const body = await req.json();
     const parsed = LoginSchema.safeParse(body);
     if (!parsed.success) {
@@ -15,6 +24,22 @@ export async function POST(req: Request) {
     }
 
     const { email, password } = parsed.data;
+    const id = loginBucketId(ip, email);
+    const windowStart = Math.floor(Date.now() / LOGIN_WINDOW_MS);
+    const bucketId = createHash('sha256').update(`${id}:${windowStart}`).digest('hex');
+    const expiresAt = new Date((windowStart + 1) * LOGIN_WINDOW_MS);
+
+    const bucket = await db.rateLimitBucket.upsert({
+      where: { id: bucketId },
+      create: { id: bucketId, count: 1, expiresAt },
+      update: { count: { increment: 1 } },
+    });
+    if (bucket.count > LOGIN_RATE_LIMIT) {
+      return NextResponse.json(
+        { error: { code: 'RATE_LIMITED', message: 'Quá nhiều lần đăng nhập thất bại. Hãy thử lại sau 15 phút.' } },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((expiresAt.getTime() - Date.now()) / 1000)) } }
+      );
+    }
 
     const user = await db.user.findUnique({ where: { email } });
     if (!user) {

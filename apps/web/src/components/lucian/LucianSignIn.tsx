@@ -156,6 +156,7 @@ export function LucianSignIn({ googleEnabled = false, googleError = '', linkGoog
           border-radius: 14px;
           background: var(--ux-surface-2);
           border: 1px solid var(--ux-line);
+          overflow: hidden;
           transition: border-color .2s, box-shadow .2s;
         }
         .u062-box:focus-within {
@@ -404,49 +405,7 @@ export function LucianSignIn({ googleEnabled = false, googleError = '', linkGoog
           {!isRegister && (
             <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px dashed var(--ux-line)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ux-ink-3)', textAlign: 'center' }}>
-                ⚡ Điền nhanh tài khoản mẫu để trải nghiệm:
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <button
-                  type="button"
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: '10px',
-                    border: '1px solid var(--ux-line)',
-                    background: 'var(--ux-surface-2)',
-                    color: 'var(--ux-ink)',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    setEmail('giaovien@studyforge.vn');
-                    setPassword('GiaoVien2026!');
-                    setErrorMsg('');
-                  }}
-                >
-                  👨‍🏫 Giáo viên mẫu
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: '10px',
-                    border: '1px solid var(--ux-line)',
-                    background: 'var(--ux-surface-2)',
-                    color: 'var(--ux-ink)',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    setEmail('hocsinh@studyforge.vn');
-                    setPassword('HocSinh2026!');
-                    setErrorMsg('');
-                  }}
-                >
-                  👩‍🎓 Học sinh mẫu
-                </button>
+                Bạn chưa có tài khoản? Hãy tạo tài khoản mới hoặc đăng nhập bằng Google ở trên.
               </div>
             </div>
           )}
