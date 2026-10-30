@@ -23,7 +23,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const { email, password } = parsed.data;
+    // Email input often contains accidental spaces or uppercase characters.
+    // User emails are stored normalized by registration, so normalize here too.
+    const email = parsed.data.email.trim().toLowerCase();
+    const { password } = parsed.data;
 
     // Rate limiting: best-effort, không chặn đăng nhập nếu bảng chưa sẵn sàng
     let rateLimited = false;
@@ -83,7 +86,8 @@ export async function POST(req: Request) {
         role: user.role,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error('[auth/login] request failed', error);
     return NextResponse.json(
       { error: { code: 'SERVER_ERROR', message: 'Không thể đăng nhập lúc này. Vui lòng thử lại.' } },
       { status: 500 }
