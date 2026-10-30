@@ -7,7 +7,11 @@ export async function readWithDocling(buffer: Buffer, fileName: string, signal?:
   if (!process.env.DOCLING_BASE_URL) throw new Error('Docling chưa được cấu hình.');
   const base = new URL(process.env.DOCLING_BASE_URL);
   if (base.protocol !== 'https:' && !(base.protocol === 'http:' && ['localhost','127.0.0.1','[::1]'].includes(base.hostname))) throw new Error('Docling cần HTTPS hoặc máy chủ cục bộ.');
-  const response = await fetch(`${base.href.replace(/\/+$/, '')}/v1/convert/source`, { method: 'POST', redirect: 'error', signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(120000)]), headers: { 'Content-Type': 'application/json', ...(process.env.DOCLING_API_KEY ? { 'X-Api-Key': process.env.DOCLING_API_KEY } : {}) },
+  const configuredTimeout = Number(process.env.AI_TIMEOUT_MS);
+  const timeout = Number.isSafeInteger(configuredTimeout) && configuredTimeout > 0 && configuredTimeout <= 2_147_483_647
+    ? configuredTimeout
+    : 90_000;
+  const response = await fetch(`${base.href.replace(/\/+$/, '')}/v1/convert/source`, { method: 'POST', redirect: 'error', signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(timeout)]), headers: { 'Content-Type': 'application/json', ...(process.env.DOCLING_API_KEY ? { 'X-Api-Key': process.env.DOCLING_API_KEY } : {}) },
     body: JSON.stringify({ options: { to_formats: ['text','json'], do_ocr: true, image_export_mode: 'placeholder' }, sources: [{ kind: 'file', filename: fileName, base64_string: buffer.toString('base64') }], target: { kind: 'inbody' } }),
   });
   if (!response.ok) throw new Error('Chưa kết nối được bộ đọc bố cục. Bản đã lưu được giữ nguyên.');
