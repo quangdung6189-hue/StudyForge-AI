@@ -8,6 +8,10 @@ The builder now saves questions/options in bulk inside one transaction. A client
 
 Set these server-only values in the repository `.env`, then restart the development server:
 
+For Netlify deployments, configure these values in the project's environment variables instead of committing a `.env` file. Use an HTTPS endpoint reachable from Netlify; a localhost router is only suitable for local development. Keep the API key scoped to server runtime and never expose it through Next.js public environment variables.
+
+Netlify secret scanning remains enabled. The repository configuration excludes only the non-sensitive endpoint and model setting names (`AI_BASE_URL`, `AI_MODEL_GENERATE`, `AI_MODEL_REVIEW`) from value matching because their values can also appear in documentation, tests, and server defaults. `AI_API_KEY` and other credentials remain scanned. If a future failure identifies a credential, remove it and rotate the exposed credential rather than extending these exclusions.
+
 ```dotenv
 AI_BASE_URL=http://127.0.0.1:20128/v1
 AI_API_KEY=<your 9Router API key>
