@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "npm run dev --workspace @studyforge/web",
-    "build": "npm run build --workspace @studyforge/web",
+    "build": "npm run db:generate && npm run build --workspace @studyforge/web",
     "start": "npm run start --workspace @studyforge/web",
     "typecheck": "tsc --noEmit && npm run typecheck --workspace @studyforge/web",
     "check:auth": "tsx scripts/check-auth.ts",
