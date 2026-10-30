@@ -41,8 +41,9 @@ export async function GET() {
       ok: false,
       code: classify(error),
       target: targetFingerprint(),
-      error: safeMessage.slice(0, 500),
+      error: safeMessage.slice(0, 1000),
       errorName: error instanceof Error ? error.name : typeof error,
+      envEngine: process.env.PRISMA_QUERY_ENGINE_LIBRARY ?? null,
     }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   }
 }

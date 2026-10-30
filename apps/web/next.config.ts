@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 import { config } from 'dotenv';
 import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 
 function findMonorepoRoot(startDir: string = process.cwd()): string {
   let curr = path.resolve(startDir);
@@ -21,6 +22,17 @@ function findMonorepoRoot(startDir: string = process.cwd()): string {
 const root = findMonorepoRoot();
 config({ path: path.join(root, '.env'), quiet: true });
 process.env.STUDYFORGE_ROOT ??= root;
+
+// Ensure Prisma engines are generated before Next build begins
+try {
+  const engineLinux = path.join(root, 'packages/db/.generated/postgres/libquery_engine-rhel-openssl-3.0.x.so.node');
+  if (!existsSync(engineLinux)) {
+    console.log('[next.config.ts] Generating Prisma query engines for build...');
+    execSync(`node "${path.join(root, 'scripts/db.mjs')}" generate`, { stdio: 'inherit', cwd: root });
+  }
+} catch (e) {
+  console.warn('[next.config.ts] Could not run pre-generate step:', e);
+}
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
