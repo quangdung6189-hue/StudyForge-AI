@@ -4,6 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  # Endpoint URLs and model IDs are public configuration and also appear in
-  # documentation, tests, and server defaults. Keep credential scanning enabled.
-  SECRETS_SCAN_OMIT_KEYS = "AI_BASE_URL,AI_MODEL_GENERATE,AI_MODEL_REVIEW"
+  SECRETS_SCAN_ENABLED = "true"
+  # Public endpoints, model IDs, transport modes, and numeric limits are not
+  # credentials. Exclude only these keys; keep scanning actual secrets.
+  SECRETS_SCAN_OMIT_KEYS = "AI_BASE_URL,AI_MODEL_GENERATE,AI_MODEL_REVIEW,MAIL_TRANSPORT,MAX_UPLOAD_BYTES,AUTH_RATE_LIMIT_PER_15_MIN,AI_TIMEOUT_MS"
