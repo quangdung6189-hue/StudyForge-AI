@@ -48,9 +48,13 @@ export async function createSession(userId: string): Promise<{ token: string; ex
 
 export async function setSessionCookie(token: string, expiresAt: Date) {
   const cookieStore = await cookies();
+  // Respect explicit local HTTP override. Production stays Secure by default.
+  const secureCookie = process.env.COOKIE_SECURE === '0'
+    ? false
+    : process.env.COOKIE_SECURE === '1' || process.env.NODE_ENV === 'production';
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: secureCookie,
     sameSite: 'lax',
     path: '/',
     expires: expiresAt,

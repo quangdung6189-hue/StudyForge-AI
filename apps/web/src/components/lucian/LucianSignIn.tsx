@@ -44,11 +44,12 @@ export function LucianSignIn({ googleEnabled = false, googleError = '', linkGoog
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         setBusy(false);
-        setErrorMsg(data.error?.message || 'Đăng nhập không thành công');
+        const apiMessage = typeof data.error?.message === 'string' ? data.error.message : '';
+        setErrorMsg(apiMessage || `Đăng nhập không thành công (HTTP ${res.status})`);
 
         // Shake animation
         if (rootRef.current) {
