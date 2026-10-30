@@ -9,6 +9,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+generator neonClient {
+  provider = "prisma-client-js"
+  output = "../.generated/neon"
+  engineType = "client"
+}
+
 model User {
   id              String    @id @default(uuid())
   email           String    @unique

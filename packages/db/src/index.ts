@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '../.generated/postgres';
+import { PrismaClient as NeonClient } from '../.generated/neon';
 import { PrismaClient as SQLiteClient } from '../.generated/sqlite';
 import path from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
@@ -30,7 +31,7 @@ function createClient(): PrismaClient {
     const runtimeUrl = runtimeDatabaseUrl(url), parsed = new URL(runtimeUrl);
     if (parsed.hostname.endsWith('.neon.tech') && process.env.DATABASE_TRANSPORT !== 'tcp') {
       neonConfig.webSocketConstructor = WebSocket;
-      return new PrismaClient({ adapter: new PrismaNeon({ connectionString: runtimeUrl, max: Number(parsed.searchParams.get('connection_limit')) || 5, connectionTimeoutMillis: (Number(parsed.searchParams.get('connect_timeout')) || 15) * 1000, idleTimeoutMillis: 30000 }, { schema: parsed.searchParams.get('schema') ?? 'public' }) });
+      return new NeonClient({ adapter: new PrismaNeon({ connectionString: runtimeUrl, max: Number(parsed.searchParams.get('connection_limit')) || 5, connectionTimeoutMillis: (Number(parsed.searchParams.get('connect_timeout')) || 15) * 1000, idleTimeoutMillis: 30000 }, { schema: parsed.searchParams.get('schema') ?? 'public' }) }) as unknown as PrismaClient;
     }
     return new PrismaClient({ datasourceUrl: runtimeUrl });
   }

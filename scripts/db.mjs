@@ -9,7 +9,7 @@ config({ path: path.join(root, '.env'), quiet: true });
 mkdirSync(path.join(root, '.data'), { recursive: true });
 const postgresSchema = 'packages/db/prisma/schema.prisma';
 const sqliteSchema = 'packages/db/prisma/schema.sqlite.prisma';
-const source = readFileSync(path.join(root, postgresSchema), 'utf8');
+const source = readFileSync(path.join(root, postgresSchema), 'utf8').replace(/generator neonClient\s*\{[^}]*\}\s*/g, '');
 writeFileSync(path.join(root, sqliteSchema), '// Generated from schema.prisma by scripts/db.mjs. Do not edit.\n' + source.replace('provider = "postgresql"', 'provider = "sqlite"').replace('../.generated/postgres', '../.generated/sqlite').replace('env("DATABASE_URL")', 'env("SQLITE_DATABASE_URL")'));
 const env = {
   ...process.env,

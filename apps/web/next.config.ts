@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@studyforge/contracts', '@studyforge/core', '@studyforge/db', '@studyforge/ai', '@studyforge/storage'],
   outputFileTracingRoot: root,
   outputFileTracingIncludes: {
-    '/*': ['../../packages/db/.generated/postgres/**/*', '../../packages/db/.generated/sqlite/**/*'],
+    '/*': ['../../packages/db/.generated/postgres/**/*', '../../packages/db/.generated/neon/**/*', '../../packages/db/.generated/sqlite/**/*'],
   },
   experimental: { serverActions: { bodySizeLimit: '1mb' } },
   async headers() {
