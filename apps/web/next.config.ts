@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@prisma/client', '@prisma/adapter-neon', '@neondatabase/serverless', 'ws', 'bcryptjs', 'pdf-parse', 'mammoth', 'nodemailer'],
   transpilePackages: ['@studyforge/contracts', '@studyforge/core', '@studyforge/db', '@studyforge/ai', '@studyforge/storage'],
   outputFileTracingRoot: root,
+  outputFileTracingIncludes: {
+    '/*': ['../../packages/db/.generated/postgres/**/*', '../../packages/db/.generated/sqlite/**/*'],
+  },
   experimental: { serverActions: { bodySizeLimit: '1mb' } },
   async headers() {
     return [{ source: '/:path*', headers: [
