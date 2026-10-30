@@ -24,20 +24,33 @@ export async function POST(req: Request) {
     }
 
     const { email, password } = parsed.data;
-    const id = loginBucketId(ip, email);
-    const windowStart = Math.floor(Date.now() / LOGIN_WINDOW_MS);
-    const bucketId = createHash('sha256').update(`${id}:${windowStart}`).digest('hex');
-    const expiresAt = new Date((windowStart + 1) * LOGIN_WINDOW_MS);
 
-    const bucket = await db.rateLimitBucket.upsert({
-      where: { id: bucketId },
-      create: { id: bucketId, count: 1, expiresAt },
-      update: { count: { increment: 1 } },
-    });
-    if (bucket.count > LOGIN_RATE_LIMIT) {
+    // Rate limiting: best-effort, không chặn đăng nhập nếu bảng chưa sẵn sàng
+    let rateLimited = false;
+    let retryAfter = 0;
+    try {
+      const id = loginBucketId(ip, email);
+      const windowStart = Math.floor(Date.now() / LOGIN_WINDOW_MS);
+      const bucketId = createHash('sha256').update(`${id}:${windowStart}`).digest('hex');
+      const expiresAt = new Date((windowStart + 1) * LOGIN_WINDOW_MS);
+
+      const bucket = await db.rateLimitBucket.upsert({
+        where: { id: bucketId },
+        create: { id: bucketId, count: 1, expiresAt },
+        update: { count: { increment: 1 } },
+      });
+      if (bucket.count > LOGIN_RATE_LIMIT) {
+        rateLimited = true;
+        retryAfter = Math.ceil((expiresAt.getTime() - Date.now()) / 1000);
+      }
+    } catch {
+      // Bỏ qua lỗi rate limiting (ví dụ bảng chưa migrate), vẫn cho phép đăng nhập
+    }
+
+    if (rateLimited) {
       return NextResponse.json(
         { error: { code: 'RATE_LIMITED', message: 'Quá nhiều lần đăng nhập thất bại. Hãy thử lại sau 15 phút.' } },
-        { status: 429, headers: { 'Retry-After': String(Math.ceil((expiresAt.getTime() - Date.now()) / 1000)) } }
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
       );
     }
 
