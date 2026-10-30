@@ -4,18 +4,28 @@ import { LoginSchema } from '@studyforge/contracts';
 import { verifyPassword, createSession, setSessionCookie } from '@/server/auth';
 import { createHash } from 'node:crypto';
 
+export const runtime = 'nodejs';
+
+function errorText(error: unknown): string {
+  if (!error || typeof error !== 'object') return String(error ?? '');
+  const value = error as { message?: unknown; cause?: unknown; sourceError?: unknown };
+  return [value.message, errorText(value.cause), errorText(value.sourceError)]
+    .filter(value => typeof value === 'string' && value.length > 0)
+    .join(' | ');
+}
 const LOGIN_RATE_LIMIT = 5;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
-function databaseErrorCode(error: unknown): string | null {
-  if (!error || typeof error !== 'object') return null;
-  const value = error as { code?: unknown; message?: unknown; name?: unknown };
+function databaseErrorCode(error: unknown): string {
+  if (!error || typeof error !== 'object') return 'DATABASE_QUERY_FAILED';
+  const value = error as { code?: unknown; name?: unknown };
   if (typeof value.code === 'string' && /^P\d{4}$/.test(value.code)) return value.code;
-  if (value.name === 'PrismaClientInitializationError' && typeof value.message === 'string') {
-    if (value.message.includes('DATABASE_URL must be configured')) return 'DATABASE_CONFIG_MISSING';
-    if (/Can't reach database server|connection timed out|Server has closed the connection/i.test(value.message)) return 'DATABASE_UNAVAILABLE';
-  }
-  return null;
+  const text = errorText(error);
+  if (text.includes('DATABASE_URL must be configured')) return 'DATABASE_CONFIG_MISSING';
+  if (/P2021|P2022|does not exist|relation .* does not exist|table .* does not exist/i.test(text)) return 'AUTH_SCHEMA_MISSING';
+  if (/28P01|authentication failed|password authentication failed|invalid password/i.test(text)) return 'DATABASE_AUTH_FAILED';
+  if (value.name === 'PrismaClientInitializationError' || /Can't reach database server|connection timed out|Server has closed the connection|getaddrinfo|ENOTFOUND|ECONNREFUSED|ECONNRESET|fetch failed|websocket|socket/i.test(text)) return 'DATABASE_UNAVAILABLE';
+  return 'DATABASE_QUERY_FAILED';
 }
 
 function loginBucketId(ip: string, email: string): string {
@@ -72,7 +82,10 @@ export async function POST(req: Request) {
     }
 
     phase = 'find_user';
-    const user = await readWithRetry(() => db.user.findUnique({ where: { email } }));
+    const user = await readWithRetry(() => db.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, name: true, role: true, passwordHash: true },
+    }));
     if (!user) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Email hoặc mật khẩu không chính xác' } },
@@ -119,16 +132,18 @@ export async function POST(req: Request) {
       code,
       name: error instanceof Error ? error.name : typeof error,
     });
-    const response = code === 'P2021' || code === 'P2022'
+    const response = code === 'P2021' || code === 'P2022' || code === 'AUTH_SCHEMA_MISSING'
       ? { code: 'AUTH_SCHEMA_MISSING', message: 'Cơ sở dữ liệu production thiếu bảng đăng nhập. Hãy chạy migration auth.' }
       : code === 'DATABASE_CONFIG_MISSING'
         ? { code: 'AUTH_DATABASE_CONFIG_MISSING', message: 'Website production chưa cấu hình DATABASE_URL.' }
+        : code === 'DATABASE_AUTH_FAILED'
+          ? { code: 'AUTH_DATABASE_CREDENTIALS_INVALID', message: 'DATABASE_URL production bị từ chối. Kiểm tra username, password và quyền database.' }
         : code === 'DATABASE_UNAVAILABLE' || code === 'P1001' || code === 'P1002' || code === 'P1008' || code === 'P1017'
           ? { code: 'AUTH_DATABASE_UNAVAILABLE', message: 'Cơ sở dữ liệu production chưa sẵn sàng. Hãy kiểm tra DATABASE_URL.' }
-          : { code: 'AUTH_LOGIN_FAILED', message: `Đăng nhập lỗi tại bước ${phase}. Kiểm tra log server.` };
+          : { code: 'AUTH_DATABASE_QUERY_FAILED', message: `Không đọc được cơ sở dữ liệu tại bước ${phase}. Mở /api/health để kiểm tra production.` };
     return NextResponse.json(
       { error: response },
-      { status: code === 'P2021' || code === 'P2022' || code === 'DATABASE_CONFIG_MISSING' ? 503 : 500 }
+      { status: code === 'P2021' || code === 'P2022' || code === 'AUTH_SCHEMA_MISSING' || code === 'DATABASE_CONFIG_MISSING' ? 503 : 500 }
     );
   }
 }

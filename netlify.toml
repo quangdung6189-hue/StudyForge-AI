@@ -1,5 +1,5 @@
 [build]
-  command = "npm run db:generate && npm run build --workspace @studyforge/web"
+  command = "npm run db:generate && npm run db:migrate && npm run build --workspace @studyforge/web"
   publish = "apps/web/.next"
 
 [build.environment]

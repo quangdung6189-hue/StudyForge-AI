@@ -80,7 +80,11 @@ export const getSessionUser = cache(async (): Promise<UserDTO | null> => {
     const tokenHash = hashToken(token);
     const session = await readWithRetry(() => db.session.findUnique({
       where: { tokenHash },
-      include: { user: true },
+      select: {
+        id: true,
+        expiresAt: true,
+        user: { select: { id: true, email: true, name: true, role: true } },
+      },
     }));
 
     if (!session || session.expiresAt.getTime() < Date.now()) {
