@@ -6,15 +6,16 @@ import Link from 'next/link';
 export default function QuizzesListPage() {
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchQuizzes = async () => {
+    setLoading(true); setError('');
     try {
       const res = await fetch('/api/quizzes');
-      if (res.ok) {
-        const data = await res.json();
-        setQuizzes(data.items || []);
-      }
-    } catch {}
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message ?? 'Chưa tải được ngân hàng đề.');
+      setQuizzes(data.items || []);
+    } catch(err) { setError((err as Error).message); }
     setLoading(false);
   };
 
@@ -47,7 +48,7 @@ export default function QuizzesListPage() {
         }
         .qz-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
           gap: 20px;
         }
         .qz-card {
@@ -122,11 +123,12 @@ export default function QuizzesListPage() {
         </Link>
       </div>
 
+      {error && <div role="alert">{error} <button onClick={() => void fetchQuizzes()}>Thử tải lại</button></div>}
       {loading ? (
         <div style={{ padding: '40px', textAlign: 'center', color: 'var(--ux-ink-3)' }}>
           Đang tải danh sách đề thi...
         </div>
-      ) : quizzes.length === 0 ? (
+      ) : quizzes.length === 0 && !error ? (
         <div style={{ padding: '60px', textAlign: 'center', background: 'var(--ux-surface)', borderRadius: '20px' }}>
           Chưa có đề thi nào trong ngân hàng. Hãy nhấn <b>Tạo đề kiểm tra mới</b>.
         </div>
@@ -161,6 +163,7 @@ export default function QuizzesListPage() {
               )}
 
               <div style={{ marginTop: 'auto', display: 'flex', gap: '8px', paddingTop: '12px' }}>
+                {!quiz.isPublished && <Link href={`/quizzes/create?quizId=${quiz.id}`}>Tiếp tục duyệt bản nháp →</Link>}
                 {quiz.shareCode && (
                   <Link
                     href={`/quizzes/take?code=${quiz.shareCode}`}

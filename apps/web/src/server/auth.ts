@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { cache } from 'react';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
-import { db } from '@studyforge/db';
+import { db, readWithRetry } from '@studyforge/db';
 import type { UserDTO } from '@studyforge/contracts';
 
 export const SESSION_COOKIE_NAME = 'studyforge_session';
@@ -66,17 +67,17 @@ export async function clearSessionCookie() {
   cookieStore.delete(SESSION_COOKIE_NAME);
 }
 
-export async function getSessionUser(): Promise<UserDTO | null> {
+export const getSessionUser = cache(async (): Promise<UserDTO | null> => {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     if (!token) return null;
 
     const tokenHash = hashToken(token);
-    const session = await db.session.findUnique({
+    const session = await readWithRetry(() => db.session.findUnique({
       where: { tokenHash },
       include: { user: true },
-    });
+    }));
 
     if (!session || session.expiresAt.getTime() < Date.now()) {
       if (session) {
@@ -95,7 +96,7 @@ export async function getSessionUser(): Promise<UserDTO | null> {
   } catch {
     return null;
   }
-}
+});
 
 /** Strict guard: throws 401 if user is unauthenticated. ZERO GUEST BYPASS. */
 export async function requireUser(): Promise<UserDTO> {

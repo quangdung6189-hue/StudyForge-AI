@@ -3,7 +3,7 @@
 // Lucian UX/UI Prompt #032 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#032
 // Ported to React / Next.js with real StudyForge AI document processing
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 export type UploadedDoc = {
   id: string;
@@ -12,6 +12,7 @@ export type UploadedDoc = {
   size: number;
   status: string;
   chunkCount: number;
+  warnings?: string[];
 };
 
 interface LucianUploadProps {
@@ -22,7 +23,9 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isOver, setIsOver] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<Array<{ name: string; size: number; progress: number; status: 'uploading' | 'done' | 'fail' }>>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<Array<{ id: string; name: string; size: number; progress: number; status: 'uploading' | 'done' | 'fail'; message?: string }>>([]);
+  const requests = useRef(new Set<XMLHttpRequest>());
+  useEffect(() => () => requests.current.forEach(xhr => xhr.abort()), []);
 
   const formatSize = (bytes: number) => {
     return bytes > 1048576
@@ -46,58 +49,38 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
   const handleFiles = async (files: FileList | null) => {
     if (!files || !files.length) return;
 
-    const fileList = Array.from(files);
+    const fileList = Array.from(files).slice(0, 10);
     const newItems = fileList.map(f => ({
-      name: f.name,
+      id: crypto.randomUUID(), name: f.name,
       size: f.size,
-      progress: 20,
+      progress: 0,
       status: 'uploading' as const,
     }));
 
     setUploadingFiles(prev => [...newItems, ...prev]);
 
-    const formData = new FormData();
-    fileList.forEach(f => formData.append('files', f));
-
-    let timer: any = null;
-    try {
-      // Simulate progressive visual feedback
-      timer = setInterval(() => {
-        setUploadingFiles(prev =>
-          prev.map(item =>
-            item.status === 'uploading'
-              ? { ...item, progress: Math.min(90, item.progress + 25) }
-              : item
-          )
-        );
-      }, 300);
-
-      const res = await fetch('/api/documents/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setUploadingFiles(prev =>
-          prev.map(item => ({ ...item, progress: 100, status: 'done' }))
-        );
-        if (onUploadSuccess) {
-          onUploadSuccess(data.documents);
-        }
-      } else {
-        setUploadingFiles(prev =>
-          prev.map(item => ({ ...item, status: 'fail' }))
-        );
+    let cursor = 0;
+    await Promise.all(Array.from({ length: Math.min(2, fileList.length) }, async () => {
+      while (cursor < fileList.length) {
+        const index = cursor++, file = fileList[index], id = newItems[index].id;
+        const update = (change: Partial<Omit<(typeof newItems)[number], 'status'>> & { message?: string; status?: 'uploading' | 'done' | 'fail' }) => setUploadingFiles(previous => previous.map(item => item.id === id ? { ...item, ...change } : item));
+        if (file.size > 25 * 1024 * 1024 || !/\.(pdf|docx|txt|png|jpe?g)$/i.test(file.name)) { update({ status: 'fail', message: 'Chỉ nhận PDF, DOCX, TXT, PNG/JPG tối đa 25MB.' }); continue; }
+        try {
+          const data = await new Promise<{ documents: UploadedDoc[] }>((resolve, reject) => {
+            const xhr = new XMLHttpRequest(); requests.current.add(xhr); xhr.open('POST', '/api/documents/upload');
+            xhr.upload.onprogress = event => { if (event.lengthComputable) update({ progress: Math.round(event.loaded / event.total * 100), message: event.loaded === event.total ? 'Đang đọc cấu trúc / OCR nếu cần…' : undefined }); };
+            xhr.onload = () => { requests.current.delete(xhr); try { const response = JSON.parse(xhr.responseText); if (xhr.status >= 200 && xhr.status < 300) resolve(response); else reject(new Error(response.error?.message ?? 'Không đọc được tài liệu.')); } catch { reject(new Error('Phản hồi tải file chưa hợp lệ.')); } };
+            xhr.onerror = () => { requests.current.delete(xhr); reject(new Error('Mất kết nối khi tải file. Hãy thử lại.')); };
+            xhr.onabort = () => { requests.current.delete(xhr); reject(new Error('Đã dừng tải file.')); };
+            const form = new FormData(); form.append('files', file); xhr.send(form);
+          });
+          const document = data.documents[0];
+          update({ status: 'done', progress: 100, message: document.status === 'needs_ocr' ? 'Đã lưu · Cần đối chiếu / OCR' : document.warnings?.length ? `Đã đọc · ${document.warnings[0]}` : 'Đã đọc cấu trúc và phân loại' });
+          onUploadSuccess?.(data.documents);
+        } catch (error) { update({ status: 'fail', message: (error as Error).message }); }
       }
-    } catch {
-      setUploadingFiles(prev =>
-        prev.map(item => ({ ...item, status: 'fail' }))
-      );
-    } finally {
-      if (timer) clearInterval(timer);
-    }
+    }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
@@ -291,6 +274,7 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
         <button
           className="u032-zone"
           type="button"
+          disabled={uploadingFiles.some(file => file.status === 'uploading')}
           onClick={() => fileInputRef.current?.click()}
           onDragEnter={e => { e.preventDefault(); setIsOver(true); }}
           onDragOver={e => { e.preventDefault(); setIsOver(true); }}
@@ -308,7 +292,7 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
             </svg>
           </span>
           <b>Kéo thả tài liệu vào đây hoặc <em>chọn file</em></b>
-          <small>Hỗ trợ PDF (văn bản & scan), Word (DOCX), TXT · dung lượng tối đa 50MB</small>
+          <small>PDF, DOCX, TXT, PNG/JPG · tối đa 25MB/file, 10 file/lần · đọc chữ trước, OCR khi cần</small>
         </button>
 
         <input
@@ -316,7 +300,7 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
           className="u032-file"
           type="file"
           multiple
-          accept=".pdf,.docx,.doc,.txt,image/*"
+          accept=".pdf,.docx,.txt,.png,.jpg,.jpeg"
           onChange={e => handleFiles(e.target.files)}
         />
 
@@ -325,18 +309,18 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
             {uploadingFiles.map((file, idx) => {
               const ext = (file.name.split('.').pop() || '').toLowerCase();
               return (
-                <li key={idx} className={`u032-row ${file.status}`}>
+                <li key={file.id} className={`u032-row ${file.status}`}>
                   <span className="u032-ic" style={{ background: getExtensionColor(ext) }}>
                     {ext.slice(0, 4).toUpperCase()}
                   </span>
                   <div className="u032-meta">
                     <b>{file.name}</b>
                     <small>
-                      {file.status === 'done'
+                      {file.message ?? (file.status === 'done'
                         ? `${formatSize(file.size)} · Đã trích xuất xong`
                         : file.status === 'fail'
                         ? 'Lỗi xử lý file'
-                        : `${formatSize(file.size)} · Đang tải lên & phân tích...`}
+                        : `${formatSize(file.size)} · Đang tải lên ${file.progress}%`) }
                     </small>
                   </div>
                   <div className="u032-st">

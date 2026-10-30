@@ -1,0 +1,68 @@
+/* StudyForge Playground Review — Lucian UX/UI tokens, glass dashboard, responsive 375px+ */
+.sf-review{position:relative;max-width:1120px;margin:56px auto 0;padding:0 24px 40px}
+
+/* Review header */
+.sf-review-head{display:flex;flex-direction:column;gap:12px;margin-bottom:26px}
+.sf-review-head-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sf-review-head h2{margin:0;font-size:clamp(22px,3vw,28px);font-weight:800;letter-spacing:-.03em}
+.sf-review-sub{margin:0;color:var(--ux-ink-2);font-size:14px;line-height:1.5}
+.sf-review-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Stat cards grid */
+.sf-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:26px}
+.sf-stat{position:relative;border-radius:18px;padding:18px 16px;background:var(--ux-surface);border:1px solid var(--ux-line);overflow:hidden}
+.sf-stat::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,var(--ux-accent),transparent)}
+.sf-stat .sf-stat-label{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ux-ink-3);margin-bottom:6px}
+.sf-stat .sf-stat-value{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--ux-ink)}
+.sf-stat .sf-stat-sub{font-size:12px;color:var(--ux-ink-2);margin-top:4px}
+.sf-stat .sf-stat-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:16px;background:var(--ux-accent-soft);color:var(--ux-accent);border:1px solid var(--ux-accent-soft)}
+.sf-stat.trend-up .sf-stat-sub{color:var(--ux-mint)}
+.sf-stat.trend-down .sf-stat-sub{color:var(--ux-danger)}
+
+/* Tabs review */
+.sf-review-tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid var(--ux-line);padding-bottom:10px}
+.sf-review-tab{position:relative;height:40px;padding:0 18px;border:0;border-radius:10px;background:none;font-size:13.5px;font-weight:700;color:var(--ux-ink-2);cursor:pointer;transition:color .3s var(--ux-ease),background .3s var(--ux-ease);z-index:1}
+.sf-review-tab:hover{color:var(--ux-ink);background:rgba(0,0,0,.03)}
+.sf-review-tab[aria-selected="true"]{color:var(--ux-accent);background:var(--ux-accent-soft);border-color:transparent}
+.sf-review-tab:focus-visible{outline:2px solid var(--ux-accent);outline-offset:2px}
+.sf-review-tab .sf-review-badge{margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;background:var(--ux-surface-2);color:var(--ux-ink);border:1px solid var(--ux-line)}
+.sf-review-tab[aria-selected="true"] .sf-review-badge{background:var(--ux-accent);color:var(--ux-accent-ink);border-color:transparent}
+
+/* Stage card */
+.sf-review-stage{border-radius:22px;border:1px solid var(--ux-line);background:linear-gradient(180deg,var(--ux-surface),var(--ux-surface-2));padding:26px;min-height:300px;display:grid;gap:16px;box-shadow:0 1px 3px var(--ux-shadow)}
+.sf-review-empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;color:var(--ux-ink-2);text-align:center}
+.sf-review-empty .sf-empty-icon{font-size:44px;margin-bottom:12px;opacity:.6}
+.sf-review-empty h3{margin:0 0 6px;font-size:18px;font-weight:800;color:var(--ux-ink)}
+.sf-review-empty p{margin:0 0 18px;font-size:14px;line-height:1.6}
+
+/* Document chips row */
+.sf-doc-row{display:flex;gap:8px;flex-wrap:wrap}
+.sf-doc-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;background:rgba(0,0,0,.03);border:1px solid var(--ux-line-2);font-size:12.5px;font-weight:600;color:var(--ux-ink)}
+.sf-doc-chip .sf-doc-ext{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:10px;font-weight:800;background:var(--ux-accent);color:#fff}
+
+/* Citation / source row */
+.sf-source-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sf-source-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--ux-surface-3);border:1px solid var(--ux-line);font-size:12px;font-weight:600;color:var(--ux-ink-2)}
+.sf-source-chip b{color:var(--ux-ink)}
+
+/* Seed seats */
+.sf-seed{display:flex;gap:8px;flex-wrap:wrap}
+.sf-seat{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-weight:800;background:rgba(0,0,0,.04);border:1px solid var(--ux-line-2);font-size:14px;color:var(--ux-ink)}
+
+/* Action bar bottom */
+.sf-review-foot{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px}
+.sf-review-foot .sf-btn-ghost{padding:10px 20px;font-size:13.5px}
+
+/* Responsive */
+@media (max-width:720px){
+  .sf-review{padding:0 16px 32px}
+  .sf-stat-grid{grid-template-columns:repeat(2,1fr)}
+  .sf-review-tabs{overflow-x:auto;padding-bottom:6px;margin-bottom:12px;scrollbar-width:none}
+  .sf-review-tabs::-webkit-scrollbar{display:none}
+  .sf-review-stage{padding:18px;min-height:240px}
+  .sf-review-head-top{flex-direction:column;align-items:flex-start}
+  .sf-review-actions{width:100%;justify-content:space-between}
+}
+@media (prefers-reduced-motion:reduce){
+  .sf-review-tab,.sf-stat{transition:none!important}
+}

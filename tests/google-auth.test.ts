@@ -26,7 +26,7 @@ vi.mock('next/headers', () => ({ cookies: async () => ({
 }) }));
 
 import { db } from '@studyforge/db';
-import { createSession, hashPassword, verifyPassword, getSessionUser, clearSessionCookie } from '../apps/web/src/server/auth';
+import { hashPassword, verifyPassword, getSessionUser, clearSessionCookie } from '../apps/web/src/server/auth';
 import { finishGoogleAuth, getGoogleConfig, startGoogleAuth, GOOGLE_COOKIE } from '../apps/web/src/server/google-oauth';
 import { POST as login } from '../apps/web/src/app/api/auth/login/route';
 import { POST as register } from '../apps/web/src/app/api/auth/register/route';

@@ -13,3 +13,7 @@ coverage/
 *.db-wal
 *.db-shm
 team/reports/*.log
+cookies/
+*.txt
+!README*.txt
+

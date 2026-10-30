@@ -27,7 +27,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         background: 'radial-gradient(ellipse at 50% 20%, var(--ux-surface-2) 0%, var(--ux-page) 70%)',
       }}
     >
-      <LucianSignIn googleEnabled={isGoogleAuthConfigured()} googleError={error} linkGoogle={Boolean(user)} />
+      <LucianSignIn googleEnabled={isGoogleAuthConfigured()} googleError={error} linkGoogle={Boolean(user)} currentEmail={user?.email} />
     </div>
   );
 }

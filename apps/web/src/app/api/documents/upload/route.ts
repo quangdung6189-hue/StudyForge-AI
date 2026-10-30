@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
-import { db } from '@studyforge/db';
-import { LocalPrivateStorage } from '@studyforge/storage';
+import { db, isTransientDatabaseError } from '@studyforge/db';
 import { requireUser } from '@/server/auth';
-import { extractDocumentContent } from '@/server/extractor';
+import { extractDocumentContent, ExtractorError } from '@/server/extractor';
+import { documentStorage, saveExtractionMetadata } from '@/server/document-files';
+import { analyzeDocument } from '@/server/question-sections';
 
-const storageDir = process.env.PRIVATE_STORAGE_DIR || './.data/storage';
-const storage = new LocalPrivateStorage(storageDir, async (principal, key) => {
-  const doc = await db.document.findFirst({ where: { storageKey: key, ownerId: principal.id } });
-  return Boolean(doc);
-});
+export const maxDuration = 300;
 
 const MAX_FILES = 10;
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
@@ -17,6 +14,7 @@ const ALLOWED_EXTS = ['.pdf', '.docx', '.txt', '.png', '.jpg', '.jpeg'];
 export async function POST(req: Request) {
   try {
     const user = await requireUser();
+    const storage = documentStorage();
     const formData = await req.formData();
     const files = formData.getAll('files') as File[];
 
@@ -46,16 +44,17 @@ export async function POST(req: Request) {
 
       try {
         // Extract text & chunks
-        const { rawText, chunks } = await extractDocumentContent(buffer, file.type, file.name);
+        const canonicalType = lowerName.endsWith('.pdf') ? 'application/pdf' : lowerName.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : lowerName.endsWith('.png') ? 'image/png' : /\.jpe?g$/.test(lowerName) ? 'image/jpeg' : 'text/plain';
+        const extraction = await extractDocumentContent(buffer, canonicalType, file.name, { ocr: true, signal: req.signal });
+        const { rawText, chunks } = extraction;
 
-        const isImage = file.type.startsWith('image/') || lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg');
-        const docStatus = isImage ? 'needs_ocr' : 'ready';
+        const docStatus = extraction.needsOcr || !rawText.trim() ? 'needs_ocr' : 'ready';
 
         const doc = await db.document.create({
           data: {
             ownerId: user.id,
             title: file.name.replace(/\.[^/.]+$/, ''),
-            fileType: file.type || 'application/octet-stream',
+            fileType: canonicalType,
             size: file.size,
             storageKey,
             status: docStatus,
@@ -69,6 +68,7 @@ export async function POST(req: Request) {
             },
           },
         });
+        await saveExtractionMetadata(doc.id, doc.revision, extraction).catch(() => {});
 
         uploadedDocuments.push({
           id: doc.id,
@@ -77,10 +77,12 @@ export async function POST(req: Request) {
           size: doc.size,
           status: doc.status,
           chunkCount: chunks.length,
+          warnings: extraction.warnings,
+          counts: analyzeDocument(rawText).counts,
         });
       } catch (extractErr) {
         // Clean up storage if extraction or DB fails
-        await storage.remove({ id: user.id }, storageKey).catch(() => {});
+        await storage.discardUpload({ id: user.id }, storageKey).catch(() => {});
         throw extractErr;
       }
     }
@@ -89,8 +91,9 @@ export async function POST(req: Request) {
       success: true,
       documents: uploadedDocuments,
     });
-  } catch (err: any) {
-    const status = err.code === 'UNAUTHORIZED' ? 401 : 500;
-    return NextResponse.json({ error: { code: err.code || 'UPLOAD_ERROR', message: err.message } }, { status });
+  } catch (error) {
+    const unauthorized = (error as { code?: string }).code === 'UNAUTHORIZED', transient = isTransientDatabaseError(error);
+    const status = unauthorized ? 401 : transient ? 503 : error instanceof ExtractorError ? 422 : 500;
+    return NextResponse.json({ error: { code: unauthorized ? 'UNAUTHORIZED' : transient ? 'DATABASE_UNAVAILABLE' : 'UPLOAD_ERROR', message: unauthorized ? 'Bạn cần đăng nhập để tải tài liệu.' : transient ? 'Kết nối dữ liệu đang gián đoạn. Hãy thử tải lại sau vài giây.' : error instanceof ExtractorError ? error.message : 'Chưa lưu được tài liệu. Hãy thử tải lại.' } }, { status, headers: { 'Cache-Control': 'no-store', ...(transient ? { 'Retry-After': '2' } : {}) } });
   }
 }

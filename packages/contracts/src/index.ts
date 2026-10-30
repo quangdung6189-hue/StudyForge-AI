@@ -26,9 +26,10 @@ export const DocumentSchema = z.strictObject({
 });
 export const DocumentPatchSchema = z.strictObject({
   title: z.string().trim().min(1).max(200).optional(), rawText: z.string().min(1).max(2_000_000).optional(),
+  revision: z.number().int().nonnegative().optional(),
 }).refine(v => v.title !== undefined || v.rawText !== undefined, 'No changes supplied');
 export const DocumentChunkSchema = z.strictObject({ id: IdSchema, chunkIndex: z.number().int(), content: z.string(), pageNumber: z.number().int().nullable() });
-export const DocumentDetailSchema = DocumentSchema.extend({ rawText: z.string().nullable(), chunks: z.array(DocumentChunkSchema) });
+export const DocumentDetailSchema = DocumentSchema.extend({ rawText: z.string().nullable(), chunks: z.array(DocumentChunkSchema), revision: z.number().int().nonnegative(), analysis: z.unknown().optional(), extraction: z.unknown().optional(), tools: z.object({ layoutReader: z.boolean() }).optional() });
 export type DocumentDTO = z.infer<typeof DocumentSchema>;
 
 export const SourceRefSchema = z.strictObject({ chunkId: IdSchema, quote: z.string().trim().min(1).max(2000) });
@@ -71,7 +72,8 @@ export const StudentAttemptQuestionSchema = z.strictObject({
 });
 export type StudentAttemptQuestionDTO = z.infer<typeof StudentAttemptQuestionSchema>;
 export const QuizGenerateSchema = z.strictObject({
-  documentId: IdSchema, mode: z.enum(['extract_existing', 'ai_generate']),
+  documentId: IdSchema,
+  mode: z.enum(['extract_existing', 'ai_generate', 'source_only', 'ai_analyze']),
   questionCount: z.number().int().min(1).max(100),
   types: z.array(QuestionTypeSchema).min(1).max(5).refine(v => new Set(v).size === v.length),
   difficultyDistribution: z.strictObject({ recognition: z.number().min(0).max(100), comprehension: z.number().min(0).max(100), application: z.number().min(0).max(100) })

@@ -44,4 +44,9 @@ export class LocalPrivateStorage {
   }
   async read(principal: StoragePrincipal, key: string): Promise<Buffer> { return readFile(await this.authorizedPath(principal, key)); }
   async remove(principal: StoragePrincipal, key: string): Promise<void> { await unlink(await this.authorizedPath(principal, key)); }
+  /** Remove a just-uploaded file when parsing fails before its database record exists. */
+  async discardUpload(principal: StoragePrincipal, key: string): Promise<void> {
+    if (!principal?.id || key.split('/')[0] !== principal.id) throw new StorageAccessError('File access denied');
+    await unlink(await this.checkedPath(key));
+  }
 }

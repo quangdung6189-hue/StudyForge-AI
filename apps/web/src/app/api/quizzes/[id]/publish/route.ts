@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/server/auth';
 import { publishOwnedQuiz } from '@/server/dal';
 import { QuizPublishSchema } from '@studyforge/contracts';
+import { isTransientDatabaseError } from '@studyforge/db';
 
 export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -37,8 +38,9 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
       shareCode: result.shareCode,
       shareUrl,
     });
-  } catch (err: any) {
-    const status = err.code === 'UNAUTHORIZED' ? 401 : err.code === 'NOT_FOUND' ? 404 : 500;
-    return NextResponse.json({ error: { code: err.code || 'PUBLISH_ERROR', message: err.message } }, { status });
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    const status = code === 'UNAUTHORIZED' ? 401 : code === 'NOT_FOUND' ? 404 : code === 'CONFLICT' ? 409 : isTransientDatabaseError(error) || code === 'P2028' ? 503 : 500;
+    return NextResponse.json({ error: { code: status === 503 ? 'PUBLISH_RETRYABLE' : status < 500 ? code : 'PUBLISH_ERROR', message: status === 401 ? 'Bạn cần đăng nhập lại.' : status === 404 ? 'Không tìm thấy đề của bạn.' : status === 409 ? (error as Error).message : 'Chưa xuất bản được. Bản nháp đã lưu; hãy bấm xuất bản lại.' } }, { status, headers: { 'Cache-Control': 'no-store', ...(status === 503 ? { 'Retry-After': '2' } : {}) } });
   }
 }

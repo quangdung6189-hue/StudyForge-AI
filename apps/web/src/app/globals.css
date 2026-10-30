@@ -64,8 +64,8 @@
   --ux-surface-2: #1E293B;
   --ux-surface-3: #2A384F;
   --ux-ink: #F9FAFB;
-  --ux-ink-2: rgba(249, 250, 251, 0.7);
-  --ux-ink-3: rgba(249, 250, 251, 0.45);
+  --ux-ink-2: #D1D5DB;
+  --ux-ink-3: #9CA3AF;
   --ux-line: rgba(255, 255, 255, 0.08);
   --ux-line-2: rgba(255, 255, 255, 0.16);
   --ux-accent: #818CF8;
@@ -139,20 +139,11 @@ body {
 
 /* App Layout Grid & Utilities */
 .app-shell {
+  flex: 1;
   display: flex;
+  flex-direction: row;
   min-height: 100vh;
-}
-
-.app-sidebar {
-  width: 260px;
-  background: var(--ux-surface);
-  border-right: 1px solid var(--ux-line);
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  z-index: 20;
+  min-width: 0;
 }
 
 .app-main {
@@ -160,6 +151,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
 .app-header {
@@ -180,21 +172,14 @@ body {
 .app-content {
   flex: 1;
   padding: 32px;
-  max-width: 1200px;
-  margin: 0 auto;
+  overflow-y: auto;
   width: 100%;
+  max-width: none;
 }
 
 @media (max-width: 768px) {
   .app-shell {
     flex-direction: column;
-  }
-  .app-sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    border-right: none;
-    border-bottom: 1px solid var(--ux-line);
   }
   .app-content {
     padding: 16px;

@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { db, transaction } from '@studyforge/db';
+import { db, transaction, readWithRetry } from '@studyforge/db';
 import {
   attemptDeadline,
   isExpired,
@@ -7,7 +7,9 @@ import {
   decodeAnswers,
   grade,
   chunkText,
+  assertCitations,
 } from '@studyforge/core';
+import { QuestionListSchema } from '@studyforge/contracts';
 import type {
   UserDTO,
   DocumentDTO,
@@ -28,7 +30,7 @@ export class DalError extends Error {
 
 export async function listUserDocuments(userId: string, page = 1, limit = 20) {
   const skip = (page - 1) * limit;
-  const [items, total] = await Promise.all([
+  const [items, total] = await readWithRetry(() => Promise.all([
     db.document.findMany({
       where: { ownerId: userId },
       orderBy: { createdAt: 'desc' },
@@ -44,7 +46,7 @@ export async function listUserDocuments(userId: string, page = 1, limit = 20) {
       },
     }),
     db.document.count({ where: { ownerId: userId } }),
-  ]);
+  ]));
 
   return {
     items: items.map(d => ({
@@ -59,14 +61,14 @@ export async function listUserDocuments(userId: string, page = 1, limit = 20) {
 }
 
 export async function getOwnedDocument(userId: string, documentId: string) {
-  const doc = await db.document.findFirst({
+  const doc = await readWithRetry(() => db.document.findFirst({
     where: { id: documentId, ownerId: userId },
     include: {
       chunks: {
         orderBy: { chunkIndex: 'asc' },
       },
     },
-  });
+  }));
 
   if (!doc) {
     throw new DalError('NOT_FOUND', 'Tài liệu không tồn tại hoặc bạn không có quyền truy cập');
@@ -79,6 +81,7 @@ export async function getOwnedDocument(userId: string, documentId: string) {
     size: doc.size,
     status: doc.status as DocumentDTO['status'],
     rawText: doc.rawText,
+    revision: doc.revision,
     chunks: doc.chunks.map(c => ({
       id: c.id,
       chunkIndex: c.chunkIndex,
@@ -89,22 +92,25 @@ export async function getOwnedDocument(userId: string, documentId: string) {
   };
 }
 
-export async function updateOwnedDocument(userId: string, documentId: string, updates: { title?: string; rawText?: string }) {
+export async function updateOwnedDocument(userId: string, documentId: string, updates: { title?: string; rawText?: string }, expectedRevision?: number) {
   const existing = await db.document.findFirst({ where: { id: documentId, ownerId: userId } });
   if (!existing) throw new DalError('NOT_FOUND', 'Tài liệu không tồn tại');
 
   return transaction(async tx => {
+    const current = await tx.document.findFirst({ where: { id: documentId, ownerId: userId }, select: { revision: true } });
+    if (!current) throw new DalError('NOT_FOUND', 'Tài liệu không tồn tại');
+    if (expectedRevision !== undefined && current.revision !== expectedRevision) throw new DalError('CONFLICT', 'Tài liệu đã thay đổi ở nơi khác. Hãy tải lại và đối chiếu trước khi lưu.');
     const updated = await tx.document.update({
       where: { id: documentId },
       data: {
         ...(updates.title ? { title: updates.title } : {}),
-        ...(updates.rawText !== undefined ? { rawText: updates.rawText, revision: { increment: 1 } } : {}),
+        ...(updates.rawText !== undefined ? { rawText: updates.rawText, status: updates.rawText.trim().length >= 10 ? 'ready' : 'needs_ocr', revision: { increment: 1 } } : {}),
       },
     });
 
     if (updates.rawText !== undefined) {
       await tx.documentChunk.deleteMany({ where: { documentId } });
-      const newChunks = chunkText(updates.rawText, 500, 50);
+      const newChunks = chunkText(updates.rawText, 1800, 250);
       await tx.documentChunk.createMany({
         data: newChunks.map((c, i) => ({
           documentId,
@@ -184,6 +190,7 @@ export async function getOwnedQuiz(userId: string, quizId: string) {
 
   return {
     id: quiz.id,
+    documentId: quiz.bank.documentId,
     title: quiz.title,
     description: quiz.description,
     durationMinutes: quiz.durationMinutes,
@@ -197,8 +204,10 @@ export async function getOwnedQuiz(userId: string, quizId: string) {
 export async function updateOwnedQuizQuestions(
   userId: string,
   quizId: string,
-  questions: FullQuestionDTO[]
+  questions: FullQuestionDTO[],
+  settings?: { title?: string; durationMinutes?: number }
 ) {
+  QuestionListSchema.parse(questions);
   return transaction(async tx => {
     const quiz = await tx.quiz.findFirst({
       where: { id: quizId, ownerId: userId },
@@ -207,6 +216,9 @@ export async function updateOwnedQuizQuestions(
     if (!quiz) throw new DalError('NOT_FOUND', 'Bài kiểm tra không tồn tại');
     if (quiz.isPublished) throw new DalError('CONFLICT', 'Không thể sửa bài kiểm tra đã xuất bản');
 
+    const chunks = await tx.documentChunk.findMany({ where: { documentId: quiz.bank.documentId } });
+    assertCitations(questions, chunks);
+
     await tx.questionOption.deleteMany({
       where: { question: { bankId: quiz.bankId } },
     });
@@ -214,34 +226,10 @@ export async function updateOwnedQuizQuestions(
       where: { bankId: quiz.bankId },
     });
 
-    for (let i = 0; i < questions.length; i++) {
-      const q = questions[i];
-      await tx.question.create({
-        data: {
-          id: q.id,
-          bankId: quiz.bankId,
-          position: i,
-          type: q.type,
-          stem: q.stem,
-          correctOptionIds: q.correctOptionIds as any,
-          acceptedAnswers: q.acceptedAnswers as any,
-          explanation: q.explanation,
-          points: Math.max(1, q.points || 1),
-          difficulty: q.difficulty || 'comprehension',
-          topic: q.topic || 'Chung',
-          answerOrigin: q.answerOrigin || 'teacher',
-          sourceRefs: q.sourceRefs as any,
-          reviewed: true,
-          options: {
-            create: q.options.map((opt, optIdx) => ({
-              id: opt.id,
-              text: opt.text,
-              position: optIdx,
-            })),
-          },
-        },
-      });
-    }
+    await tx.question.createMany({ data: questions.map(({ options, ...q }, position) => ({ ...q, bankId: quiz.bankId, position })) });
+    const options = questions.flatMap(q => q.options.map((option, position) => ({ ...option, questionId: q.id, position })));
+    if (options.length) await tx.questionOption.createMany({ data: options });
+    if (settings) await tx.quiz.update({ where: { id: quiz.id }, data: settings });
 
     return { success: true };
   });
@@ -269,6 +257,11 @@ export async function publishOwnedQuiz(
 
     if (!quiz) throw new DalError('NOT_FOUND', 'Bài kiểm tra không tồn tại');
     if (!quiz.bank.questions.length) throw new DalError('CONFLICT', 'Không thể xuất bản đề thi chưa có câu hỏi');
+    if (quiz.isPublished && quiz.shareCode && quiz.durationMinutes === (options.durationMinutes ?? quiz.durationMinutes) && quiz.allowReview === options.allowReview && (quiz.deadline?.toISOString() ?? null) === (options.deadline ?? null)) {
+      const version = await tx.quizVersion.findUnique({ where: { quizId_version: { quizId, version: quiz.publishedVersion } } });
+      if (version) return { versionId: version.id, versionNumber: quiz.publishedVersion, shareCode: quiz.shareCode };
+    }
+    if (quiz.bank.questions.some(q => !q.reviewed)) throw new DalError('CONFLICT', 'Hãy duyệt đáp án và lời giải của tất cả câu hỏi trước khi xuất bản');
 
     const nextVersion = quiz.publishedVersion + 1;
     const shareCode = (quiz.shareCode || randomBytes(8).toString('hex')).toUpperCase();
@@ -290,6 +283,10 @@ export async function publishOwnedQuiz(
       sourceRefs: q.sourceRefs as any,
       reviewed: q.reviewed,
     }));
+
+    if (!QuestionListSchema.safeParse(questions).success) throw new DalError('CONFLICT', 'Câu hỏi hoặc đáp án chưa hợp lệ');
+    const chunks = await tx.documentChunk.findMany({ where: { documentId: quiz.bank.documentId } });
+    try { assertCitations(questions, chunks); } catch { throw new DalError('CONFLICT', 'Trích dẫn không khớp tài liệu hiện tại'); }
 
     const snapshot: QuizSnapshot = {
       title: quiz.title,

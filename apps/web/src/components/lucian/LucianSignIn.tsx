@@ -3,16 +3,18 @@
 // Lucian UX/UI Prompt #062 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#062
 // Ported to React / Next.js with real StudyForge AI authentication
 
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-export function LucianSignIn({ googleEnabled = false, googleError = '', linkGoogle = false }: {
+export function LucianSignIn({ googleEnabled = false, googleError = '', linkGoogle = false, currentEmail = '' }: {
   googleEnabled?: boolean;
   googleError?: string;
   linkGoogle?: boolean;
+  currentEmail?: string;
 }) {
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
+  const [hydrated, setHydrated] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -23,6 +25,8 @@ export function LucianSignIn({ googleEnabled = false, googleError = '', linkGoog
   const [busy, setBusy] = useState(false);
   const [ok, setOk] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => { setHydrated(true); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +101,15 @@ export function LucianSignIn({ googleEnabled = false, googleError = '', linkGoog
           display: flex;
           flex-direction: column;
           width: 100%;
+          flex: 1;
+        }
+        .u062 .u062-fields {
+          border: 0;
+          padding: 0;
+          margin: 0;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
           flex: 1;
         }
         .u062-logo {
@@ -256,19 +269,23 @@ export function LucianSignIn({ googleEnabled = false, googleError = '', linkGoog
         .u062 .u062-google:disabled { opacity: .6; cursor: not-allowed; }
         .u062 .u062-divider { text-align: center; color: var(--ux-ink-3); font-size: 12px; margin-bottom: 16px; }
         .u062 .u062-auth-error { color: var(--ux-danger); font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
+        .u062 .u062-current-account { font-size: 12px; color: var(--ux-ink-2); overflow-wrap: anywhere; }
       `}</style>
 
       <div ref={rootRef} className="ux u062">
-        <form className="u062-pane" onSubmit={handleSubmit}>
+        <form className="u062-pane" method="post" action={isRegister ? '/api/auth/register' : '/api/auth/login'} onSubmit={handleSubmit} aria-busy={!hydrated || busy}>
+          <fieldset className="u062-fields" disabled={!hydrated || busy || ok}>
           <div className="u062-logo" aria-hidden="true">SF</div>
           <h3>{isRegister ? 'Tạo tài khoản StudyForge' : 'Chào mừng trở lại'}</h3>
           <p>{isRegister ? 'Bắt đầu biến tài liệu thành bài kiểm tra & câu hỏi ôn tập' : 'Đăng nhập vào tài khoản StudyForge AI'}</p>
 
           {googleError && <div className="u062-auth-error" role="alert">{googleError}</div>}
+          {currentEmail && <p className="u062-current-account">Tài khoản hiện tại: {currentEmail}</p>}
           {googleEnabled ? (
-            <a className="u062-google" href={linkGoogle ? '/api/auth/google?intent=link' : '/api/auth/google'}>
-              {linkGoogle ? 'Liên kết tài khoản Google' : 'Tiếp tục với Google'}
-            </a>
+            <>
+              <a className="u062-google" href="/api/auth/google">Tiếp tục với Google</a>
+              {linkGoogle && <a className="u062-google" href="/api/auth/google?intent=link">Liên kết Google với tài khoản hiện tại</a>}
+            </>
           ) : (
             <>
               <button className="u062-google" type="button" disabled>Tiếp tục với Google</button>
@@ -433,6 +450,7 @@ export function LucianSignIn({ googleEnabled = false, googleError = '', linkGoog
               </div>
             </div>
           )}
+          </fieldset>
         </form>
       </div>
     </>

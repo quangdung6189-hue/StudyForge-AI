@@ -4,6 +4,12 @@ import { db } from './src/index';
 async function main() {
   console.log('Seeding StudyForge AI database...');
 
+  // This legacy seed resets data. Do not wipe an existing account database
+  // when development is pointed at the newly connected hosted PostgreSQL.
+  if (await db.user.count() > 0 && process.env.ALLOW_DATABASE_RESET !== 'true') {
+    throw new Error('Seed stopped: this database already contains accounts. Use an empty development database; an intentional reset requires ALLOW_DATABASE_RESET=true.');
+  }
+
   // Clean existing data
   await db.attemptAnswer.deleteMany();
   await db.attempt.deleteMany();
