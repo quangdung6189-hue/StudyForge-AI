@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@studyforge/db';
+import { db, readWithRetry } from '@studyforge/db';
 import { LoginSchema } from '@studyforge/contracts';
 import { verifyPassword, createSession, setSessionCookie } from '@/server/auth';
 import { createHash } from 'node:crypto';
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = await db.user.findUnique({ where: { email } });
+    const user = await readWithRetry(() => db.user.findUnique({ where: { email } }));
     if (!user) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Email hoặc mật khẩu không chính xác' } },
@@ -73,7 +73,11 @@ export async function POST(req: Request) {
       );
     }
 
-    await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+    // Login must not fail because an optional audit timestamp hits a stale DB connection.
+    // Session creation remains mandatory and still fails closed if DB is unavailable.
+    await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch((error) => {
+      console.error('[auth/login] lastLoginAt update failed', error);
+    });
     const session = await createSession(user.id);
     await setSessionCookie(session.token, session.expiresAt);
 
