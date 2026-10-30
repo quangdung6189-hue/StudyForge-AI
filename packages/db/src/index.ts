@@ -2,7 +2,7 @@ import { PrismaClient, Prisma } from '../.generated/postgres';
 import { PrismaClient as NeonClient } from '../.generated/neon';
 import { PrismaClient as SQLiteClient } from '../.generated/sqlite';
 import path from 'node:path';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { config } from 'dotenv';
 import { runtimeDatabaseUrl } from './resilience';
 import { PrismaNeon } from '@prisma/adapter-neon';
@@ -17,6 +17,13 @@ function getWorkspaceRoot(): string {
     if (existsSync(path.join(curr, '.data', 'dev.db')) || existsSync(path.join(curr, 'StudyForge_AI_Prompts.txt'))) {
       return curr;
     }
+    const pkgPath = path.join(curr, 'package.json');
+    if (existsSync(pkgPath)) {
+      try {
+        const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+        if (pkg.workspaces) return curr;
+      } catch {}
+    }
     curr = path.dirname(curr);
   }
   return path.resolve(process.cwd());
@@ -25,21 +32,43 @@ function getWorkspaceRoot(): string {
 const root = getWorkspaceRoot();
 config({ path: path.join(root, '.env'), quiet: true });
 const globalDb = globalThis as unknown as { studyforgeDb?: PrismaClient };
+
 function createClient(): PrismaClient {
   const url = process.env.DATABASE_URL;
   if (url && !url.startsWith('file:')) {
-    const runtimeUrl = runtimeDatabaseUrl(url), parsed = new URL(runtimeUrl);
-    if (parsed.hostname.endsWith('.neon.tech') && process.env.DATABASE_TRANSPORT !== 'tcp') {
-      neonConfig.webSocketConstructor = WebSocket;
-      return new NeonClient({ adapter: new PrismaNeon({ connectionString: runtimeUrl, max: Number(parsed.searchParams.get('connection_limit')) || 5, connectionTimeoutMillis: (Number(parsed.searchParams.get('connect_timeout')) || 15) * 1000, idleTimeoutMillis: 30000 }, { schema: parsed.searchParams.get('schema') ?? 'public' }) }) as unknown as PrismaClient;
+    const runtimeUrl = runtimeDatabaseUrl(url);
+    const parsed = new URL(runtimeUrl);
+
+    // If explicitly requested via DATABASE_TRANSPORT=websocket, try Neon WebSocket adapter
+    if (process.env.DATABASE_TRANSPORT === 'websocket' && parsed.hostname.endsWith('.neon.tech')) {
+      try {
+        neonConfig.webSocketConstructor = WebSocket;
+        return new NeonClient({
+          adapter: new PrismaNeon(
+            {
+              connectionString: runtimeUrl,
+              max: Number(parsed.searchParams.get('connection_limit')) || 5,
+              connectionTimeoutMillis: (Number(parsed.searchParams.get('connect_timeout')) || 15) * 1000,
+              idleTimeoutMillis: 30000,
+            },
+            { schema: parsed.searchParams.get('schema') ?? 'public' }
+          ),
+        }) as unknown as PrismaClient;
+      } catch (err) {
+        console.warn('[db] Neon WebSocket adapter initialization failed, using standard PrismaClient:', err);
+      }
     }
+
+    // Default for serverless Node.js (AWS Lambda / Netlify) with Neon PgBouncer pooler: standard Prisma TCP engine
     return new PrismaClient({ datasourceUrl: runtimeUrl });
   }
+
   if (process.env.NODE_ENV === 'production' && !url) throw new Error('DATABASE_URL must be configured in production');
   mkdirSync(path.join(root, '.data'), { recursive: true });
   const sqliteUrl = url ?? process.env.SQLITE_DATABASE_URL ?? `file:${path.join(root, '.data', 'dev.db').replaceAll('\\', '/')}`;
   return new SQLiteClient({ datasourceUrl: sqliteUrl }) as unknown as PrismaClient;
 }
+
 // Lazy creation allows Next build without connecting to a database.
 export const db = new Proxy({} as PrismaClient, {
   get(_target, key) {

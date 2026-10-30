@@ -1,8 +1,24 @@
 import type { NextConfig } from 'next';
 import { config } from 'dotenv';
 import path from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 
-const root = path.resolve(process.cwd(), '../..');
+function findMonorepoRoot(startDir: string = process.cwd()): string {
+  let curr = path.resolve(startDir);
+  while (curr && path.dirname(curr) !== curr) {
+    const pkgPath = path.join(curr, 'package.json');
+    if (existsSync(pkgPath)) {
+      try {
+        const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+        if (pkg.workspaces) return curr;
+      } catch {}
+    }
+    curr = path.dirname(curr);
+  }
+  return path.resolve(startDir, '../..');
+}
+
+const root = findMonorepoRoot();
 config({ path: path.join(root, '.env'), quiet: true });
 process.env.STUDYFORGE_ROOT ??= root;
 
@@ -13,7 +29,9 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@studyforge/contracts', '@studyforge/core', '@studyforge/db', '@studyforge/ai', '@studyforge/storage'],
   outputFileTracingRoot: root,
   outputFileTracingIncludes: {
-    '/*': ['../../packages/db/.generated/postgres/**/*', '../../packages/db/.generated/neon/**/*', '../../packages/db/.generated/sqlite/**/*'],
+    '/*': [
+      './packages/db/.generated/**/*',
+    ],
   },
   experimental: { serverActions: { bodySizeLimit: '1mb' } },
   async headers() {

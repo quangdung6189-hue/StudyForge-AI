@@ -37,6 +37,12 @@ export async function GET() {
       .replace(/postgres(?:ql)?:\/\/[^\s"'`]+/gi, '[DATABASE_URL REDACTED]')
       .replace(/(password\s*[:=]\s*)[^\s,;]+/gi, '$1[REDACTED]');
     console.error('[health] database check failed', { code: (error as { code?: unknown })?.code, name: error instanceof Error ? error.name : typeof error, message: safeMessage.slice(0, 3000) });
-    return NextResponse.json({ ok: false, code: classify(error), target: targetFingerprint() }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({
+      ok: false,
+      code: classify(error),
+      target: targetFingerprint(),
+      error: safeMessage.slice(0, 500),
+      errorName: error instanceof Error ? error.name : typeof error,
+    }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   }
 }
