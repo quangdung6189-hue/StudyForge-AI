@@ -16,4 +16,5 @@ team/reports/*.log
 cookies/
 *.txt
 !README*.txt
-
+.agents/
+.claude/
