@@ -31,6 +31,9 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/*': [
       './packages/db/.generated/**/*',
+      './node_modules/.prisma/client/**/*',
+      './apps/web/.generated/**/*',
+      './apps/web/node_modules/.prisma/client/**/*',
     ],
   },
   experimental: { serverActions: { bodySizeLimit: '1mb' } },

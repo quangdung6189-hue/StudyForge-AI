@@ -33,7 +33,48 @@ const root = getWorkspaceRoot();
 config({ path: path.join(root, '.env'), quiet: true });
 const globalDb = globalThis as unknown as { studyforgeDb?: PrismaClient };
 
+function setupPrismaEngine(): void {
+  if (process.env.PRISMA_QUERY_ENGINE_LIBRARY && existsSync(process.env.PRISMA_QUERY_ENGINE_LIBRARY)) {
+    return;
+  }
+  const engineNames = process.platform === 'win32'
+    ? ['query_engine-windows.dll.node']
+    : ['libquery_engine-rhel-openssl-3.0.x.so.node', 'libquery_engine-debian-openssl-3.0.x.so.node'];
+  const searchDirs = [
+    path.join(__dirname, '../.generated/postgres'),
+    path.join(__dirname, '.'),
+    path.join(root, 'packages/db/.generated/postgres'),
+    path.join(root, 'node_modules/.prisma/client'),
+    path.join(root, 'apps/web/node_modules/.prisma/client'),
+    path.join(root, 'apps/web/.generated/postgres'),
+    path.join(process.cwd(), 'packages/db/.generated/postgres'),
+    path.join(process.cwd(), '.next/server/packages/db/.generated/postgres'),
+    path.join(process.cwd(), 'node_modules/.prisma/client'),
+    path.join(process.cwd(), '.prisma/client'),
+    path.join(process.cwd()),
+    '/var/task/packages/db/.generated/postgres',
+    '/var/task/apps/web/packages/db/.generated/postgres',
+    '/var/task/apps/web/.generated/postgres',
+    '/var/task/node_modules/.prisma/client',
+    '/var/task/apps/web/node_modules/.prisma/client',
+    '/var/task',
+  ];
+
+  for (const dir of searchDirs) {
+    for (const name of engineNames) {
+      try {
+        const fullPath = path.join(dir, name);
+        if (existsSync(fullPath)) {
+          process.env.PRISMA_QUERY_ENGINE_LIBRARY = fullPath;
+          return;
+        }
+      } catch {}
+    }
+  }
+}
+
 function createClient(): PrismaClient {
+  setupPrismaEngine();
   const url = process.env.DATABASE_URL;
   if (url && !url.startsWith('file:')) {
     const runtimeUrl = runtimeDatabaseUrl(url);

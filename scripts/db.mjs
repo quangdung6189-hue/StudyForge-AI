@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -18,12 +18,37 @@ const env = {
 };
 const sqlite = !process.env.DATABASE_URL || process.env.DATABASE_URL.startsWith('file:');
 const selected = sqlite ? sqliteSchema : postgresSchema;
+
 function run(args) {
   const result = spawnSync(process.execPath, [path.join(root, 'node_modules/prisma/build/index.js'), ...args], { cwd: root, env, stdio: 'inherit' });
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
+
+function copyEngines() {
+  const srcDir = path.join(root, 'packages/db/.generated/postgres');
+  const targetDirs = [
+    path.join(root, 'node_modules/.prisma/client'),
+    path.join(root, 'apps/web/node_modules/.prisma/client'),
+    path.join(root, 'apps/web/.generated/postgres'),
+  ];
+  if (!existsSync(srcDir)) return;
+  const files = readdirSync(srcDir);
+  for (const dir of targetDirs) {
+    mkdirSync(dir, { recursive: true });
+    for (const file of files) {
+      if (file.endsWith('.node') || file.endsWith('.wasm') || file.endsWith('.prisma') || file.endsWith('.js') || file.endsWith('.d.ts')) {
+        copyFileSync(path.join(srcDir, file), path.join(dir, file));
+      }
+    }
+  }
+}
+
 switch (process.argv[2]) {
-  case 'generate': run(['generate', '--schema', postgresSchema]); run(['generate', '--schema', sqliteSchema]); break;
+  case 'generate':
+    run(['generate', '--schema', postgresSchema]);
+    run(['generate', '--schema', sqliteSchema]);
+    copyEngines();
+    break;
   case 'validate': run(['validate', '--schema', postgresSchema]); run(['validate', '--schema', sqliteSchema]); break;
   case 'push': run(['db', 'push', '--schema', selected]); break;
   case 'migrate':
