@@ -9,6 +9,7 @@
     "dev": "next dev",
     "prebuild": "node ../../scripts/db.mjs generate",
     "build": "node ../../scripts/db.mjs generate && next build --webpack",
+    "postbuild": "node ../../scripts/check-build-traces.mjs --sanitize-build-only",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "postinstall": "node ../../scripts/db.mjs generate || true"

@@ -22,6 +22,20 @@ Không sửa bằng cách bỏ qua mọi lỗi `postinstall`, cài lại riêng 
 
 Cảnh báo npm `Unknown env config "cache-dir"` không phải nguyên nhân của lỗi thiếu `dotenv`.
 
+### Lỗi đóng gói `ENOENT: lstat .../apps/web/.next/lock`
+
+Next.js tạo `.next/lock` trong lúc build và xóa khi tiến trình kết thúc. File tracing có thể ghi nhầm file khóa tạm vào các manifest `.nft.json`; Vercel đọc manifest sau build nên không tìm thấy file đó. Build Next.js thành công riêng lẻ chưa kiểm tra được bước đóng gói này.
+
+`next.config.ts` đã loại `.next/lock`, output development, cache và build trace log khỏi trace production. Do việc khớp glob có thể khác nhau trên Windows/Linux, script `postbuild` còn dọn đúng các mục tạm đó trong mọi manifest sau khi Next.js thoát, rồi kiểm tra file còn lại bằng `lstat`. Thiếu file runtime hoặc engine Prisma sẽ báo lỗi, không âm thầm bỏ qua. Không tạo file khóa giả hoặc loại toàn bộ `.next` vì cần giữ server chunks thật.
+
+Kiểm tra lại manifest của bản build hiện có từ gốc repository:
+
+```shell
+node scripts/check-build-traces.mjs
+```
+
+Sau khi bản sửa lên GitHub, triển khai commit mới nhất của `main`, không dùng lại commit lỗi. Tắt **Use existing Build Cache** cho lượt triển khai đầu sau sửa để không tái sử dụng manifest cũ.
+
 ## 2. Biến môi trường
 
 Thêm biến trong **Project Settings > Environment Variables**, chọn đúng môi trường Production hoặc Preview, rồi redeploy. Xem `.env.example` để biết đầy đủ biến hiện có; không tải file `.env` lên Git.

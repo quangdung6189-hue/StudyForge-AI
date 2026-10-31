@@ -17,6 +17,12 @@ describe('Monorepo deployment file tracing', () => {
     expect(path.resolve(nextConfig.outputFileTracingRoot!)).toBe(path.resolve(root));
   });
 
+  it('excludes transient Next.js lock, development files and build caches from every route', () => {
+    expect(nextConfig.outputFileTracingExcludes?.['/*']).toEqual(expect.arrayContaining([
+      './.next/lock', './.next/dev/**/*', './.next/cache/**/*', './.next/trace',
+    ]));
+  });
+
   it.each([
     'packages/db/.generated',
     'node_modules/.prisma/client',
@@ -35,6 +41,10 @@ describe('Vercel installation settings', () => {
     expect(deployment.framework).toBe('nextjs');
     expect(deployment.installCommand).toBe('cd ../.. && npm ci --include=dev --workspaces --include-workspace-root');
     expect(deployment.buildCommand).toBe('npm run build');
+  });
+
+  it('checks trace dependencies after Next.js has exited and removed its temporary lock', () => {
+    expect(readJson('apps/web/package.json').scripts.postbuild).toBe('node ../../scripts/check-build-traces.mjs --sanitize-build-only');
   });
 
   it('pins both manifests and the lockfile to Node.js 22 instead of an open-ended range', () => {

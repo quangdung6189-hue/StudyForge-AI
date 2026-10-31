@@ -40,6 +40,10 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@prisma/client', '@prisma/adapter-neon', '@neondatabase/serverless', 'ws', 'bcryptjs', 'pdf-parse', 'mammoth', 'nodemailer'],
   transpilePackages: ['@studyforge/contracts', '@studyforge/core', '@studyforge/db', '@studyforge/ai', '@studyforge/storage'],
   outputFileTracingRoot: root,
+  outputFileTracingExcludes: {
+    // Next removes its lock on exit, before deployment packaging reads the traces.
+    '/*': ['./.next/lock', './.next/dev/**/*', './.next/cache/**/*', './.next/trace'],
+  },
   outputFileTracingIncludes: {
     // Include patterns resolve from apps/web, not outputFileTracingRoot.
     '/*': [
