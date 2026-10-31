@@ -47,13 +47,21 @@ describe('Vercel installation settings', () => {
     expect(readJson('apps/web/package.json').scripts.postbuild).toBe('node ../../scripts/check-build-traces.mjs --sanitize-build-only');
   });
 
-  it('pins both manifests and the lockfile to Node.js 22 instead of an open-ended range', () => {
+  it('pins both manifests and the lockfile to Node.js 26 instead of an open-ended range', () => {
     const manifest = readJson('package.json');
     const web = readJson('apps/web/package.json');
     const lock = readJson('package-lock.json');
-    expect(manifest.engines.node).toBe('>=22.12 <23');
+    expect(manifest.engines.node).toBe('26.x');
     expect(web.engines).toEqual(manifest.engines);
     expect(lock.packages[''].engines).toEqual(manifest.engines);
     expect(lock.packages['apps/web'].engines).toEqual(web.engines);
+  });
+
+  it('uses Node.js 26 TypeScript definitions consistent with the runtime', () => {
+    const manifest = readJson('package.json');
+    const lock = readJson('package-lock.json');
+    expect(manifest.devDependencies['@types/node']).toMatch(/^\^26\./);
+    expect(lock.packages[''].devDependencies['@types/node']).toBe(manifest.devDependencies['@types/node']);
+    expect(lock.packages['node_modules/@types/node'].version).toMatch(/^26\./);
   });
 });

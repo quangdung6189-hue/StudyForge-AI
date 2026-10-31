@@ -7,12 +7,14 @@ Repository dùng npm workspaces. Ứng dụng Next.js nằm trong `apps/web`, d�
 1. Import repository Git vào Vercel, chọn **Framework Preset: Next.js**.
 2. Đặt **Root Directory: `apps/web`**.
 3. Bật **Include source files outside of the Root Directory in the Build Step** để build đọc được `packages/` và `scripts/`.
-4. Đặt **Node.js Version: 22.x**; repository yêu cầu Node.js từ 22.12 đến trước 23, không tự chọn Node.js 26.
+4. Đặt **Node.js Version: 26.x**; `engines.node` trong cả package gốc và `apps/web` đã chọn `26.x`. Vercel ưu tiên cấu hình trong package hơn giá trị Dashboard; minor/patch được nền tảng cập nhật trong nhánh 26.
 5. **Install Command: `cd ../.. && npm ci --include=dev --workspaces --include-workspace-root`** để cài đúng lockfile, dependency gốc và các workspace. Script `postinstall` tự sinh Prisma clients. `--include=dev` giữ Prisma CLI và TypeScript trong bước build.
 6. Đặt **Build Command: `npm run build`**, chạy trong `apps/web`. Script hiện có sinh Prisma clients rồi chạy `next build --webpack`.
 7. Giữ **Output Directory** mặc định của Next.js (`.next`). Không dùng static export vì ứng dụng cần API và session phía server.
 
 `apps/web/vercel.json` đã khai báo Framework, Install Command và Build Command; các giá trị này ưu tiên hơn thiết lập tương ứng trên Dashboard. Không cần adapter riêng. Root Directory và quyền đọc file bên ngoài root vẫn phải đặt trên Dashboard. Các file Prisma được khai báo trong `next.config.ts`; đường dẫn include được tính từ `apps/web`.
+
+Khi nâng từ Node.js 22 lên 26, triển khai commit mới nhất, đặt Dashboard cùng `26.x` và bỏ **Use existing Build Cache** trong lượt đầu. Deployment cũ không đổi runtime cho đến khi được triển khai lại bằng code mới. Local cũng cần Node.js 26.x trước khi cài dependency hoặc chạy kiểm tra; `@types/node` đã được đồng bộ lên nhánh 26.
 
 ### Lỗi cài đặt `Cannot find package 'dotenv'`
 

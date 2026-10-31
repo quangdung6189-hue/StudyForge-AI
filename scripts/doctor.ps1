@@ -1,4 +1,4 @@
-# StudyForge AI - Environment & Health Check Doctor
+﻿# StudyForge AI - Environment & Health Check Doctor
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host "   StudyForge AI - Kiểm tra hệ thống (Doctor)" -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
@@ -9,10 +9,10 @@ $allPass = $true
 $nodeVersion = node --version
 if ($nodeVersion -match "v(\d+)\.") {
   $major = [int]$matches[1]
-  if ($major -ge 22) {
-    Write-Host "[✓] Node.js: $nodeVersion (Đạt >= v22.12)" -ForegroundColor Green
+  if ($major -eq 26) {
+    Write-Host "[✓] Node.js: $nodeVersion (Đạt 26.x)" -ForegroundColor Green
   } else {
-    Write-Host "[✗] Node.js: $nodeVersion (Cần nâng cấp >= v22.12)" -ForegroundColor Red
+    Write-Host "[✗] Node.js: $nodeVersion (Dự án yêu cầu 26.x)" -ForegroundColor Red
     $allPass = $false
   }
 }
