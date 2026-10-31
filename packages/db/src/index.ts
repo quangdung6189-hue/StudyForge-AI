@@ -100,7 +100,7 @@ function createClient(): PrismaClient {
       }
     }
 
-    // Default for serverless Node.js (AWS Lambda / Netlify) with Neon PgBouncer pooler: standard Prisma TCP engine
+    // Use the standard Prisma TCP engine unless the Neon WebSocket adapter is explicitly requested.
     return new PrismaClient({ datasourceUrl: runtimeUrl });
   }
 

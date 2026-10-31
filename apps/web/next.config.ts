@@ -41,11 +41,12 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@studyforge/contracts', '@studyforge/core', '@studyforge/db', '@studyforge/ai', '@studyforge/storage'],
   outputFileTracingRoot: root,
   outputFileTracingIncludes: {
+    // Include patterns resolve from apps/web, not outputFileTracingRoot.
     '/*': [
-      './packages/db/.generated/**/*',
+      '../../packages/db/.generated/**/*',
+      '../../node_modules/.prisma/client/**/*',
+      './.generated/**/*',
       './node_modules/.prisma/client/**/*',
-      './apps/web/.generated/**/*',
-      './apps/web/node_modules/.prisma/client/**/*',
     ],
   },
   experimental: { serverActions: { bodySizeLimit: '1mb' } },
