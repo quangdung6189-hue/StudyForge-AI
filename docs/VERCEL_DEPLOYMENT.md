@@ -7,12 +7,20 @@ Repository dùng npm workspaces. Ứng dụng Next.js nằm trong `apps/web`, d�
 1. Import repository Git vào Vercel, chọn **Framework Preset: Next.js**.
 2. Đặt **Root Directory: `apps/web`**.
 3. Bật **Include source files outside of the Root Directory in the Build Step** để build đọc được `packages/` và `scripts/`.
-4. Đặt **Node.js Version: 22.x**; repository yêu cầu Node.js từ 22.12.
-5. Đặt **Install Command: `cd ../.. && npm ci`** để cài đúng lockfile ở gốc repository. Script `postinstall` tự sinh Prisma clients.
+4. Đặt **Node.js Version: 22.x**; repository yêu cầu Node.js từ 22.12 đến trước 23, không tự chọn Node.js 26.
+5. **Install Command: `cd ../.. && npm ci --include=dev --workspaces --include-workspace-root`** để cài đúng lockfile, dependency gốc và các workspace. Script `postinstall` tự sinh Prisma clients. `--include=dev` giữ Prisma CLI và TypeScript trong bước build.
 6. Đặt **Build Command: `npm run build`**, chạy trong `apps/web`. Script hiện có sinh Prisma clients rồi chạy `next build --webpack`.
 7. Giữ **Output Directory** mặc định của Next.js (`.next`). Không dùng static export vì ứng dụng cần API và session phía server.
 
-Không cần thêm `vercel.json` hoặc adapter riêng. Các file Prisma được khai báo trong `next.config.ts`; đường dẫn include được tính từ `apps/web`.
+`apps/web/vercel.json` đã khai báo Framework, Install Command và Build Command; các giá trị này ưu tiên hơn thiết lập tương ứng trên Dashboard. Không cần adapter riêng. Root Directory và quyền đọc file bên ngoài root vẫn phải đặt trên Dashboard. Các file Prisma được khai báo trong `next.config.ts`; đường dẫn include được tính từ `apps/web`.
+
+### Lỗi cài đặt `Cannot find package 'dotenv'`
+
+Chạy `npm install` trực tiếp từ `apps/web` có thể chỉ cài dependency của workspace, bỏ qua dependency ở gốc, nhưng vẫn chạy `postinstall` của gốc. Script `scripts/db.mjs` cần `dotenv` và Prisma CLI ở gốc nên cài đặt sẽ dừng.
+
+Không sửa bằng cách bỏ qua mọi lỗi `postinstall`, cài lại riêng `dotenv` hoặc xóa DB. Dùng Install Command trong `vercel.json` để cài đầy đủ từ gốc repository. Sau khi bản sửa lên GitHub, tạo deployment từ commit mới nhất của `main`; không redeploy lại commit cũ còn thiếu cấu hình. Nếu cần, tắt dùng build cache cho lượt triển khai đầu sau sửa.
+
+Cảnh báo npm `Unknown env config "cache-dir"` không phải nguyên nhân của lỗi thiếu `dotenv`.
 
 ## 2. Biến môi trường
 
