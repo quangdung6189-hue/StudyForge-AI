@@ -27,7 +27,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     }
     const updated = await updateOwnedDocument(user.id, id, { rawText: extraction.rawText }, doc.revision);
     await db.document.update({ where: { id }, data: { status: extraction.needsOcr ? 'needs_ocr' : 'ready' } }); previous = undefined;
-    await saveExtractionMetadata(id, updated.revision, extraction).catch(() => {});
+    await saveExtractionMetadata(id, updated.revision, extraction, user.id);
     return Response.json({ applied: true, warnings: extraction.warnings });
   } catch (error) {
     if (previous) await db.document.updateMany({ where: { id: previous.id, revision: previous.revision, status: 'extracting' }, data: { status: previous.status } }).catch(() => {});

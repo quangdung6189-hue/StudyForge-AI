@@ -28,6 +28,7 @@ model User {
   quizzes         Quiz[]
   attempts        Attempt[]
   googleAuthAttempts GoogleAuthAttempt[]
+  documentUploads DocumentUpload[]
 }
 
 // Short-lived, single-use state for Google OAuth; never stores Google passwords.
@@ -80,7 +81,45 @@ model Document {
   owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   chunks     DocumentChunk[]
   banks      QuestionBank[]
+  original   DocumentFile?
   @@index([ownerId, createdAt])
+}
+
+// Private originals are never selected by document list/detail queries.
+model DocumentFile {
+  documentId String   @id
+  content    Bytes
+  metadata   Json?
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+// Bounded, expiring uploads. No part is publicly readable or addressable by URL.
+model DocumentUpload {
+  id            String   @id @default(uuid())
+  ownerId       String
+  filename      String
+  fileType      String
+  size          Int
+  receivedBytes Int      @default(0)
+  nextPart      Int      @default(0)
+  status        String   @default("uploading")
+  documentId    String?
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  parts         DocumentUploadPart[]
+  @@index([ownerId, expiresAt])
+  @@index([expiresAt])
+}
+
+model DocumentUploadPart {
+  uploadId String
+  position Int
+  checksum String
+  content  Bytes
+  upload   DocumentUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  @@id([uploadId, position])
 }
 
 model DocumentChunk {

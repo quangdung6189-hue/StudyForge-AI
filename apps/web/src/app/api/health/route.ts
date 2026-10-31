@@ -26,24 +26,26 @@ function classify(error: unknown): string {
 }
 
 export async function GET() {
+  let phase: 'database' | 'auth' | 'uploads' = 'database';
   try {
     await readWithRetry(() => db.$queryRaw`SELECT 1`);
+    phase = 'auth';
     await readWithRetry(() => db.user.findFirst({ select: { id: true, email: true, name: true, role: true, passwordHash: true } }));
     await readWithRetry(() => db.session.findFirst({ select: { id: true, userId: true, tokenHash: true, expiresAt: true } }));
-    return NextResponse.json({ ok: true, database: 'connected', authSchema: 'available', target: targetFingerprint() }, { headers: { 'Cache-Control': 'no-store' } });
+    phase = 'uploads';
+    await readWithRetry(() => db.documentFile.findFirst({ select: { documentId: true } }));
+    await readWithRetry(() => db.documentUpload.findFirst({ select: { id: true } }));
+    await readWithRetry(() => db.documentUploadPart.findFirst({ select: { uploadId: true, position: true } }));
+    return NextResponse.json({ ok: true, database: 'connected', authSchema: 'available', uploadSchema: 'available', documentStorage: 'database', target: targetFingerprint() }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
-    const rawMessage = error instanceof Error ? error.message : '';
-    const safeMessage = rawMessage
-      .replace(/postgres(?:ql)?:\/\/[^\s"'`]+/gi, '[DATABASE_URL REDACTED]')
-      .replace(/(password\s*[:=]\s*)[^\s,;]+/gi, '$1[REDACTED]');
-    console.error('[health] database check failed', { code: (error as { code?: unknown })?.code, name: error instanceof Error ? error.name : typeof error, message: safeMessage.slice(0, 3000) });
+    const internalCode = (error as { code?: string })?.code;
+    const code = phase === 'uploads' && ['P2021', 'P2022'].includes(internalCode ?? '') ? 'UPLOAD_SCHEMA_MISSING' : classify(error);
+    console.error('[health] database check failed', { phase, code, internalCode: /^P\d{4}$/.test(internalCode ?? '') ? internalCode : undefined });
     return NextResponse.json({
       ok: false,
-      code: classify(error),
+      code,
       target: targetFingerprint(),
-      error: safeMessage.slice(0, 1000),
-      errorName: error instanceof Error ? error.name : typeof error,
-      envEngine: process.env.PRISMA_QUERY_ENGINE_LIBRARY ?? null,
+      message: code === 'UPLOAD_SCHEMA_MISSING' ? 'Database đã kết nối nhưng chưa có bảng upload. Quản trị viên cần chạy npm run db:migrate.' : 'Kiểm tra cấu hình database hoặc schema trong Runtime Logs.',
     }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   }
 }

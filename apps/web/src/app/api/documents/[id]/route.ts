@@ -23,7 +23,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     const user = await requireUser();
     const { id } = await context.params;
     const document = await getOwnedDocument(user.id, id);
-    return NextResponse.json({ ...document, analysis: analyzeDocument(document.rawText ?? ''), tools: { layoutReader: Boolean(process.env.DOCLING_BASE_URL) }, extraction: await readExtractionMetadata(id, document.revision) }, { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ ...document, analysis: analyzeDocument(document.rawText ?? ''), tools: { layoutReader: Boolean(process.env.DOCLING_BASE_URL) }, extraction: await readExtractionMetadata(id, document.revision, user.id) }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) { return documentError(error); }
 }
 

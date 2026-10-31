@@ -4,6 +4,7 @@
 // Ported to React / Next.js with real StudyForge AI document processing
 
 import React, { useState, useRef, useEffect } from 'react';
+import { DOCUMENT_MAX_BYTES, DOCUMENT_MAX_FILES, documentFileType, uploadResponseError } from '@/lib/document-upload';
 
 export type UploadedDoc = {
   id: string;
@@ -24,8 +25,8 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isOver, setIsOver] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Array<{ id: string; name: string; size: number; progress: number; status: 'uploading' | 'done' | 'fail'; message?: string }>>([]);
-  const requests = useRef(new Set<XMLHttpRequest>());
-  useEffect(() => () => requests.current.forEach(xhr => xhr.abort()), []);
+  const requests = useRef(new Set<AbortController>());
+  useEffect(() => () => requests.current.forEach(controller => controller.abort()), []);
 
   const formatSize = (bytes: number) => {
     return bytes > 1048576
@@ -49,7 +50,7 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
   const handleFiles = async (files: FileList | null) => {
     if (!files || !files.length) return;
 
-    const fileList = Array.from(files).slice(0, 10);
+    const fileList = Array.from(files).slice(0, DOCUMENT_MAX_FILES);
     const newItems = fileList.map(f => ({
       id: crypto.randomUUID(), name: f.name,
       size: f.size,
@@ -64,20 +65,32 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
       while (cursor < fileList.length) {
         const index = cursor++, file = fileList[index], id = newItems[index].id;
         const update = (change: Partial<Omit<(typeof newItems)[number], 'status'>> & { message?: string; status?: 'uploading' | 'done' | 'fail' }) => setUploadingFiles(previous => previous.map(item => item.id === id ? { ...item, ...change } : item));
-        if (file.size > 25 * 1024 * 1024 || !/\.(pdf|docx|txt|png|jpe?g)$/i.test(file.name)) { update({ status: 'fail', message: 'Chỉ nhận PDF, DOCX, TXT, PNG/JPG tối đa 25MB.' }); continue; }
+        if (!file.size || file.size > DOCUMENT_MAX_BYTES || !documentFileType(file.name)) { update({ status: 'fail', message: 'Chỉ nhận file có nội dung: PDF, DOCX, TXT, PNG/JPG tối đa 25MB.' }); continue; }
+        const controller = new AbortController(); requests.current.add(controller);
+        let uploadId: string | undefined;
+        const request = async <T,>(url: string, init: RequestInit): Promise<T> => {
+          const response = await fetch(url, { ...init, signal: controller.signal });
+          const text = await response.text();
+          if (!response.ok) throw new Error(uploadResponseError(response.status, text));
+          try { return JSON.parse(text) as T; } catch { throw new Error(uploadResponseError(response.status, text)); }
+        };
         try {
-          const data = await new Promise<{ documents: UploadedDoc[] }>((resolve, reject) => {
-            const xhr = new XMLHttpRequest(); requests.current.add(xhr); xhr.open('POST', '/api/documents/upload');
-            xhr.upload.onprogress = event => { if (event.lengthComputable) update({ progress: Math.round(event.loaded / event.total * 100), message: event.loaded === event.total ? 'Đang đọc cấu trúc / OCR nếu cần…' : undefined }); };
-            xhr.onload = () => { requests.current.delete(xhr); try { const response = JSON.parse(xhr.responseText); if (xhr.status >= 200 && xhr.status < 300) resolve(response); else reject(new Error(response.error?.message ?? 'Không đọc được tài liệu.')); } catch { reject(new Error('Phản hồi tải file chưa hợp lệ.')); } };
-            xhr.onerror = () => { requests.current.delete(xhr); reject(new Error('Mất kết nối khi tải file. Hãy thử lại.')); };
-            xhr.onabort = () => { requests.current.delete(xhr); reject(new Error('Đã dừng tải file.')); };
-            const form = new FormData(); form.append('files', file); xhr.send(form);
-          });
+          const started = await request<{ uploadId: string; partBytes: number }>('/api/documents/uploads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: file.name, size: file.size }) });
+          uploadId = started.uploadId;
+          if (!Number.isInteger(started.partBytes) || started.partBytes < 1 || started.partBytes > 1024 * 1024) throw new Error('Máy chủ trả giới hạn phần tải chưa hợp lệ.');
+          for (let offset = 0, position = 0; offset < file.size; offset += started.partBytes, position++) {
+            await request(`/api/documents/uploads/${uploadId}`, { method: 'PUT', headers: { 'Content-Type': 'application/octet-stream', 'X-Upload-Part': String(position) }, body: file.slice(offset, offset + started.partBytes) });
+            update({ progress: Math.min(95, Math.round(Math.min(file.size, offset + started.partBytes) / file.size * 95)), message: 'Đang lưu các phần tài liệu riêng tư…' });
+          }
+          update({ progress: 95, message: 'Đã nhận file · Đang đọc cấu trúc / OCR nếu cần…' });
+          const data = await request<{ documents: UploadedDoc[] }>(`/api/documents/uploads/${uploadId}/complete`, { method: 'POST' });
           const document = data.documents[0];
           update({ status: 'done', progress: 100, message: document.status === 'needs_ocr' ? 'Đã lưu · Cần đối chiếu / OCR' : document.warnings?.length ? `Đã đọc · ${document.warnings[0]}` : 'Đã đọc cấu trúc và phân loại' });
           onUploadSuccess?.(data.documents);
-        } catch (error) { update({ status: 'fail', message: (error as Error).message }); }
+        } catch (error) {
+          if (uploadId && !controller.signal.aborted) await fetch(`/api/documents/uploads/${uploadId}`, { method: 'DELETE', signal: controller.signal }).catch(() => {});
+          update({ status: 'fail', message: controller.signal.aborted ? 'Đã dừng tải file.' : error instanceof TypeError ? 'Mất kết nối khi tải file. Hãy thử lại.' : (error as Error).message });
+        } finally { requests.current.delete(controller); }
       }
     }));
     if (fileInputRef.current) fileInputRef.current.value = '';

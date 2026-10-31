@@ -78,16 +78,24 @@ Build hiện không tự chạy migrations. Không thêm migration production v�
 
 File gốc đang lưu trong ổ đĩa riêng của máy chủ cũ không tự chuyển theo DB. Giữ bản sao và chuyển sang kho lưu trữ bền vững trước khi ngừng máy chủ cũ.
 
+### Bắt buộc cho bản sửa upload lưu PostgreSQL
+
+Migration `20261101000000_private_document_uploads` **chỉ thêm** `DocumentFile`, `DocumentUpload`, `DocumentUploadPart`, index và khóa ngoại; không xóa tài khoản, tài liệu hoặc đáp án cũ. Cần áp dụng migration bằng `npm run db:migrate` vào đúng PostgreSQL đang đặt trong `DATABASE_URL` của Vercel **trước khi dùng luồng mới**. Kiểm tra đúng DB và sao lưu theo quy trình của nhà cung cấp trước khi chạy. Không dùng `db:push`, `db:seed` hay reset cho production.
+
+Sau deploy, `/api/health` phải có `database: "connected"`, `uploadSchema: "available"`, `documentStorage: "database"`. `UPLOAD_SCHEMA_MISSING` nghĩa là kết nối DB có thể đã hoạt động nhưng thiếu migration; `DATABASE_UNAVAILABLE` là lỗi kết nối khác. API không trả SQL, connection string, đường dẫn engine hoặc binary file trong JSON lỗi.
+
+File cũ trên ổ đĩa local vẫn có đường đọc tương thích khi chạy trên máy cũ. Bản sửa không tự nhập file local cũ lên PostgreSQL; tài liệu không có file gốc trên Vercel cần được tải lại hoặc chuyển riêng trước khi ngừng máy cũ.
+
 ## 4. Giới hạn phải xử lý trước khi dùng đầy đủ
 
 Gỡ cấu hình host cũ và build thành công chưa có nghĩa toàn bộ tính năng đã phù hợp Vercel:
 
-- **Lưu file:** `packages/storage` hiện chỉ có `LocalPrivateStorage`. File gốc dùng `PRIVATE_STORAGE_DIR`; metadata trích xuất dùng `.data/document-extraction`. Filesystem ứng dụng trên Vercel không phải ổ ghi bền vững. `/tmp` chỉ là vùng tạm, không bảo đảm chia sẻ giữa các instance hoặc còn sau redeploy. Không dùng `/tmp` làm kho tài liệu lâu dài. Cần chuyển file và metadata sang kho lưu trữ bền vững, giữ kiểm tra session/quyền sở hữu tại backend.
-- **Upload lớn:** Vercel Functions giới hạn request/response body 4.5 MB. Giá trị `MAX_UPLOAD_BYTES=268435456` trong cấu hình mẫu không tăng được giới hạn nền tảng. Upload lớn cần luồng tải trực tiếp vào kho riêng với quyền tạm thời do backend xác thực cấp; chưa có trong adapter hiện tại.
+- **Lưu file:** file tải mới và metadata được lưu bền vững trong PostgreSQL, cùng quyền sở hữu tài liệu. Không ghi file mới vào `PRIVATE_STORAGE_DIR` hay `/tmp`. File nhị phân làm tăng dung lượng DB và backup; theo dõi quota Neon/PostgreSQL. Khi số lượng tài liệu lớn, nên chuyển binary sang object storage riêng.
+- **Upload lớn:** giao diện chia file tối đa 25 MiB thành phần 1 MiB, nhỏ hơn giới hạn request 4.5 MB của Vercel. Backend kiểm tra thứ tự, checksum, tổng kích thước và chủ sở hữu; không tăng giới hạn nền tảng. File gốc được stream và hỗ trợ HTTP Range, không gửi một body buffered 25 MB. Multipart endpoint cũ vẫn chịu giới hạn request của Vercel.
 - **AI/OCR lâu:** kiểm tra giới hạn thời gian Functions của gói đang dùng trước khi xử lý file lớn hoặc gọi AI lâu. Có thể cần worker riêng; tăng `AI_TIMEOUT_MS` không tự tăng thời gian chạy Function.
 - **Dịch vụ local:** gateway AI hoặc Docling chạy trên máy cá nhân không tự xuất hiện trên Vercel. Cần endpoint riêng truy cập được từ máy chủ mới.
 
-Phần chuẩn bị triển khai này không thêm nhà cung cấp storage, không chuyển file, không đổi dữ liệu, không tạo tài nguyên cloud và không triển khai lên tài khoản Vercel.
+Không thêm nhà cung cấp storage hoặc tạo tài nguyên cloud. Upload dở hết hạn sau 1 giờ và được dọn khi có lần khởi tạo upload tiếp theo; upload hoàn tất xóa các phần trong cùng transaction lưu file gốc. OCR/AI thất bại không được khai báo nhầm là đọc thành công: tài liệu vẫn có thể ở trạng thái `needs_ocr` và cần duyệt.
 
 ## 5. Kiểm tra
 
@@ -99,7 +107,7 @@ npm test
 npm run build
 ```
 
-Sau deploy, kiểm tra `/api/health`, đăng nhập/đăng xuất và Google callback. Chỉ kiểm tra luồng upload/tải lại file như chức năng production hoàn chỉnh sau khi xử lý lưu trữ bền vững và giới hạn upload ở trên.
+Sau deploy và migration, kiểm tra `/api/health`, đăng nhập/đăng xuất, upload TXT/DOCX/PDF, file trên 4.5 MB và tab bản gốc. Tài khoản khác/khách phải không đọc được file. Đăng nhập Google vẫn cần domain/callback đúng.
 
 Tài liệu nền tảng:
 

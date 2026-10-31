@@ -41,7 +41,7 @@ try {
   await context.addCookies([{ name: 'studyforge_session', value: owner.token, url: base, httpOnly: true, sameSite: 'Lax' }]);
   page = await context.newPage(); page.on('pageerror', error => errors.push(error.message)); page.on('console', message => { if (message.type() === 'error' && /hydrat|didn't match/i.test(message.text())) errors.push(message.text()); });
   await page.goto(base + '/documents', { waitUntil: 'networkidle' });
-  const uploaded = page.waitForResponse(response => response.url().endsWith('/api/documents/upload') && response.request().method() === 'POST');
+  const uploaded = page.waitForResponse(response => /\/api\/documents\/uploads\/[^/]+\/complete$/.test(response.url()) && response.request().method() === 'POST');
   await page.locator('.u032 input[type=file]').setInputFiles({ name: 'Mixed-format-verification.txt', mimeType: 'text/plain', buffer: Buffer.from(source) });
   const uploadResponse = await uploaded; assert.equal(uploadResponse.status(), 200); const uploadedDoc = (await uploadResponse.json()).documents[0];
   await page.getByRole('heading', { name: 'Mixed-format-verification', exact: true }).waitFor();

@@ -16,9 +16,24 @@
   - Response: `{ authenticated: boolean, user?: { id, email, name, role } }`
 
 ## 2. Document Endpoints
+- All endpoints require an authenticated session. Upload IDs are bound to the authenticated owner; no client-supplied owner ID is accepted.
+- `POST /api/documents/uploads`:
+  - JSON: `{ filename: string, size: number }` (1 byte–25 MiB, PDF/DOCX/TXT/PNG/JPG).
+  - Response 201: `{ uploadId: string, partBytes: 1048576 }`.
+  - Expiry: 1 hour; max 10 incomplete uploads per owner; DB-backed upload rate limit.
+- `PUT /api/documents/uploads/:id`:
+  - Binary body, `Content-Type: application/octet-stream`, `X-Upload-Part: 0` (zero-based, sequential).
+  - Each part is exactly `min(partBytes, remainingBytes)`, with a server-enforced stream limit of 1 MiB. Identical retries are idempotent; changed bytes or wrong order return 409.
+  - Response: `{ receivedBytes: number, nextPart: number }`.
+- `POST /api/documents/uploads/:id/complete`:
+  - No file bytes in the request. Server validates all parts, parses the original, then atomically saves document, text chunks, private binary original and extraction metadata.
+  - Response: `{ success: true, documents: Array<{ id, title, fileType, size, status, chunkCount, warnings, counts }> }`.
+  - Successful retries return the existing document, not a duplicate. Concurrent finalization returns 409; failed parsing leaves the parts available until cancellation/expiry.
+- `DELETE /api/documents/uploads/:id`: cancels only the caller's incomplete upload, removes parts, returns 204. Processing/completed documents are not deleted.
+- `GET /api/documents/:id/file`: authenticated owner only; private streaming response, supports one HTTP byte range for PDF readers (206/416).
 - `POST /api/documents/upload`:
-  - Form-data: `files: File[]`, `title?: string`
-  - Response: `{ documents: Array<{ id, title, fileType, size, status: "uploaded" | "extracting" | "ready" }> }`
+  - Legacy multipart compatibility only: `files: File[]` (max 10). Uses the same database storage. Large requests may be rejected by Vercel before the handler; the UI uses chunked endpoints above instead.
+  - Response: `{ success: true, documents: Array<{ id, title, fileType, size, status, chunkCount, warnings, counts }> }`.
 - `GET /api/documents`:
   - Query: `page`, `limit`
   - Response: `{ items: DocumentDTO[], total: number }`

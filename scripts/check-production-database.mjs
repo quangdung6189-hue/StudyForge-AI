@@ -12,12 +12,15 @@ if (!url) {
     const migrations = await db.$queryRaw`SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL`;
     await db.user.findFirst({ select: { id: true, email: true, name: true, role: true, passwordHash: true } });
     await db.session.findFirst({ select: { id: true, userId: true, tokenHash: true, expiresAt: true } });
+    await db.documentFile.findFirst({ select: { documentId: true } });
+    await db.documentUpload.findFirst({ select: { id: true } });
+    await db.documentUploadPart.findFirst({ select: { uploadId: true, position: true } });
     const counts = {
       users: await db.user.count(),
       validSessions: await db.session.count({ where: { expiresAt: { gt: new Date() } } }),
       unfinishedExams: await db.attempt.count({ where: { status: 'started', submittedAt: null, expiresAt: { gt: new Date() } } }),
     };
-    console.log(JSON.stringify({ target, migrations: migrations.map(row => row.migration_name), authSchema: 'ok', ...counts }));
+    console.log(JSON.stringify({ target, migrations: migrations.map(row => row.migration_name), authSchema: 'ok', uploadSchema: 'ok', ...counts }));
   } catch (error) {
     console.error('DATABASE_CHECK_FAILED', error?.code ?? error?.name ?? 'UNKNOWN');
     process.exitCode = 1;
