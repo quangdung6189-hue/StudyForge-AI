@@ -154,6 +154,53 @@ try {
   await page.goto(base + '/documents', { waitUntil: 'networkidle' });
   await page.getByRole('link', { name: 'Exam-Parser-Pro JSON', exact: true }).waitFor();
   pass('Real upload/reader/Exam-Parser-Pro export preserves matching context, sorted options and essay; guests denied');
+  const writtenText = 'PHẦN III. TRẢ LỜI NGẮN\nCâu 1: Tổng bằng bao nhiêu? Trả lời: 4\nGiải thích\nCộng hai nhóm.\nPHẦN IV. TỰ LUẬN\nCâu 18: Giải thích nguyên nhân.\na) Nêu nguyên nhân.\nb) Nêu biện pháp.\nTrả lời\na) Do điều kiện ban đầu.\nb) Thực hiện hai biện pháp.\nLời giải\nDẫn chứng từ nguồn.';
+  const writtenUpload = await context.request.post(base + '/api/documents/upload', { multipart: { files: { name: 'Written-reread-fixture.txt', mimeType: 'text/plain', buffer: Buffer.from(writtenText) } } });
+  assert.equal(writtenUpload.status(), 200);
+  const writtenDoc = (await writtenUpload.json()).documents[0];
+  for (let reading = 0; reading < 2; reading++) {
+    const reread = await context.request.post(`${base}/api/documents/${writtenDoc.id}/reprocess`, { data: { engine: 'native', vision: false } });
+    assert.equal(reread.status(), 200, await reread.text()); assert.equal((await reread.json()).applied, true);
+    const rereadDetail = await (await context.request.get(`${base}/api/documents/${writtenDoc.id}`)).json();
+    assert.equal(rereadDetail.analysis.questions.length, 1); assert.equal(rereadDetail.analysis.unsupported.length, 1);
+    assert.deepEqual(rereadDetail.analysis.questions[0].documentAnswer.acceptedAnswers, ['4']);
+    assert(!rereadDetail.analysis.questions[0].stem.includes('Cộng hai nhóm'));
+    assert(!rereadDetail.analysis.unsupported[0].stem.includes('Do điều kiện'));
+    assert(rereadDetail.analysis.unsupported[0].documentAnswer.acceptedAnswers[0].includes('Do điều kiện'));
+    assert.equal(rereadDetail.extraction.revision, rereadDetail.revision);
+  }
+  const rereadExport = await (await context.request.get(`${base}/api/documents/${writtenDoc.id}/export?format=exam-pro`)).json();
+  assert.deepEqual(rereadExport.questions.map(question => question.type), ['SHORT_ANSWER', 'ESSAY']);
+  assert.equal(rereadExport.questions[0].correct_answer, '4');
+  await page.goto(base + '/documents', { waitUntil: 'networkidle' });
+  await page.getByRole('heading', { name: 'Written-reread-fixture', exact: true }).waitFor();
+  await page.getByText('Đáp án / bài làm mẫu trong tài liệu', { exact: true }).click();
+  await page.getByText('a) Do điều kiện ban đầu.\nb) Thực hiện hai biện pháp.', { exact: true }).waitFor();
+  pass('Repeated real reread keeps short answers and multiline essay solutions outside stems and visible separately');
+  const finalText = 'PHẦN III. TRẢ LỜI NGẮN\nCâu 1: Giá trị bằng bao nhiêu?\nPHẦN IV. TỰ LUẬN\nBài 1: Trình bày thuật toán.\n**ĐÁP ÁN**\nPHẦN III. TRẢ LỜI NGẮN\nCâu 1: Đáp án – 1/2 | 0,5\nLời giải - Chia đôi.\nPHẦN IV. TỰ LUẬN\nBài 1: Dùng toán tử | để ghép điều kiện.\nBước hai: đối chiếu dữ liệu.';
+  const finalUpload = await context.request.post(base + '/api/documents/upload', { multipart: { files: { name: 'Written-final-keys.txt', mimeType: 'text/plain', buffer: Buffer.from(finalText) } } });
+  assert.equal(finalUpload.status(), 200);
+  const finalDoc = (await finalUpload.json()).documents[0];
+  const finalRead = await context.request.post(`${base}/api/documents/${finalDoc.id}/reprocess`, { data: { engine: 'native' } });
+  assert.equal(finalRead.status(), 200); assert.equal((await finalRead.json()).applied, true);
+  const finalDetail = await (await context.request.get(`${base}/api/documents/${finalDoc.id}`)).json();
+  assert.equal(finalDetail.analysis.questions.length, 1); assert.equal(finalDetail.analysis.unsupported.length, 1);
+  assert.deepEqual(finalDetail.analysis.questions[0].documentAnswer.acceptedAnswers, ['1/2', '0,5']);
+  assert.deepEqual(finalDetail.analysis.unsupported[0].documentAnswer.acceptedAnswers, ['Dùng toán tử | để ghép điều kiện.\nBước hai: đối chiếu dữ liệu.']);
+  const sourceOnly = await context.request.post(base + '/api/quizzes/generate', { data: { documentId: finalDoc.id, mode: 'source_only', questionCount: 1, types: ['short'] } });
+  assert.equal(sourceOnly.status(), 200, await sourceOnly.text());
+  const original = (await sourceOnly.json()).questions[0];
+  assert.equal(original.answerOrigin, 'document'); assert.equal(original.reviewed, false);
+  assert.deepEqual(original.acceptedAnswers, ['1/2', '0,5']);
+  assert(finalText.includes(original.sourceRefs[0].quote)); assert(!/1\/2|0,5|Chia đôi|Đáp án/.test(original.stem));
+  await page.goto(base + '/documents', { waitUntil: 'networkidle' });
+  await page.getByRole('heading', { name: 'Written-final-keys', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Đọc lại file gốc', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: 'Đã đọc lại và phân loại lại tài liệu.' }).waitFor();
+  await page.getByText('Đáp án / bài làm mẫu trong tài liệu', { exact: true }).click();
+  await page.getByText('Dùng toán tử | để ghép điều kiện.\nBước hai: đối chiếu dữ liệu.', { exact: true }).waitFor();
+  assert.equal(await page.locator('.documents-question h3').filter({ hasText: /Dùng toán tử|Chia đôi/ }).count(), 0);
+  pass('Final section keys with duplicate numbers survive API/UI reread and deterministic generation with real citations');
   assert.equal(errors.length, 0, errors.join('\n')); pass('No browser runtime errors');
 } catch(error) {
   if(diagnosticPage) { await diagnosticPage.screenshot({path:path.join(directory,'failure.png'),fullPage:true}).catch(()=>{}); await writeFile(path.join(directory,'failure.txt'),await diagnosticPage.locator('body').innerText().catch(()=>'')); }

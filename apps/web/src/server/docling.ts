@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { chunkText } from '@studyforge/core';
+import { unglueExamText } from '@/lib/exam-layout';
 const Output = z.object({ status: z.string().optional(), document: z.object({ text_content: z.string().nullable().optional(), md_content: z.string().nullable().optional(), json_content: z.unknown().optional() }) });
 
 /** Optional local/self-hosted open-source layout reader. User files never go to a public demo. */
@@ -14,8 +15,9 @@ export async function readWithDocling(buffer: Buffer, fileName: string, signal?:
   const raw = await response.text(); if (raw.length > 12_000_000) throw new Error('Kết quả đọc quá lớn. Hãy tách tài liệu.');
   const data = Output.parse(JSON.parse(raw));
   if (data.status && !['success','partial_success'].includes(data.status)) throw new Error('Bộ đọc chưa xử lý xong tài liệu.');
-  const rawText = (data.document.text_content ?? data.document.md_content ?? '').normalize('NFC').replace(/\r\n?/g,'\n').trim();
+  const repaired = unglueExamText((data.document.text_content ?? data.document.md_content ?? '').replace(/^[ \n]+|[ \n]+$/g, ''));
+  const rawText = repaired.text;
   if (!rawText) throw new Error('Bộ đọc không tìm thấy chữ trong tài liệu.');
   const uncertain = data.status === 'partial_success';
-  return { rawText, chunks: chunkText(rawText,1800,250), method: 'docling' as const, needsOcr: uncertain, pages: [{ number: 1, characters: rawText.length }], warnings: [ ...(uncertain ? ['Bộ đọc bố cục chỉ xử lý được một phần; cần kiểm tra bản gốc.'] : []), 'Bộ đọc bố cục chưa cung cấp vị trí trang trong bản văn bản; hãy đối chiếu bản gốc.' ] };
+  return { rawText, chunks: chunkText(rawText,1800,250), method: 'docling' as const, needsOcr: uncertain, pages: [{ number: 1, characters: rawText.length }], warnings: [ ...repaired.notices.map(notice => notice.message), ...(uncertain ? ['Bộ đọc bố cục chỉ xử lý được một phần; cần kiểm tra bản gốc.'] : []), 'Bộ đọc bố cục chưa cung cấp vị trí trang trong bản văn bản; hãy đối chiếu bản gốc.' ] };
 }

@@ -12,7 +12,7 @@ type Options = { ocr?: boolean; forceVision?: boolean; signal?: AbortSignal; onP
 async function recognizePage(image: string, signal?: AbortSignal) {
   return gatewayFromEnv().structured({ schema: VisionSchema, name: 'DocumentPage', purpose: 'generate', signal, images: [image],
     system: 'Bạn là bộ đọc tài liệu, KHÔNG phải bộ giải đề. Chỉ chép chính xác chữ, số, công thức và cấu trúc nhìn thấy. Giữ nguyên PHẦN I/II/III, Câu 1, A/B/C/D, từng ý a/b/c/d, bảng và đáp án gốc. QUAN TRỌNG — tuyến tính hóa bố cục: nếu A/B/C/D nằm 2 cột hoặc chung hàng, tách mỗi phương án thành MỘT DÒNG riêng theo thứ tự A-B-C-D. Với bảng đáp án, giữ mỗi hàng một dòng, các ô cách nhau bằng tab. Không tự trả lời hoặc bổ sung kiến thức. Chỉ thêm [Đáp án] nếu tài liệu ghi rõ đó là đáp án (kể cả chú giải màu rõ ràng). Chỗ không đọc chắc ghi [không đọc rõ], uncertain=true. Với hình/đồ thị chưa mô tả đủ để làm câu hỏi, ghi cảnh báo; không đoán. Trả text trống nếu ảnh không có chữ.',
-    prompt: 'Đọc toàn bộ trang từ trên xuống, trái sang phải. Mỗi phương án A/B/C/D một dòng riêng, kể cả khi bản gốc xếp 2 cột. Không bỏ các cột, bảng hay các ý đúng/sai.',
+    prompt: 'Đọc toàn bộ trang từ trên xuống, trái sang phải. Mỗi phương án A/B/C/D một dòng riêng, kể cả khi bản gốc xếp 2 cột. Không bỏ các cột, bảng hay các ý đúng/sai. Với tự luận/trả lời ngắn: giữ ranh giới câu hỏi, Trả lời/Đáp án, Lời giải/Giải thích như bản gốc; nhãn thiếu dấu hai chấm vẫn giữ thành dòng riêng. Đáp án nhiều dòng, đề và phần đáp án cuối tài liệu phải tách vùng rõ, không gộp lời giải vào câu hỏi. Không tạo nhãn đáp án nếu không có bằng chứng nguồn.',
   });
 }
 

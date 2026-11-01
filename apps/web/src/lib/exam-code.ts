@@ -1,5 +1,6 @@
 import type { QuestionType } from '@studyforge/contracts';
 import { bottomUpLayout, unglueExamText } from './exam-layout';
+import { conflictingWrittenAnswers, isGlobalAnswerHeading, matchingWrittenAnswers, nextNonemptyLines, readAnswerMarker, sameWrittenAnswers, splitQuestionContent, textAnswerParts, writtenAnswerSections, writtenAnswerValues } from './exam-answer-blocks';
 
 export type ExamIssue = { code: string; message: string; line: number; severity: 'error' | 'warning' };
 export type ExamOption = { id: string; letter: string; text: string };
@@ -34,13 +35,12 @@ const headerKind = (text: string): QuestionType | undefined => {
   return /dung\s*[/–-]?\s*sai/.test(value) ? 'boolean' : /tra loi ngan/.test(value) ? 'short' : /dien tu|dien khuyet/.test(value) ? 'fill' : /chon nhieu|nhieu dap an/.test(value) ? 'multiple' : /trac nghiem|lua chon/.test(value) ? 'single' : undefined;
 };
 const qStart = /^(?:Câu hỏi|Câu|Cau|Question|Bài|Bai)\s*(\d+)\s*[.:)]\s*(.*)$|^(\d+)[.)]\s+(.+)$/iu;
-const answerStart = /^(?:Đáp án(?: đúng)?|Dap an|Đáp số|Dap so|Answer|Trả lời)\s*[:\-]\s*(.*)$/iu;
-const solutionStart = /^(?:Lời giải|Hướng dẫn(?: chi tiết| giải)?|Giải thích(?: chi tiết| ngắn)?)\s*:?\s*(.*)$/iu;
 
 export function parseExamCode(code: string): { questions: ExamQuestion[]; groups: string[]; issues: ExamIssue[] } {
   const lines = unglueExamText(code).text.split('\n');
+  const nextLines = nextNonemptyLines(lines);
   const questions: ExamQuestion[] = [], groups: string[] = [], issues: ExamIssue[] = [];
-  let group = '', kind: QuestionType | undefined, current: { start: number; number: number; lines: string[]; group: string; kind?: QuestionType; plain: boolean } | undefined;
+  let group = '', kind: QuestionType | undefined, current: { start: number; number: number; lines: string[]; group: string; kind?: QuestionType; plain: boolean; region: 'body' | 'answer' | 'explanation' } | undefined;
   let inTable = false, tableSection = '', numbers: string[] = [];
   const table = new Map<string, { answer: string; quote: string }>();
   const occurrences = new Map<string, number>();
@@ -56,25 +56,23 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
     if (explicitType) { type = explicitType[1].toLowerCase() as QuestionType; first = first.replace(explicitType[0], '').trim(); }
     const point = first.match(/\[([\d.,]+)\s*(?:điểm|đ|points?)\]/iu);
     if (point) { points = Number(point[1].replace(',', '.')); first = first.replace(point[0], '').trim(); }
-    const layout = bottomUpLayout([first, ...block.lines.slice(1)], block.group, explicitType ? type : undefined);
+    const separated = splitQuestionContent([first, ...block.lines.slice(1)]);
+    const layout = bottomUpLayout(separated.body, block.group, explicitType ? type : undefined);
     if (layout.kind && layout.kind !== 'essay' && !explicitType) type = layout.kind;
     if (layout.choiceFooter) type = layout.kind === 'multiple' ? 'multiple' : 'single';
     for (const notice of layout.notices) add(notice.code, notice.message, notice.requiresReview ? 'error' : 'warning');
     if (layout.kind === 'essay') add('ESSAY_REQUIRES_MANUAL_GRADING', 'Câu tự luận được giữ nguyên; không đưa vào chấm trắc nghiệm tự động.');
-    first = layout.lines[0] ?? first;
+    first = layout.lines[0] ?? '';
     if (!(points > 0 && points <= 100)) add('INVALID_POINTS', 'Điểm câu phải lớn hơn 0 và không quá 100.');
+    const textParts = textAnswerParts(separated);
     const stemLines = [first], options: ExamOption[] = [], statements: ExamStatement[] = [];
-    const marked: string[] = [], answers: string[] = []; let explanation = '', inSolution = false;
+    const marked: string[] = [], answers: string[] = textParts.answers.map(answer => layout.kind === 'boolean' && layout.lines.filter(line => /^[a-h][)]\s+/iu.test(line)).length === 1 && /^(?:Đúng|Sai|Đ|S)$/iu.test(answer.text) ? `a - ${answer.text}` : answer.text); const explanation = textParts.explanation;
+    answerEvidence.push(...textParts.answers.map(answer => answer.quote));
     const checkboxLetters = new Set<string>();
     const verdicts = new Map<string, boolean>();
     const optionStart = layout.choiceFooter ? layout.lines.findIndex((line, index) => index > 0 && /^\*?A[.)]\s+/.test(line)) : -1;
     for (const [bodyIndex, raw] of layout.lines.slice(1).entries()) {
       const line = normalizeLine(raw); if (!line) continue;
-      const answer = line.match(answerStart);
-      if (answer) { answers.push(answer[1]); answerEvidence.push(line); continue; }
-      const solution = line.match(solutionStart);
-      if (solution) { inSolution = true; explanation = solution[1]; continue; }
-      if (inSolution) { explanation += '\n' + raw; continue; }
       if (layout.kind === 'essay' || optionStart > 0 && bodyIndex + 1 < optionStart) { stemLines.push(raw); continue; }
       const choices = [...line.matchAll(/(?:^|\s+)(\*?)([A-Ha-h])[.)]\s+(.*?)(?=(?:\s+\*?[A-Ha-h][.)]\s+)|$)/gu)];
       const checkbox = line.match(/^\[([xX ]?)\]\s+(.+)$/);
@@ -125,7 +123,7 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
           if (verdicts.has(letter) && verdicts.get(letter) !== value) add('ANSWER_CONFLICT', `Ý ${part[1]} có đáp án mâu thuẫn.`);
           verdicts.set(letter, value);
         }
-      } else if (type === 'short' || type === 'fill') acceptedAnswers.push(...answer.split('|').map(value => value.trim()).filter(Boolean));
+      } else if (type === 'short' || type === 'fill') acceptedAnswers.push(...writtenAnswerValues(answer, layout.kind === 'essay'));
       else {
         if (!/^[A-H](?:\s*[,;|]\s*[A-H])*\.?$/i.test(answer)) { add('INVALID_ANSWER', 'Đáp án lựa chọn phải là A–H, nhiều đáp án cách nhau bằng dấu phẩy.'); continue; }
         const letters = [...answer.toUpperCase().matchAll(/[A-H]/g)].map(m => m[0]);
@@ -133,6 +131,7 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
         letters.forEach(letter => chosen.add(letter));
       }
     }
+    if ((type === 'short' || type === 'fill') && conflictingWrittenAnswers(textParts.answers, layout.kind === 'essay')) add('ANSWER_CONFLICT', 'Các dòng đáp án trả lời chưa thống nhất; cần đối chiếu bản gốc.');
     if (type === 'boolean') {
       if (new Set(statements.map(statement => statement.letter)).size !== statements.length) add('DUPLICATE_STATEMENT', 'Trùng nhãn nhận định đúng–sai.');
       for (const statement of statements) { statement.verdict = verdicts.get(statement.letter.toUpperCase()) ?? null; if (statement.verdict === null) add('MISSING_ANSWER', `Ý ${statement.letter} chưa có đáp án Đúng/Sai.`); }
@@ -153,7 +152,7 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
   // Collect answer tables first, including sections whose numbering restarts.
   for (let i = 0; i < lines.length; i++) {
     const line = normalizeLine(lines[i]);
-    if (/^(HẾT|BẢNG ĐÁP ÁN|ĐÁP ÁN NHANH)\b/iu.test(line)) { inTable = true; continue; }
+    if (isGlobalAnswerHeading(line, nextLines[i])) { inTable = true; continue; }
     if (!inTable) { if (isSectionHeader(line)) tableSection = line.replace(/^\[!b:\$|\$\]$/g, '').trim(); continue; }
     if (isSectionHeader(line) && !/bảng đáp án/iu.test(line)) { tableSection = line.replace(/^\[!b:\$|\$\]$/g, '').trim(); numbers = []; continue; }
     const row = line.match(/^Câu\s+([\d\s\t|]+)$/iu);
@@ -164,17 +163,36 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
   inTable = false;
   for (let index = 0; index < lines.length; index++) {
     const line = normalizeLine(lines[index]);
-    if (/^(HẾT|BẢNG ĐÁP ÁN|ĐÁP ÁN NHANH)\b/iu.test(line)) { flush(index); inTable = true; continue; }
+    if (isGlobalAnswerHeading(line, nextLines[index])) { flush(index); inTable = true; continue; }
     if (inTable) continue;
     if (isSectionHeader(line)) { flush(index); group = line.replace(/^\[!b:\$|\$\]$/g, '').trim(); kind = headerKind(group); if (!groups.includes(group)) groups.push(group); continue; }
     if (/^(?:Trang\s+\d+(?:\s*\/\s*\d+)?|--\s*\d+\s+of\s+\d+\s*--)$/iu.test(line)) continue;
     const match = line.match(qStart);
-    if (match && !(match[3] && current && !current.plain)) { flush(index); current = { start: index, number: Number(match[1] ?? match[3]), lines: [match[2] ?? match[4]], group, kind, plain: !!match[3] }; }
-    else if (kind === 'short' && /\?\s*$/.test(line) && !/^(?:[A-Ha-h][.)]|Đáp án|Trả lời)/iu.test(line)) {
-      flush(index); current = { start: index, number: questions.filter(question => question.group === group).length + 1, lines: [line], group, kind, plain: true };
-    } else if (current) current.lines.push(lines[index]);
+    if (match && !(match[3] && current && (!current.plain || current.region !== 'body'))) {
+      flush(index); const content = match[2] ?? match[4], part = splitQuestionContent([content]);
+      current = { start: index, number: Number(match[1] ?? match[3]), lines: [content], group, kind, plain: !!match[3], region: part.region ?? 'body' };
+    } else if (kind === 'short' && (!current || current.region === 'body' || readAnswerMarker(nextLines[index])?.kind === 'answer') && /\?\s*$/.test(line) && !/^(?:[A-Ha-h][.)]|Đáp án|Trả lời)/iu.test(line)) {
+      flush(index); current = { start: index, number: questions.filter(question => question.group === group).length + 1, lines: [line], group, kind, plain: true, region: 'body' };
+    } else if (current) {
+      current.lines.push(lines[index]); const part = splitQuestionContent([line]);
+      if (part.region && part.region !== 'body') current.region = part.region;
+    }
   }
   flush(lines.length);
+  const written = writtenAnswerSections(lines);
+  const numberCounts = new Map<number, number>();
+  for (const q of questions) numberCounts.set(q.number, (numberCounts.get(q.number) ?? 0) + 1);
+  for (const q of questions.filter(question => question.type === 'short' || question.type === 'fill' || question.classification === 'ESSAY')) {
+    const matches = matchingWrittenAnswers(written, q.number, q.group, numberCounts.get(q.number) === 1);
+    const keys = matches.filter(item => item.text.trim());
+    if (!keys.length) continue;
+    const external = textAnswerParts({ body: [], answers: keys.map(item => ({ text: item.text, quote: item.quote })), explanation: keys.map(item => item.explanation).filter(Boolean).join('\n'), answerTail: [] });
+    if (keys.some(item => /\[Cần xác minh\]/iu.test(item.quote))) q.issues.push({ code: 'REQUIRES_REVIEW', message: 'Phần đáp án cuối đề có dấu cần xác minh; đối chiếu bản gốc trước khi dùng.', severity: 'error', line: q.startLine });
+    const values = [...new Set(external.answers.flatMap(item => writtenAnswerValues(item.text, q.classification === 'ESSAY')))];
+    if (conflictingWrittenAnswers(external.answers, q.classification === 'ESSAY') || q.acceptedAnswers.length && !sameWrittenAnswers(q.acceptedAnswers, values)) q.issues.push({ code: 'ANSWER_CONFLICT', message: 'Đáp án sau câu và phần đáp án cuối đề chưa thống nhất; cần đối chiếu.', severity: 'error', line: q.startLine });
+    else if (!q.acceptedAnswers.length) { q.acceptedAnswers = values; q.answerEvidence.push(...external.answers.map(item => item.quote)); q.issues = q.issues.filter(issue => issue.code !== 'MISSING_ANSWER'); }
+    q.explanation ||= external.explanation;
+  }
   issues.push(...questions.flatMap(question => question.issues));
   return { questions, groups, issues };
 }
