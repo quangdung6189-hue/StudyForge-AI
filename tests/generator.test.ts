@@ -54,6 +54,25 @@ describe('Vietnamese mixed-format source recognition', () => {
   });
 });
 describe('AI quiz validation', () => {
+  it('uses the typed gateway for ai_analyze, preserves source structure and respects count/types', async () => {
+    const content = 'PHẦN I. TRẮC NGHIỆM\nCâu 1. Hai cộng hai bằng bao nhiêu?\nA. 3\nB. 4\nC. 5\nD. 6';
+    const output = fixture(); output.questions = [output.questions[0]];
+    output.questions[0].sourceRefs = [{ chunkId: chunk.id, quote: 'Hai cộng hai bằng bao nhiêu?' }];
+    provider.structured.mockResolvedValue(output);
+    const questions = await generateQuizQuestions({ ...params(), rawText: content, chunks: [{ ...chunk, content }], mode: 'ai_analyze', types: ['single'], questionCount: 1 });
+    expect(questions).toHaveLength(1); expect(provider.structured).toHaveBeenCalledOnce();
+    expect(questions[0].stem).toContain('Hai cộng hai');
+    expect(questions[0].options.map(option => option.text)).toEqual(['3', '4', '5', '6']);
+    expect(questions[0].answerOrigin).toBe('ai_suggested'); expect(questions[0].reviewed).toBe(false);
+  });
+  it('does not allow AI analysis to replace a verified original answer or invent document origin', async () => {
+    const content = 'PHẦN I. TRẮC NGHIỆM\nCâu 1. Hai cộng hai bằng bao nhiêu?\nA. 3\nB. 4\nC. 5\nD. 6\nĐáp án: B';
+    const output = fixture(); output.questions = [output.questions[0]];
+    output.questions[0].correctIndices = [0];
+    output.questions[0].sourceRefs = [{ chunkId: chunk.id, quote: 'Hai cộng hai bằng bao nhiêu?' }];
+    provider.structured.mockResolvedValue(output);
+    await expect(generateQuizQuestions({ ...params(), rawText: content, chunks: [{ ...chunk, content }], mode: 'ai_analyze', types: ['single'], questionCount: 1 })).rejects.toBeInstanceOf(AIGatewayError);
+  });
   it('assigns server UUIDs, detailed solutions, and AI origin with review required', async () => {
     const output = GenerationOutputSchema.parse(fixture());
     provider.structured.mockResolvedValue(output);

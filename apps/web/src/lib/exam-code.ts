@@ -1,4 +1,5 @@
 import type { QuestionType } from '@studyforge/contracts';
+import { bottomUpLayout, unglueExamText } from './exam-layout';
 
 export type ExamIssue = { code: string; message: string; line: number; severity: 'error' | 'warning' };
 export type ExamOption = { id: string; letter: string; text: string };
@@ -8,6 +9,7 @@ export type ExamQuestion = {
   options: ExamOption[]; statements: ExamStatement[]; correctOptionIds: string[]; acceptedAnswers: string[];
   points: number; explanation: string; startLine: number; endLine: number; sourceText: string;
   issues: ExamIssue[]; answerEvidence: string[];
+  classification?: 'ESSAY';
 };
 export const QUESTION_LABELS: Record<QuestionType, string> = { single: 'Trắc nghiệm một đáp án', multiple: 'Trắc nghiệm nhiều đáp án', boolean: 'Đúng – Sai', short: 'Trả lời ngắn', fill: 'Điền từ' };
 export const normalizeLine = (value: string) => (value ?? '').replace(/\u00a0/g, ' ').trim();
@@ -36,9 +38,9 @@ const answerStart = /^(?:Đáp án(?: đúng)?|Dap an|Đáp số|Dap so|Answer|T
 const solutionStart = /^(?:Lời giải|Hướng dẫn(?: chi tiết| giải)?|Giải thích(?: chi tiết| ngắn)?)\s*:?\s*(.*)$/iu;
 
 export function parseExamCode(code: string): { questions: ExamQuestion[]; groups: string[]; issues: ExamIssue[] } {
-  const lines = code.normalize('NFC').replace(/\r/g, '').split('\n');
+  const lines = unglueExamText(code).text.split('\n');
   const questions: ExamQuestion[] = [], groups: string[] = [], issues: ExamIssue[] = [];
-  let group = '', kind: QuestionType | undefined, current: { start: number; number: number; lines: string[]; group: string; kind?: QuestionType } | undefined;
+  let group = '', kind: QuestionType | undefined, current: { start: number; number: number; lines: string[]; group: string; kind?: QuestionType; plain: boolean } | undefined;
   let inTable = false, tableSection = '', numbers: string[] = [];
   const table = new Map<string, { answer: string; quote: string }>();
   const occurrences = new Map<string, number>();
@@ -54,18 +56,26 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
     if (explicitType) { type = explicitType[1].toLowerCase() as QuestionType; first = first.replace(explicitType[0], '').trim(); }
     const point = first.match(/\[([\d.,]+)\s*(?:điểm|đ|points?)\]/iu);
     if (point) { points = Number(point[1].replace(',', '.')); first = first.replace(point[0], '').trim(); }
+    const layout = bottomUpLayout([first, ...block.lines.slice(1)], block.group, explicitType ? type : undefined);
+    if (layout.kind && layout.kind !== 'essay' && !explicitType) type = layout.kind;
+    if (layout.choiceFooter) type = layout.kind === 'multiple' ? 'multiple' : 'single';
+    for (const notice of layout.notices) add(notice.code, notice.message, notice.requiresReview ? 'error' : 'warning');
+    if (layout.kind === 'essay') add('ESSAY_REQUIRES_MANUAL_GRADING', 'Câu tự luận được giữ nguyên; không đưa vào chấm trắc nghiệm tự động.');
+    first = layout.lines[0] ?? first;
     if (!(points > 0 && points <= 100)) add('INVALID_POINTS', 'Điểm câu phải lớn hơn 0 và không quá 100.');
     const stemLines = [first], options: ExamOption[] = [], statements: ExamStatement[] = [];
     const marked: string[] = [], answers: string[] = []; let explanation = '', inSolution = false;
     const checkboxLetters = new Set<string>();
     const verdicts = new Map<string, boolean>();
-    for (const raw of block.lines.slice(1)) {
+    const optionStart = layout.choiceFooter ? layout.lines.findIndex((line, index) => index > 0 && /^\*?A[.)]\s+/.test(line)) : -1;
+    for (const [bodyIndex, raw] of layout.lines.slice(1).entries()) {
       const line = normalizeLine(raw); if (!line) continue;
       const answer = line.match(answerStart);
       if (answer) { answers.push(answer[1]); answerEvidence.push(line); continue; }
       const solution = line.match(solutionStart);
       if (solution) { inSolution = true; explanation = solution[1]; continue; }
       if (inSolution) { explanation += '\n' + raw; continue; }
+      if (layout.kind === 'essay' || optionStart > 0 && bodyIndex + 1 < optionStart) { stemLines.push(raw); continue; }
       const choices = [...line.matchAll(/(?:^|\s+)(\*?)([A-Ha-h])[.)]\s+(.*?)(?=(?:\s+\*?[A-Ha-h][.)]\s+)|$)/gu)];
       const checkbox = line.match(/^\[([xX ]?)\]\s+(.+)$/);
       if (checkbox) checkboxLetters.add(String.fromCharCode(65 + options.length));
@@ -77,7 +87,7 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
           text = text.replace(/\[\s*Đáp án\s*\]|(?:^|\s)[✓✔]\s*$/giu, '').trim();
           if (entry.lower || type === 'boolean') {
             type = 'boolean';
-            const verdict = text.match(/\s+(ĐÚNG|SAI|Đ|S)\s*$/iu);
+            const verdict = text.match(/\s+(ĐÚNG|SAI|Đ|S)(?:\s+[xX✗✘])?\s*$/iu);
             let value: boolean | null = verdict ? !['s', 'sai'].includes(fold(verdict[1])) : isMarked ? true : null;
             if (isMarked && value === false) add('ANSWER_CONFLICT', `Ý ${entry.label.toLowerCase()} vừa có dấu đánh đúng vừa có đáp án Sai.`);
             if (verdict) text = text.slice(0, verdict.index).trim();
@@ -98,8 +108,8 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
     if (occurrence) add('DUPLICATE_NUMBER', `Trùng số Câu ${block.number} trong cùng phần.`, 'warning');
     type ??= options.length ? 'single' : /_{2,}|\(\.{2,}\)|\(…\)/.test(stem) ? 'fill' : 'short';
     if (checkboxLetters.size && !explicitType && !block.kind) type = 'multiple';
-    if (!options.length && !statements.length && !explicitType && !block.kind && /phân tích|chứng minh|trình bày|vẽ hình|ghép đôi|sắp xếp/iu.test(stem)) add('UNSUPPORTED', 'Câu tự luận dài/ghép đôi/sắp xếp cần chọn lại dạng, không tự coi là trả lời ngắn.');
-    if (/tự luận/iu.test(block.group) && !/trả lời ngắn/iu.test(block.group) && !explicitType) add('UNSUPPORTED', 'Phần tự luận chưa được hỗ trợ chấm tự động. Chọn lại dạng và xác minh nội dung.');
+    if (!layout.choiceFooter && !options.length && !statements.length && !explicitType && !block.kind && /phân tích|chứng minh|trình bày|vẽ hình|ghép đôi|sắp xếp/iu.test(stem)) add('UNSUPPORTED', 'Câu tự luận dài/ghép đôi/sắp xếp cần chọn lại dạng, không tự coi là trả lời ngắn.');
+    if (!layout.choiceFooter && /tự luận/iu.test(block.group) && !/trả lời ngắn/iu.test(block.group) && !explicitType) add('UNSUPPORTED', 'Phần tự luận chưa được hỗ trợ chấm tự động. Chọn lại dạng và xác minh nội dung.');
     const tableAnswer = table.get(`${block.group}:${block.number}`);
     if (tableAnswer) { answers.push(tableAnswer.answer); answerEvidence.push(tableAnswer.quote); }
     const chosen = new Set(marked); const acceptedAnswers: string[] = [];
@@ -138,7 +148,7 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
       }
     } else if (!acceptedAnswers.length) add('MISSING_ANSWER', 'Chưa có đáp án trả lời ngắn/điền từ.');
     if ((type === 'short' || type === 'fill') && (options.length || statements.length)) add('TYPE_CONFLICT', 'Dạng trả lời ngắn không được có phương án lựa chọn.');
-    questions.push({ id, globalIndex: questions.length + 1, number: block.number, stem, group: block.group, type, options, statements, correctOptionIds: options.filter(option => chosen.has(option.letter)).map(option => option.id), acceptedAnswers: [...new Set(acceptedAnswers)], points, explanation: explanation.trim(), startLine: block.start + 1, endLine: end, sourceText: lines.slice(block.start, end).join('\n'), issues: localIssues, answerEvidence });
+    questions.push({ id, globalIndex: questions.length + 1, number: block.number, stem, group: block.group, type, options, statements, correctOptionIds: options.filter(option => chosen.has(option.letter)).map(option => option.id), acceptedAnswers: [...new Set(acceptedAnswers)], points, explanation: explanation.trim(), startLine: block.start + 1, endLine: end, sourceText: lines.slice(block.start, end).join('\n'), issues: localIssues, answerEvidence, ...(layout.kind === 'essay' ? { classification: 'ESSAY' as const } : {}) });
   };
   // Collect answer tables first, including sections whose numbering restarts.
   for (let i = 0; i < lines.length; i++) {
@@ -159,8 +169,10 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
     if (isSectionHeader(line)) { flush(index); group = line.replace(/^\[!b:\$|\$\]$/g, '').trim(); kind = headerKind(group); if (!groups.includes(group)) groups.push(group); continue; }
     if (/^(?:Trang\s+\d+(?:\s*\/\s*\d+)?|--\s*\d+\s+of\s+\d+\s*--)$/iu.test(line)) continue;
     const match = line.match(qStart);
-    if (match) { flush(index); current = { start: index, number: Number(match[1] ?? match[3]), lines: [match[2] ?? match[4]], group, kind }; }
-    else if (current) current.lines.push(lines[index]);
+    if (match && !(match[3] && current && !current.plain)) { flush(index); current = { start: index, number: Number(match[1] ?? match[3]), lines: [match[2] ?? match[4]], group, kind, plain: !!match[3] }; }
+    else if (kind === 'short' && /\?\s*$/.test(line) && !/^(?:[A-Ha-h][.)]|Đáp án|Trả lời)/iu.test(line)) {
+      flush(index); current = { start: index, number: questions.filter(question => question.group === group).length + 1, lines: [line], group, kind, plain: true };
+    } else if (current) current.lines.push(lines[index]);
   }
   flush(lines.length);
   issues.push(...questions.flatMap(question => question.issues));
@@ -184,13 +196,13 @@ export function questionCode(q: ExamQuestion): string {
 }
 
 export function replaceExamQuestion(code: string, question: ExamQuestion, patch: Partial<ExamQuestion> | null): string {
-  const lines = code.replace(/\r/g, '').split('\n');
+  const lines = unglueExamText(code).text.split('\n');
   lines.splice(question.startLine - 1, question.endLine - question.startLine + 1, ...(patch ? [questionCode({ ...question, ...patch }), ''] : []));
   return lines.join('\n');
 }
 
 export function normalizeExamCode(code: string): string {
-  const parsed = parseExamCode(code); let next = code;
+  const parsed = parseExamCode(code); let next = unglueExamText(code).text;
   // Work in place, keeping preambles, section headings and unclassified text/table blocks.
   for (let index = parsed.questions.length - 1; index >= 0; index--) {
     const question = parsed.questions[index];
@@ -204,7 +216,7 @@ export function normalizeExamCode(code: string): string {
 export function allocateExamPoints(code: string, total = 10): string {
   const { questions } = parseExamCode(code); if (!questions.length) return code;
   const units = Math.round(total * 100), base = Math.floor(units / questions.length), remainder = units % questions.length;
-  const lines = code.replace(/\r/g, '').split('\n');
+  const lines = unglueExamText(code).text.split('\n');
   for (let i = 0; i < questions.length; i++) {
     const line = questions[i].startLine - 1, points = (base + (i < remainder ? 1 : 0)) / 100;
     const old = /\[[\d.,]+\s*(?:điểm|đ|points?)\]/iu;

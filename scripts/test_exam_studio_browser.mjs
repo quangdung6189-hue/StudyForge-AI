@@ -68,6 +68,12 @@ try {
   assert.equal(keyboardResponse.status(), 200);
   assert((await keyboardResponse.json()).code.includes('Nội dung đang nhập chưa rời ô'));
   pass('Uncommitted visual text stays marked unsaved and Ctrl+S commits the latest content');
+  await code.fill('PHẦN II. ĐÚNG SAI\nCâu 18: Ghép ngữ cảnh\na) Mục thứ nhất\nb) Mục thứ hai\nA. 1-b\nC. 3-c\nB. 2-a\nD. 4-d\nĐáp án: B');
+  assert.equal(await page.getByLabel('Dạng câu 1', { exact: true }).inputValue(), 'single');
+  assert((await page.getByLabel('Nội dung câu 1', { exact: true }).inputValue()).includes('a) Mục thứ nhất'));
+  assert.equal(await page.getByRole('radio', { name: 'Đáp án B câu 1', exact: true }).isChecked(), true);
+  assert.equal(await page.locator('.exam-statements').count(), 0);
+  pass('Bottom-up A-D classification keeps matching context despite a misleading true/false heading');
   const sample = 'PHẦN I. TRẮC NGHIỆM\nCâu 1: Hai cộng hai?\nA. 3\n*B. 4\nPHẦN II. ĐÚNG – SAI\nCâu 1: Xét nhận định\na) Hai cộng hai bằng bốn.\nb) Hai cộng hai bằng năm.\nĐáp án: a - Đ, b - S\nPHẦN III. TRẢ LỜI NGẮN\nCâu 1: Thủ đô Việt Nam?\nĐáp án: Hà Nội | Ha Noi';
   await page.getByRole('button', { name: 'Nhập đề', exact: true }).click();
   await page.getByRole('textbox', { name: 'Nội dung nhập bản soạn', exact: true }).fill(JSON.stringify({ format: 'studyforge.exam.v1', title: 'Đề nhập JSON', minutes: 45, code: sample }));
@@ -131,6 +137,23 @@ try {
   await page.getByRole('button', { name: 'Lưu bản nháp', exact: true }).click();
   await page.getByText('Đã lưu bản nháp. Bạn có thể tải lại trang và tiếp tục duyệt.', { exact: true }).waitFor();
   pass('Prepared questions pass real save schema and retain review requirement');
+  const proText = 'Môn: Khoa học tự nhiên\nLớp 8\nPHẦN I. TRẮC NGHIỆM\nCâu 18: Ghép các dữ kiện\na) Cột ngữ cảnh một\nb) Cột ngữ cảnh hai\nA. 1-b\nC. 3-c\nB. 2-a\nD. 4-d\nĐáp án: B\nPHẦN IV. TỰ LUẬN\nCâu 20: Trình bày nguyên nhân và biện pháp.';
+  const uploaded = await context.request.post(base + '/api/documents/upload', { multipart: { files: { name: 'Exam-Parser-Pro-fixture.txt', mimeType: 'text/plain', buffer: Buffer.from(proText) } } });
+  assert.equal(uploaded.status(), 200, await uploaded.text());
+  const proDoc = (await uploaded.json()).documents[0];
+  const exported = await context.request.get(`${base}/api/documents/${proDoc.id}/export?format=exam-pro`);
+  assert.equal(exported.status(), 200); assert.equal(exported.headers()['cache-control'], 'private, no-store');
+  const pro = await exported.json();
+  assert.equal(pro.format, 'studyforge.exam-parser-pro.v1');
+  assert.deepEqual(pro.questions.map(question => question.type), ['MULTIPLE_CHOICE', 'ESSAY']);
+  assert.equal(pro.questions[0].correct_answer, 'B');
+  assert.equal(pro.questions[0].original_number, 'Câu 18');
+  assert(pro.questions[0].question_stem.includes('a) Cột ngữ cảnh một'));
+  const guest = await browser.newContext();
+  assert.equal((await guest.request.get(`${base}/api/documents/${proDoc.id}/export?format=exam-pro`)).status(), 401); await guest.close();
+  await page.goto(base + '/documents', { waitUntil: 'networkidle' });
+  await page.getByRole('link', { name: 'Exam-Parser-Pro JSON', exact: true }).waitFor();
+  pass('Real upload/reader/Exam-Parser-Pro export preserves matching context, sorted options and essay; guests denied');
   assert.equal(errors.length, 0, errors.join('\n')); pass('No browser runtime errors');
 } catch(error) {
   if(diagnosticPage) { await diagnosticPage.screenshot({path:path.join(directory,'failure.png'),fullPage:true}).catch(()=>{}); await writeFile(path.join(directory,'failure.txt'),await diagnosticPage.locator('body').innerText().catch(()=>'')); }

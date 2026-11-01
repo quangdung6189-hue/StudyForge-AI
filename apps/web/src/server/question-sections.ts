@@ -1,4 +1,5 @@
 import type { QuestionType } from '@studyforge/contracts';
+import { bottomUpLayout, unglueExamText } from '@/lib/exam-layout';
 
 export type SourceQuestion = {
   key: string; type: QuestionType; stem: string; options: string[]; sourceText: string;
@@ -9,13 +10,14 @@ export type SourceQuestion = {
 export type UnclassifiedQuestion = { key: string; type: 'unsupported'; stem: string; reason: string; pageNumber: number };
 const fold = (text: string) => text.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replaceAll('đ', 'd');
 const compact = (text: string) => text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+const compactLayout = (text: string) => text.split('\n').map(line => line.includes('\t') ? line.replace(/^ +| +$/g, '') : line.replace(/ +/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').replace(/^[ \n]+|[ \n]+$/g, '');
 const emptyCounts = () => ({ single: 0, multiple: 0, boolean: 0, short: 0, fill: 0 });
 
 export function analyzeDocument(text: string) {
-  const pages = text.normalize('NFC').replace(/\r/g, '').split('\f').map(page => page.replace(/(^|\n)(Câu[ \t]+\d+(?:[ \t]+\d+)*[ \t]*)(\n(?:[ \t]*\n)*)(?=Đáp án[ \t]+[A-F*])/giu, '$1BẢNG ĐÁP ÁN\n$2$3'));
+  const pages = unglueExamText(text).text.split('\f').map(page => page.replace(/(^|\n)(Câu[ \t]+\d+(?:[ \t]+\d+)*[ \t]*)(\n(?:[ \t]*\n)*)(?=Đáp án[ \t]+[A-F*])/giu, '$1BẢNG ĐÁP ÁN\n$2$3'));
   const repeated = new Map<string, number>();
   for (const page of pages) for (const line of new Set(page.split('\n').map(line => line.trim()).filter(Boolean))) repeated.set(line, (repeated.get(line) ?? 0) + 1);
-  type Block = { number: string; lines: string[]; type?: QuestionType | 'unsupported'; section: string; pageNumber: number };
+  type Block = { number: string; lines: string[]; type?: QuestionType | 'unsupported'; section: string; pageNumber: number; plain: boolean };
   const blocks: Block[] = [];
   const warnings: string[] = [];
   let current: Block | undefined, section: QuestionType | 'unsupported' | undefined, sectionName = '', inAnswers = false;
@@ -53,49 +55,62 @@ export function analyzeDocument(text: string) {
       continue;
     }
     const question = line.match(/^(?:(?:Câu|Cau|Question)\s*(\d+)\s*[.:)]?|(?:(\d+)\s*[.)]))\s+(.+)$/iu);
-    if (question) {
-      finish(); current = { number: question[1] ?? question[2], lines: [question[3]], type: section, section: sectionName, pageNumber: pageIndex + 1 };
+    if (question && !(question[2] && current && !current.plain)) {
+      finish(); current = { number: question[1] ?? question[2], lines: [question[3]], type: section, section: sectionName, pageNumber: pageIndex + 1, plain: !!question[2] };
+    } else if (section === 'short' && /\?\s*$/.test(line) && !/^(?:[A-Ha-h][.)]|Đáp án|Trả lời)/iu.test(line)) {
+      finish(); current = { number: String(blocks.filter(block => block.section === sectionName).length + 1), lines: [line], type: section, section: sectionName, pageNumber: pageIndex + 1, plain: true };
     } else if (current) current.lines.push(originalLine);
   }
   finish();
   const questions: SourceQuestion[] = [], unsupported: UnclassifiedQuestion[] = [];
   for (const [index, block] of blocks.entries()) {
-    const fullText = compact(block.lines.join('\n'));
+    const fullText = compactLayout(block.lines.join('\n'));
     const answerLine = fullText.match(/(?:^|\n)[ \t]*(?:Đáp án|Dap an|Đáp số|Dap so|Trả lời|Tra loi)\s*:\s*([^\n]+)/iu);
     const solutionLine = fullText.match(/(?:^|\n)[ \t]*(?:Lời giải|Hướng dẫn giải|Giải thích(?: ngắn)?|Ghi chú)\s*:/iu);
-    const sourceText = fullText.slice(0, Math.min(answerLine?.index ?? fullText.length, solutionLine?.index ?? fullText.length)).trim();
+    const sourceText = fullText.slice(0, Math.min(answerLine?.index ?? fullText.length, solutionLine?.index ?? fullText.length)).replace(/^[ \n]+|[ \n]+$/g, '');
     const sourceExplanation = solutionLine ? fullText.slice(solutionLine.index! + solutionLine[0].length).trim() : undefined;
-    const linearized = sourceText.replace(/(?<!^)(?<!\n)\s*([B-Fb-f])[.)]\s+(?=[^\n]{1,200})/g, "\n$1) ");
-    const markers = [...linearized.matchAll(/(?:^|\n|[ \t]+)([A-Fa-f])[.)]\s+/g)];
+    const layout = bottomUpLayout(sourceText.split('\n'), block.section);
+    const linearized = layout.lines.join('\n').replace(/(?<!^)(?<!\n)\s*([B-Fb-f])[.)]\s+(?=[^\n]{1,200})/g, "\n$1) ");
+    const markers = [...linearized.matchAll(/(?:^|\n|[ \t]+)\*?([A-Fa-f])[.)]\s+/g)];
     const uppercase = markers.filter(match => match[1] === match[1].toUpperCase());
     const lower = markers.filter(match => match[1] === match[1].toLowerCase());
     const inlineBoolean = /dung\s*[/\-–]?\s*sai/.test(fold(sourceText.slice(0, 100))) || !block.type && markers.filter((match, i) => /\s(?:ĐÚNG|SAI|Đ|S)\s*$/iu.test(linearized.slice(match.index! + match[0].length, markers[i + 1]?.index ?? sourceText.length).trim())).length >= 2;
-    const type = inlineBoolean ? 'boolean' : block.type ?? (uppercase.length >= 2 ? 'single' : lower.length >= 2 ? 'boolean' : /_{2,}|\.{3,}|\(\s*\.{2,}\s*\)|\u2026/.test(linearized) ? 'fill' : /tinh|bao nhieu|neu ten|viet dap|tra loi ngan|dien vao|dien tu|hoan thanh/.test(fold(linearized)) ? 'short' : 'unsupported');
+    const type = layout.choiceFooter ? layout.kind as 'single' | 'multiple' : layout.kind === 'essay' ? 'unsupported' : inlineBoolean ? 'boolean' : block.type ?? layout.kind ?? (uppercase.length >= 2 ? 'single' : lower.length >= 2 ? 'boolean' : /_{2,}|\.{3,}|\(\s*\.{2,}\s*\)|\u2026/.test(linearized) ? 'fill' : /tinh|bao nhieu|gom may|co may|qua trinh nao|neu ten|viet dap|tra loi ngan|dien vao|dien tu|hoan thanh/.test(fold(linearized)) ? 'short' : 'unsupported');
     if (type === 'unsupported') {
       unsupported.push({ key: String(index + 1), type, stem: `Câu ${block.number}. ${sourceText}`, reason: 'Dạng tự luận, ghép đôi, sắp xếp hoặc chưa đủ dấu hiệu để chấm tự động. Cần kiểm tra trước khi chuyển dạng.', pageNumber: block.pageNumber }); continue;
     }
     const base = { number: block.number, group: `${block.section}:${block.number}:${index}`, section: block.section, pageNumber: block.pageNumber, sourceText, ...(sourceExplanation ? { sourceExplanation } : {}) };
     if (type === 'boolean' && markers.length) {
       const intro = linearized.slice(0, markers[0].index).trim();
+      const originalRows = sourceText.split('\n');
+      const verdictHeader = originalRows.findIndex(line => /(?:^|\t)\s*ĐÚNG\s*\t\s*SAI\s*$/iu.test(line));
+      const verdictRows = verdictHeader >= 0 ? originalRows.slice(verdictHeader + 1).filter(line => line.trim()) : [];
       markers.forEach((match, i) => {
-        const raw = linearized.slice(match.index! + match[0].length, markers[i + 1]?.index ?? sourceText.length).trim();
-        const key = raw.match(/\s+(ĐÚNG|SAI|Đ|S)\s*$/iu);
+        const raw = linearized.slice(match.index! + match[0].length, markers[i + 1]?.index ?? linearized.length).trim();
+        const key = raw.match(/\s+(ĐÚNG|SAI|Đ|S)(?:\s+[xX✗✘])?\s*$/iu);
         const statement = key ? raw.slice(0, key.index).trim() : raw;
         if (!statement) return;
-        const uncertain = /\[Cần xác minh\]/iu.test(fullText);
-        const answer = key && !uncertain ? { indices: [fold(key[1]) === 'sai' || fold(key[1]) === 's' ? 1 : 0], acceptedAnswers: [], quote: raw.slice(-Math.min(raw.length, 1800)) } : undefined;
+        const uncertain = /\[Cần xác minh\]/iu.test(fullText) || layout.notices.some(notice => notice.requiresReview);
+        const direct = markers.length === 1 && answerLine && /^(?:Đúng|Sai|Đ|S)$/iu.test(answerLine[1].trim()) ? answerLine[1].trim() : undefined;
+        const listed = answerLine ? [...answerLine[1].matchAll(/([a-h])\s*[-:=]\s*(Đúng|Sai|Đ|S)(?=\s*[,;]|\s*$)/giu)].filter(item => item[1].toLowerCase() === match[1].toLowerCase()) : [];
+        const listedVerdict = listed[0]?.[2];
+        const verdict = key?.[1] ?? listedVerdict ?? direct;
+        const isFalse = (value: string) => ['s', 'sai'].includes(fold(value));
+        const conflict = !!(key && listedVerdict && isFalse(key[1]) !== isFalse(listedVerdict)) || new Set(listed.map(item => isFalse(item[2]))).size > 1;
+        const originalQuote = verdictRows[i] || (key ? raw.slice(-Math.min(raw.length, 1800)) : answerLine?.[0].trim());
+        const answer = verdict && !uncertain && !conflict && originalQuote ? { indices: [fold(verdict) === 'sai' || fold(verdict) === 's' ? 1 : 0], acceptedAnswers: [], quote: originalQuote } : undefined;
         questions.push({ ...base, key: `${index + 1}${match[1]}`, type, stem: `Câu ${block.number}. ${intro}\n${match[1]}) ${statement}`, options: ['Đúng', 'Sai'], ...(answer ? { documentAnswer: answer } : {}) });
       });
       continue;
     }
     const choiceMarkers = type === 'single' || type === 'multiple' ? uppercase : [];
-    const rawOptions = choiceMarkers.map((match, i) => linearized.slice(match.index! + match[0].length, choiceMarkers[i + 1]?.index ?? sourceText.length).trim());
-    const marked = rawOptions.flatMap((option, i) => /\[\s*Đáp án\s*\*?\s*\]|[✓✔]/iu.test(option) ? [i] : []);
+    const rawOptions = choiceMarkers.map((match, i) => linearized.slice(match.index! + match[0].length, choiceMarkers[i + 1]?.index ?? linearized.length).trim());
+    const marked = rawOptions.flatMap((option, i) => /\[\s*Đáp án\s*\*?\s*\]|[✓✔]/iu.test(option) || choiceMarkers[i]?.[0].includes('*') ? [i] : []);
     const localWarnings: string[] = [];
     if (rawOptions.some(option => /\[\s*Đáp án\s*\*/iu.test(option)) || /chua thong nhat|can doi chieu|tham khao/.test(fold(sourceExplanation ?? ''))) localWarnings.push('Đáp án gốc có ghi chú hoặc chưa thống nhất; cần đối chiếu giáo viên.');
     // Footnotes are not answer options. Preserve their uncertainty as a warning.
     const options = rawOptions.map(option => option.split(/\n\s*\*\s+/)[0].replace(/\[\s*Đáp án\s*\*?\s*\]|[✓✔]/giu, '').trim());
-    const stem = `Câu ${block.number}. ${sourceText.slice(0, choiceMarkers[0]?.index ?? sourceText.length).trim()}`;
+    const stem = `Câu ${block.number}. ${linearized.slice(0, choiceMarkers[0]?.index ?? linearized.length).trim()}`;
     let documentAnswer: SourceQuestion['documentAnswer'];
     const tableAnswer = type === 'single' || type === 'multiple' ? answerTables.get(block.section)?.get(block.number) : undefined;
     const answer = answerLine?.[1].trim() ?? tableAnswer?.answer;
@@ -109,6 +124,7 @@ export function analyzeDocument(text: string) {
       if (verdict) documentAnswer = { indices: [verdict === 'sai' || verdict === 's' ? 1 : 0], acceptedAnswers: [], quote: answerLine![0].trim() };
     }
     if (/\[Cần xác minh\]/iu.test(fullText)) { documentAnswer = undefined; localWarnings.push('Định dạng đáp án chưa rõ; cần giáo viên đối chiếu bản gốc, không tự điền.'); }
+    if (layout.notices.some(notice => notice.requiresReview)) { documentAnswer = undefined; localWarnings.push(...layout.notices.map(notice => notice.message)); }
     if (marked.length && answer && (type === 'single' || type === 'multiple') && /^[A-F](?:\s*[,;]\s*[A-F])*[.]?$/i.test(answer)) {
       const explicit = [...answer.toUpperCase().matchAll(/[A-F]/g)].map(match => match[0].charCodeAt(0) - 65);
       if ([...marked].sort().join() !== [...explicit].sort().join()) { documentAnswer = undefined; localWarnings.push('Dấu tại phương án và dòng/bảng đáp án mâu thuẫn; cần xác minh.'); }

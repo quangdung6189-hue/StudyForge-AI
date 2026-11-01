@@ -5,6 +5,8 @@ description: Develop and verify StudyForge exam import and structured editing fo
 
 # Exam document reader protocol
 
+For bottom-up multi-subject classification, glued boundaries, ambiguous OCR recovery and the four-group JSON format, also read `skills/exam-parser-pro/SKILL.md`. Its rules refine this protocol; neither permits invented answers, discarded essay content or silent OCR number changes.
+
 This skill guides development and verification. It does not replace the website's runtime parser, install an OCR service or grant access to private files.
 
 ## Required workflow

@@ -4,6 +4,7 @@ import { chunkText } from '@studyforge/core';
 import { gatewayFromEnv } from '@studyforge/ai';
 import { documentHtmlToText } from './document-html';
 import { readDocxAnswerMarks, validateDocxArchive, type AnswerMarkEvidence } from './document-answer-marks';
+import { unglueExamText } from '@/lib/exam-layout';
 
 export class ExtractorError extends Error { constructor(message: string) { super(message); this.name = 'ExtractorError'; } }
 const VisionSchema = z.strictObject({ text: z.string().max(60000), uncertain: z.boolean(), warnings: z.array(z.string().max(500)).max(20) });
@@ -85,8 +86,10 @@ export async function extractDocumentContent(buffer: Buffer, fileType: string, f
     else { try { text = new TextDecoder('utf-8', { fatal: true }).decode(buffer); } catch { throw new ExtractorError('TXT không phải UTF-8 hoặc UTF-16. Hãy lưu lại bằng UTF-8 để giữ đúng dấu tiếng Việt.'); } }
     pages = text.split('\f');
   } else throw new ExtractorError('Định dạng tài liệu chưa được hỗ trợ.');
-  pages = pages.map(text => text.normalize('NFC').replace(/\r\n?/g, '\n').replace(/[\u200B\uFEFF]/g, '').trim());
-  const rawText = pages.join('\f');
+  // Preserve trailing/leading empty table cells represented by tabs, including the final row.
+  pages = pages.map(text => text.normalize('NFC').replace(/\r\n?/g, '\n').replace(/[\u200B\uFEFF]/g, '').replace(/^[ \n]+|[ \n]+$/g, ''));
+  const repaired = unglueExamText(pages.join('\f'));
+  const rawText = repaired.text; warnings.push(...repaired.notices.map(notice => notice.message));
   if (!rawText.trim()) needsOcr = true;
   const chunks = chunkText(rawText, 1800, 250);
   return { rawText, chunks, pages: pages.map((text, i) => ({ number: i + 1, characters: text.length })), method, needsOcr, warnings, answerMarks };

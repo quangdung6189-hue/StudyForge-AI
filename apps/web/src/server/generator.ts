@@ -35,14 +35,9 @@ export async function generateQuizQuestions(params: Params): Promise<FullQuestio
   if (params.mode === 'ai_analyze') {
     params.signal?.throwIfAborted();
     if (!params.chunks.length) throw new AIGatewayError('INVALID_OUTPUT', 'Văn bản chưa đọc được. Hãy đọc lại tài liệu.');
-    const detected = detectSourceQuestions(params.rawText ?? params.chunks.map(c => c.content).join('\n'));
-    const fullText = params.rawText ?? params.chunks.map(c => c.content).join('\n');
-    params.onProgress?.({ completed: 0, total: detected.length, cached: 0, stage: 'preparing' });
-    const analyzed = await analyzeAndSolveQuestions(detected, fullText, params);
-    params.onProgress?.({ completed: analyzed.length, total: analyzed.length, cached: 0, stage: 'complete' });
-    try { QuestionListSchema.parse(analyzed); assertCitations(analyzed, params.chunks); }
-    catch { throw new AIGatewayError('INVALID_OUTPUT', 'Kết quả phân tích không đạt kiểm tra. Hãy thử lại.'); }
-    return analyzed;
+    // One typed gateway path: preserve detected stems/options and verified keys, solve only
+    // missing answers/solutions, validate citations and label suggestions server-side.
+    return generateQuizQuestions({ ...params, mode: 'extract_existing' });
   }
   if (!params.chunks.length || params.chunks.some(chunk => chunk.content.length > 160_000)) throw new AIGatewayError('INVALID_OUTPUT', 'Văn bản chưa đọc được hoặc chưa được chia đoạn. Hãy đọc lại tài liệu.');
   const source = params.mode === 'extract_existing' ? selectSourceQuestions(detectSourceQuestions(params.rawText ?? params.chunks.map(c => c.content).join('\n')), params.types, params.questionCount) : [];
@@ -175,95 +170,4 @@ sourceRefs phải chứa chunkId có thật và quote NGUYÊN VĂN liên tục t
     if (new Set(stems).size !== stems.length) throw new Error('Duplicate stems');
   } catch { throw new AIGatewayError('INVALID_OUTPUT', 'Câu hỏi hoặc trích dẫn của AI chưa đạt kiểm tra. Hãy thử lại hoặc kiểm tra nội dung tài liệu.'); }
   return ordered;
-}
-/** Mode 1: AI analyzes detected questions, evaluates types, and auto-solves missing answers. */
-async function analyzeAndSolveQuestions(
-  detected: SourceQuestion[],
-  fullText: string,
-  params: Params
-): Promise<FullQuestionDTO[]> {
-  const chunks = params.chunks;
-  const result: FullQuestionDTO[] = [];
-  const batchSize = 5;
-
-  for (let start = 0; start < detected.length; start += batchSize) {
-    params.signal?.throwIfAborted();
-    const batch = detected.slice(start, start + batchSize);
-    params.onProgress?.({ completed: start, total: detected.length, cached: 0, stage: 'generating' });
-
-    const AnalyzeResponseSchema = z.strictObject({
-      index: z.number().int().min(0).max(99),
-      type: QuestionTypeSchema,
-      stem: z.string().min(1),
-      options: z.array(z.string()).optional(),
-      correctIndices: z.array(z.number().int()).optional(),
-      acceptedAnswers: z.array(z.string()).optional(),
-      answerOrigin: z.enum(['document', 'ai_suggested']).optional(),
-      explanation: z.string().optional(),
-      sourceRefs: z.array(z.strictObject({ chunkId: z.string(), quote: z.string() })).optional(),
-      confidence: z.number().optional(),
-      needsReview: z.boolean().optional(),
-    });
-    const batchResult = await (gatewayFromEnv() as any).generate({
-      schema: AnalyzeResponseSchema,
-      name: 'AnalyzeQuizQuestions',
-      purpose: 'generate',
-      system: `Bạn là chuyên gia phân loại và giải đáp án câu hỏi từ tài liệu học tập.
-Nhiệm vụ: Dựa trên văn bản tài liệu, phân loại từng câu hỏi đã phát hiện vào đúng dạng (single/multiple/boolean/fill/short).
-Nếu câu hỏi đã có đáp án trong tài liệu (đánh dấu ✓, A/B/C/D, đáp án đính kèm) thì giữ đáp án đó và nêu nguồn trích dẫn.
-Nếu câu hỏi KHÔNG có đáp án thì tự giải đáp án bằng AI dựa trên kiến thức từ tài liệu, đánh dấu answerOrigin: 'ai_suggested'.
-Trả về JSON mảng các đối tượng: { index, type, stem, options, correctIndices, acceptedAnswers, answerOrigin, explanation, sourceRefs, confidence, needsReview }.
-sourceRefs phải có chunkId và quote nguyên văn từ tài liệu. Confidence là số từ 0-100. needsReview=true nếu không chắc chắn.`,
-      prompt: `Tài liệu: ${params.documentTitle}
-Văn bản tham khảo (dùng để trích dẫn): ${fullText.slice(0, 12000)}
-Danh sách câu hỏi cần phân loại và giải:
-${batch.map((q, i) => `${i}. [${q.type}] ${q.stem}\n   Phương án: ${q.options.join(' | ')}\n   Đáp án tài liệu (nếu có): ${q.documentAnswer ? JSON.stringify(q.documentAnswer) : 'Chưa có'}\n   Trích dẫn gợi ý: ${q.sourceText?.slice(0, 300) ?? 'Không'}`).join('\n\n')}`,
-      signal: params.signal,
-      timeoutMs: 120000,
-    });
-
-    const analyzed = Array.isArray(batchResult) ? batchResult : batchResult.questions ?? [];
-    for (const item of analyzed as any[]) {
-      const idx = Number(item.index);
-      const source = detected[idx];
-      if (!source) continue;
-      const options = ((item.options ?? source.options) as string[]).map(text => ({ id: randomUUID(), text }));
-      let correctOptionIds: string[];
-      let acceptedAnswers: string[];
-      let answerOrigin: 'document' | 'teacher' | 'ai_suggested' = item.answerOrigin === 'document' ? 'document' : 'ai_suggested';
-
-      if (item.type === 'boolean') {
-        correctOptionIds = [options[item.correctIndices?.[0] ?? 0].id];
-        acceptedAnswers = [];
-      } else if (item.type === 'fill' || item.type === 'short') {
-        correctOptionIds = [];
-        acceptedAnswers = item.acceptedAnswers ?? source.documentAnswer?.acceptedAnswers ?? [];
-      } else {
-        correctOptionIds = (item.correctIndices ?? []).map((i: number) => options[i]?.id).filter(Boolean);
-        acceptedAnswers = item.acceptedAnswers ?? [];
-      }
-
-      const chunkId = chunks.find(c => c.content.includes(item.sourceRefs?.[0]?.quote ?? source.sourceText ?? ''))?.id ?? chunks[0]?.id;
-      const quote = item.sourceRefs?.[0]?.quote ?? source.sourceText?.slice(0, 200) ?? '';
-
-      result.push({
-        id: randomUUID(),
-        type: item.type,
-        stem: item.stem ?? source.stem,
-        options,
-        correctOptionIds,
-        acceptedAnswers,
-        explanation: item.explanation ?? 'AI đã phân tích và giải đáp án dựa trên tài liệu.',
-        points: 1,
-        difficulty: 'comprehension',
-        topic: params.documentTitle.slice(0, 200),
-        answerOrigin,
-        reviewed: false,
-        sourceRefs: chunkId && quote ? [{ chunkId, quote }] : [],
-      });
-    }
-  }
-
-  if (!result.length) throw new AIGatewayError('INVALID_OUTPUT', 'Không phân tích được câu hỏi nào từ tài liệu.');
-  return result;
 }

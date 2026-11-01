@@ -28,7 +28,8 @@ export function documentHtmlToText(html: string): { text: string; hasImages: boo
       }).join('\n') + '\n';
     }
     if (tag === 'tr') {
-      const cells = Array.from(node.childNodes).filter(child => child.nodeType === 1).map(child => walk(child, depth).trim()).filter(Boolean);
+      // Empty verdict cells retain their column positions: false-only X must not shift to true.
+      const cells = Array.from(node.childNodes).filter(child => child.nodeType === 1 && /^(td|th)$/i.test((child as Element).tagName)).map(child => walk(child, depth).trim());
       const opt = cells.filter(c => /^[A-Fa-f][.)]\s+/u.test(c));
       const joiner = cells.length >= 2 && opt.length >= 2 ? '\n' : '\t';
       return '\n' + cells.join(joiner) + '\n';
@@ -37,7 +38,7 @@ export function documentHtmlToText(html: string): { text: string; hasImages: boo
     const value = children();
     return /^(p|h[1-6]|div|table|blockquote)$/.test(tag ?? '') ? `\n${value}\n` : value;
   }
-  const raw = walk(document).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  const raw = walk(document).replace(/ +\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/^[ \n]+|[ \n]+$/g, '');
   const lines = raw.split('\n');
   const out: string[] = [];
   for (const ln of lines) {

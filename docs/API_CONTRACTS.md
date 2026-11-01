@@ -42,6 +42,10 @@
 - `PATCH /api/documents/:id`:
   - Request: `{ title?: string, rawText?: string }`
   - Response: `{ success: true, document: DocumentDTO }`
+- `GET /api/documents/:id/export?format=exam-pro`:
+  - Authenticated owner only. Private/no-store JSON attachment using `studyforge.exam-parser-pro.v1`.
+  - Includes `exam_metadata`, four-category `questions`, source numbering/text, diagnostics and review flags. Unknown answer/subject/grade stays null. Does not invoke AI, modify stored documents or publish essays.
+  - Existing `format=json|csv|md` exports remain available.
 
 ## 3. Quiz Generation & Management
 - `GET /api/exam-drafts`: owner-scoped recent structured editor drafts (max 20), never another user's content.

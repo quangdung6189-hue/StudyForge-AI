@@ -35,5 +35,6 @@ StudyForge AI transforms PDFs, DOCX, TXT, and scanned study materials into struc
 
 ## Exam Import & Editor Protocol
 - For exam parsing, document formatting evidence, structured editing or answer provenance changes, read `skills/exam-document-reader/SKILL.md` first.
+- For bottom-up classification, OCR layout repair and four-category exam JSON, also read `skills/exam-parser-pro/SKILL.md`; preserve original numbering/numbers and keep AI suggestions separate from source answers.
 - Unknown/contradictory marks require verification. Never default to choice A, assume an unmarked true/false statement is false, or silently clear diagnostics during visual edits.
 - Editor drafts may be incomplete; publication still requires validated answer keys, citations and teacher review. Verify on an isolated database; no production reset or seed.
