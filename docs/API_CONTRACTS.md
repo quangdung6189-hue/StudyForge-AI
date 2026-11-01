@@ -44,6 +44,11 @@
   - Response: `{ success: true, document: DocumentDTO }`
 
 ## 3. Quiz Generation & Management
+- `GET /api/exam-drafts`: owner-scoped recent structured editor drafts (max 20), never another user's content.
+- `POST /api/exam-drafts`: `{ id: UUID, code: string <= 250000, title, minutes: 1..1440, revision, sourceDocumentId: UUID | null }`. Incomplete questions are allowed. Response contains the saved revision and timestamp. Stale different content returns 409; identical lost-response retries reuse saved content.
+- `GET /api/exam-drafts/:id`: restores the authenticated owner's code/settings/revision. No guest bypass.
+- `POST /api/exam-drafts/:id/prepare`: `{ revision }`. Rejects missing/conflicting answer keys and unsupported structures; creates an immutable source snapshot, then returns `{ documentId, questions }` with actual citations and `reviewed: false`. True/false substatements use the existing two-option grading contract.
+- `POST /api/code-exam`: legacy adapter now uses the same parser and validated draft workflow. It does not publish or select choice A when a key is missing. Valid requests save an unpublished quiz requiring review.
 - `POST /api/quizzes/generate`:
   - Request: `{ documentId: string, mode: "extract_existing" | "ai_generate", questionCount: number, types: ("single"|"multiple"|"boolean"|"fill")[], difficultyDistribution?: { recognition: number, comprehension: number, application: number } }`
   - Response: `{ draftId: string, status: "completed" | "processing", questions: QuestionDraftDTO[] }`

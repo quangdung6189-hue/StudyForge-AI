@@ -15,6 +15,7 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
     if (!input.success) return Response.json({ error: { code: 'INVALID_INPUT', message: 'Chế độ đọc chưa hợp lệ.' } }, { status: 400 });
     const doc = await db.document.findFirst({ where: { id, ownerId: user.id } });
     if (!doc) return Response.json({ error: { code: 'NOT_FOUND', message: 'Không tìm thấy tài liệu.' } }, { status: 404 });
+    if (doc.storageKey.startsWith('editor:') || doc.storageKey.startsWith('editor-source:')) return Response.json({ error: { code: 'CONFLICT', message: 'Nguồn đề biên soạn không hỗ trợ đọc lại file. Hãy mở trình biên soạn.' } }, { status: 409 });
     const lock = await db.document.updateMany({ where: { id, ownerId: user.id, OR: [{ status: { not: 'extracting' } }, { updatedAt: { lt: new Date(Date.now() - 600_000) } }] }, data: { status: 'extracting' } });
     if (!lock.count) return Response.json({ error: { code: 'BUSY', message: 'Tài liệu đang được đọc. Hãy chờ hoàn tất.' } }, { status: 409 });
     previous = { id, status: doc.status === 'extracting' ? 'needs_ocr' : doc.status, revision: doc.revision };

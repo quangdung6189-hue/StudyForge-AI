@@ -82,7 +82,8 @@ export function analyzeDocument(text: string) {
         const key = raw.match(/\s+(ĐÚNG|SAI|Đ|S)\s*$/iu);
         const statement = key ? raw.slice(0, key.index).trim() : raw;
         if (!statement) return;
-        const answer = key ? { indices: [fold(key[1]) === 'sai' || fold(key[1]) === 's' ? 1 : 0], acceptedAnswers: [], quote: raw.slice(-Math.min(raw.length, 1800)) } : undefined;
+        const uncertain = /\[Cần xác minh\]/iu.test(fullText);
+        const answer = key && !uncertain ? { indices: [fold(key[1]) === 'sai' || fold(key[1]) === 's' ? 1 : 0], acceptedAnswers: [], quote: raw.slice(-Math.min(raw.length, 1800)) } : undefined;
         questions.push({ ...base, key: `${index + 1}${match[1]}`, type, stem: `Câu ${block.number}. ${intro}\n${match[1]}) ${statement}`, options: ['Đúng', 'Sai'], ...(answer ? { documentAnswer: answer } : {}) });
       });
       continue;
@@ -106,6 +107,11 @@ export function analyzeDocument(text: string) {
     if (type === 'boolean') {
       const verdict = answer && /^(?:Đúng|Sai|Đ|S)$/iu.test(answer) ? fold(answer) : undefined;
       if (verdict) documentAnswer = { indices: [verdict === 'sai' || verdict === 's' ? 1 : 0], acceptedAnswers: [], quote: answerLine![0].trim() };
+    }
+    if (/\[Cần xác minh\]/iu.test(fullText)) { documentAnswer = undefined; localWarnings.push('Định dạng đáp án chưa rõ; cần giáo viên đối chiếu bản gốc, không tự điền.'); }
+    if (marked.length && answer && (type === 'single' || type === 'multiple') && /^[A-F](?:\s*[,;]\s*[A-F])*[.]?$/i.test(answer)) {
+      const explicit = [...answer.toUpperCase().matchAll(/[A-F]/g)].map(match => match[0].charCodeAt(0) - 65);
+      if ([...marked].sort().join() !== [...explicit].sort().join()) { documentAnswer = undefined; localWarnings.push('Dấu tại phương án và dòng/bảng đáp án mâu thuẫn; cần xác minh.'); }
     }
     const finalOptions = type === 'boolean' ? ['Đúng', 'Sai'] : options;
     if ((type === 'single' || type === 'multiple') && finalOptions.length < 2) { warnings.push(`Câu ${block.number}: chưa đọc đủ phương án; cần kiểm tra bố cục.`); continue; }

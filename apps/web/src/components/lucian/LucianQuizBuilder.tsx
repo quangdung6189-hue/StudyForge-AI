@@ -58,8 +58,8 @@ async function api<T>(url: string, body?: unknown, signal?: AbortSignal): Promis
 }
 
 const modes = [
-  ['ai_analyze', '1. AI phân tích & tự động giải', 'AI đọc tài liệu, phân tích dạng câu hỏi và tự động suy luận giải đáp án nếu tài liệu chưa có sẵn.', '🧠'],
-  ['code_editor', '2. Soạn đề bằng mã · Trực quan (kiểu Azota)', 'Nhập hoặc dán mã đề text/code, xem trước 2 cột song song và click chuột gắn đáp án trực tiếp.', '⚡'],
+  ['ai_analyze', 'Phân tích đề bằng AI', 'AI đọc tài liệu, phân tích dạng câu hỏi và tự động suy luận giải đáp án nếu tài liệu chưa có sẵn.', '🧠'],
+  ['code_editor', 'Trình biên soạn đề thi', 'Nhập tài liệu hoặc văn bản cấu trúc, chỉnh trực quan và kiểm chứng đáp án trước khi xuất bản.', '▤'],
 ] as const;
 
 function ModeCards({ value, onChange }: { value: string; onChange: (value: 'ai_analyze' | 'code_editor') => void }) {
@@ -85,12 +85,13 @@ function ModeCards({ value, onChange }: { value: string; onChange: (value: 'ai_a
 
 export function LucianQuizBuilder() {
   const searchParams = useSearchParams(), initialId = searchParams.get('docId') ?? '', initialQuiz = searchParams.get('quizId') ?? '';
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(searchParams.get('draftId') ? 1 : 0);
   const [documents, setDocuments] = useState<DocumentDTO[]>([]);
+  const [examDrafts, setExamDrafts] = useState<{ id: string; title: string; updatedAt: string }[]>([]);
   const [documentId, setDocumentId] = useState(initialId);
   const [docRawText, setDocRawText] = useState('');
   const [title, setTitle] = useState('');
-  const [mode, setMode] = useState<'ai_analyze' | 'code_editor'>('ai_analyze');
+  const [mode, setMode] = useState<'ai_analyze' | 'code_editor'>(searchParams.get('draftId') ? 'code_editor' : 'ai_analyze');
   const [types, setTypes] = useState<QuestionType[]>(['single', 'boolean', 'short']);
   const [count, setCount] = useState(6);
   const [minutes, setMinutes] = useState(15);
@@ -120,6 +121,11 @@ export function LucianQuizBuilder() {
   const firstRender = useRef(true);
 
   useEffect(() => () => generationAbort.current?.abort(), []);
+  useEffect(() => {
+    const abort = new AbortController();
+    api<{ items: typeof examDrafts }>('/api/exam-drafts', undefined, abort.signal).then(result => setExamDrafts(result.items)).catch(() => {});
+    return () => abort.abort();
+  }, []);
 
   useEffect(() => {
     if (!initialQuiz || initialQuiz === loadedQuiz.current) return;
@@ -145,7 +151,7 @@ export function LucianQuizBuilder() {
     api<{ items: DocumentDTO[] }>('/api/documents?limit=100', undefined, abort.signal).then(data => {
       setDocuments(data.items);
       const selected = data.items.find(d => d.id === initialId) ?? data.items.find(d => d.status === 'ready');
-      if (!initialQuiz) { setDocumentId(selected?.id ?? ''); setTitle(selected ? `Bài kiểm tra: ${selected.title}`.slice(0, 200) : ''); }
+      if (!initialQuiz && !searchParams.get('draftId')) { setDocumentId(selected?.id ?? ''); setTitle(selected ? `Bài kiểm tra: ${selected.title}`.slice(0, 200) : ''); }
     }).catch(err => { if (!abort.signal.aborted) setError(err.message); }).finally(() => { if (!abort.signal.aborted) setDocsLoading(false); });
     return () => abort.abort();
   }, [initialId, initialQuiz]);
@@ -236,8 +242,9 @@ export function LucianQuizBuilder() {
 
         {/* BƯỚC 0: CHỌN TÀI LIỆU GỐC HOẶC SOẠN TRỰC TIẾP */}
         {step === 0 && <>
-          <p>Chọn tài liệu từ thư viện hoặc chuyển ngay sang chế độ soạn đề trực tiếp bằng mã.</p>
-          {docsLoading ? <p role="status">Đang tải thư viện…</p> : documents.length === 0 ? !error && <div className="studio-empty"><b>Thư viện của bạn chưa có tài liệu</b><p>Bạn có thể tải tài liệu lên hoặc soạn trực tiếp bằng mã đề.</p><div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 12 }}><Link href="/documents" className="sf-btn sf-btn-primary sf-btn-sm">Tải tài liệu lên →</Link><button type="button" className="code-studio-btn code-studio-btn-primary" onClick={() => { setMode('code_editor'); move(1); }}>⚡ Soạn đề trực tiếp bằng mã</button></div></div> : <>
+          <p>Chọn tài liệu từ thư viện, tiếp tục bản nháp hoặc mở trình biên soạn mới.</p>
+          {examDrafts.length > 0 && <div className="studio-analysis"><b>Bản soạn gần đây</b><div className="studio-draft-list">{examDrafts.slice(0, 5).map(draft => <a key={draft.id} href={`/quizzes/create?draftId=${draft.id}`}>{draft.title}<small>{new Date(draft.updatedAt).toLocaleString('vi')}</small><span>Tiếp tục →</span></a>)}</div></div>}
+          {docsLoading ? <p role="status">Đang tải thư viện…</p> : documents.length === 0 ? !error && <div className="studio-empty"><b>Thư viện của bạn chưa có tài liệu</b><p>Bạn có thể tải tài liệu lên hoặc biên soạn trực tiếp.</p><div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 12 }}><Link href="/documents" className="sf-btn sf-btn-primary sf-btn-sm">Tải tài liệu lên →</Link><button type="button" className="code-studio-btn code-studio-btn-primary" onClick={() => { setMode('code_editor'); move(1); }}>Mở trình biên soạn đề thi</button></div></div> : <>
             <label className="studio-label" htmlFor="source-document">Tài liệu trong thư viện</label>
             <select id="source-document" className="studio-input" value={documentId} onChange={event => { const id = event.target.value; setDocumentId(id); setTitle(`Bài kiểm tra: ${documents.find(d => d.id === id)?.title ?? ''}`.slice(0, 200)); setError(''); }}>
               <option value="" disabled>Chọn tài liệu</option>
@@ -251,7 +258,7 @@ export function LucianQuizBuilder() {
           </>}
           <div className="u042-foot" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <button type="button" className="code-studio-btn" onClick={() => { setMode('code_editor'); move(1); }}>
-              ⚡ Soạn đề bằng mã (không cần tài liệu) →
+              Mở trình biên soạn · Không cần tài liệu →
             </button>
             <button className="u042-b u042-next" disabled={!ready || analysisLoading || docsLoading} onClick={() => move(1)}>Tiếp tục cấu hình →</button>
           </div>
@@ -339,11 +346,13 @@ export function LucianQuizBuilder() {
               <CodeExamStudio
                 documentText={docRawText}
                 documentTitle={documents.find(d => d.id === documentId)?.title}
+                sourceDocumentId={documentId || undefined}
                 title={title}
                 setTitle={setTitle}
                 minutes={minutes}
                 setMinutes={setMinutes}
-                onApply={(appliedQuestions) => {
+                onApply={(appliedQuestions, draftDocumentId) => {
+                  setDocumentId(draftDocumentId);
                   setQuestions(appliedQuestions);
                   setSavedId('');
                   requestId.current = crypto.randomUUID();

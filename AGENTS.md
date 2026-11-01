@@ -32,3 +32,8 @@ StudyForge AI transforms PDFs, DOCX, TXT, and scanned study materials into struc
 4. **Answer Ground Truth**: Differentiate original document answers vs AI-suggested answers (`answerOrigin: "document" | "teacher" | "ai_suggested"`). Require `sourceRefs` with textual citations.
 5. **Exam Confidentiality**: During active exams, correct answers, explanations, and secret keys MUST NOT be returned in JSON/HTML/RSC payloads.
 6. **Task Execution Lifecycle**: `todo` -> `ready` -> `running` -> `review` -> `done`.
+
+## Exam Import & Editor Protocol
+- For exam parsing, document formatting evidence, structured editing or answer provenance changes, read `skills/exam-document-reader/SKILL.md` first.
+- Unknown/contradictory marks require verification. Never default to choice A, assume an unmarked true/false statement is false, or silently clear diagnostics during visual edits.
+- Editor drafts may be incomplete; publication still requires validated answer keys, citations and teacher review. Verify on an isolated database; no production reset or seed.

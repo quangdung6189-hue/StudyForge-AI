@@ -84,7 +84,7 @@ export async function completeDocumentUpload(ownerId: string, id: string, signal
         id, ownerId, title: upload.filename.replace(/\.[^/.]+$/, ''), fileType: upload.fileType, size: upload.size,
         storageKey: `db:${id}`, rawText: extraction.rawText, status: extraction.needsOcr ? 'needs_ocr' : 'ready',
         chunks: { create: extraction.chunks },
-        original: { create: { content: new Uint8Array(bytes), metadata: { revision: 1, warnings: extraction.warnings, method: extraction.method, needsOcr: extraction.needsOcr, pages: extraction.pages } } },
+        original: { create: { content: new Uint8Array(bytes), metadata: { revision: 1, warnings: extraction.warnings, method: extraction.method, needsOcr: extraction.needsOcr, pages: extraction.pages, answerMarks: extraction.answerMarks } } },
       } });
       await tx.documentUploadPart.deleteMany({ where: { uploadId: id } });
       return document;

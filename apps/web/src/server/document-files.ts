@@ -22,13 +22,13 @@ const metadataPath = (id: string) => {
   if (!/^[\da-f-]{36}$/i.test(id)) throw new Error('Invalid document ID');
   return path.join(root(), '.data', 'document-extraction', `${id}.json`);
 };
-export async function saveExtractionMetadata(id: string, revision: number, extraction: { warnings: string[]; method: string; needsOcr: boolean; pages: { number: number; characters: number }[] }, userId: string) {
-  const metadata = { revision, warnings: extraction.warnings, method: extraction.method, needsOcr: extraction.needsOcr, pages: extraction.pages };
+export async function saveExtractionMetadata(id: string, revision: number, extraction: { warnings: string[]; method: string; needsOcr: boolean; pages: { number: number; characters: number }[]; answerMarks?: { text: string; mark: string; value: string; paragraph: number; confidence: string }[] }, userId: string) {
+  const metadata = { revision, warnings: extraction.warnings, method: extraction.method, needsOcr: extraction.needsOcr, pages: extraction.pages, answerMarks: extraction.answerMarks ?? [] };
   const result = await db.documentFile.updateMany({ where: { documentId: id, document: { ownerId: userId, revision } }, data: { metadata } });
   if (result.count) return;
   if (!await db.document.findFirst({ where: { id, ownerId: userId, revision }, select: { id: true } })) throw new Error('File access denied');
   const filename = metadataPath(id); await mkdir(path.dirname(filename), { recursive: true, mode: 0o700 });
-  await writeFile(filename, JSON.stringify({ revision, warnings: extraction.warnings, method: extraction.method, needsOcr: extraction.needsOcr, pages: extraction.pages }), { mode: 0o600 });
+  await writeFile(filename, JSON.stringify(metadata), { mode: 0o600 });
 }
 export async function readExtractionMetadata(id: string, revision: number, userId: string) {
   const record = await readWithRetry(() => db.documentFile.findFirst({ where: { documentId: id, document: { ownerId: userId } }, select: { metadata: true } }));

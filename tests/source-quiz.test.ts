@@ -14,4 +14,9 @@ describe('Deterministic original-answer creation', () => {
   it('does not treat a key that is absent from saved chunks as verified', () => {
     expect(()=>sourceQuiz({ rawText:text,chunks:[{id:randomUUID(),content:'Unrelated text'}],documentTitle:'Source',questionCount:3,types:['single'] })).toThrow('đáp án gốc xác thực');
   });
+  it('does not export a visually uncertain or contradictory key as a document ground truth', () => {
+    for (const raw of ['I. Trắc nghiệm\nCâu 1. Chọn\nA. Một\nB. Hai [Đáp án] [Cần xác minh]', 'I. Trắc nghiệm\nCâu 1. Chọn\nA. Một\nB. Hai [Đáp án]\nĐáp án: A']) {
+      expect(() => sourceQuiz({ rawText: raw, chunks: [{ id: randomUUID(), content: raw }], documentTitle: 'Source', questionCount: 1, types: ['single'] })).toThrow('đáp án gốc xác thực');
+    }
+  });
 });

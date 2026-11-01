@@ -32,7 +32,7 @@ export async function listUserDocuments(userId: string, page = 1, limit = 20) {
   const skip = (page - 1) * limit;
   const [items, total] = await readWithRetry(() => Promise.all([
     db.document.findMany({
-      where: { ownerId: userId },
+      where: { ownerId: userId, NOT: [{ storageKey: { startsWith: 'editor:' } }, { storageKey: { startsWith: 'editor-source:' } }] },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
@@ -45,7 +45,7 @@ export async function listUserDocuments(userId: string, page = 1, limit = 20) {
         createdAt: true,
       },
     }),
-    db.document.count({ where: { ownerId: userId } }),
+    db.document.count({ where: { ownerId: userId, NOT: [{ storageKey: { startsWith: 'editor:' } }, { storageKey: { startsWith: 'editor-source:' } }] } }),
   ]));
 
   return {
@@ -95,6 +95,7 @@ export async function getOwnedDocument(userId: string, documentId: string) {
 export async function updateOwnedDocument(userId: string, documentId: string, updates: { title?: string; rawText?: string }, expectedRevision?: number) {
   const existing = await db.document.findFirst({ where: { id: documentId, ownerId: userId } });
   if (!existing) throw new DalError('NOT_FOUND', 'Tài liệu không tồn tại');
+  if (existing.storageKey.startsWith('editor-source:') || existing.storageKey.startsWith('editor:')) throw new DalError('CONFLICT', 'Nguồn biên soạn được bảo vệ. Hãy chỉnh bản nháp trong Trình biên soạn đề thi.');
 
   return transaction(async tx => {
     const current = await tx.document.findFirst({ where: { id: documentId, ownerId: userId }, select: { revision: true } });
