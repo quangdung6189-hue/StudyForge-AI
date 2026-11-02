@@ -186,8 +186,16 @@ export function LucianQuizBuilder() {
   const ready = documents.find(d => d.id === documentId)?.status === 'ready';
   const valid = title.trim().length > 0 && Number.isInteger(count) && count >= 1 && count <= 100 && Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440 && types.length > 0;
   const reviewed = questions.filter(q => q.reviewed).length;
+  const allReviewed = questions.length > 0 && reviewed === questions.length;
   const move = (next: number) => { setError(''); setStep(next); };
   const edit = (id: string, update: Partial<FullQuestionDTO>) => { setSaveNotice(''); setQuestions(current => current.map(q => q.id === id ? { ...q, ...update, reviewed: false } : q)); };
+  const setAllReviewed = () => {
+    if (!questions.length || busy) return;
+    const nextReviewed = !allReviewed;
+    if (nextReviewed && !window.confirm(`Xác nhận đã kiểm tra ${questions.length} câu hỏi, đáp án và lời giải? Hành động này cho phép chuyển sang bước xuất bản.`)) return;
+    setSaveNotice('');
+    setQuestions(current => current.map(question => ({ ...question, reviewed: nextReviewed })));
+  };
 
   async function generate() {
     if (!valid || busy) return;
@@ -369,9 +377,19 @@ export function LucianQuizBuilder() {
 
         {/* BƯỚC 2: DUYỆT ĐỀ VÀ KIỂM TRA LẦN CUỐI */}
         {step === 2 && <>
-          <p>{questions.length} câu · {minutes} phút · Đã duyệt {reviewed}/{questions.length}. Kiểm tra cả đáp án và lời giải của từng câu.</p>
+          <p className="studio-review-intro">{questions.length} câu · {minutes} phút · Đã duyệt {reviewed}/{questions.length}. Kiểm tra cả đáp án và lời giải của từng câu.</p>
           {warnings.map(warning => <div className="studio-analysis" role="status" key={warning}>{warning}</div>)}
           <div className="studio-filters" role="group" aria-label="Lọc dạng câu"><button aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Tất cả ({questions.length})</button>{typeInfo.filter(item => questions.some(q => q.type === item.type)).map(item => <button key={item.type} aria-pressed={filter === item.type} onClick={() => setFilter(item.type)}>{item.title} ({questions.filter(q => q.type === item.type).length})</button>)}</div>
+          <div className="studio-review-toolbar">
+            <div className="studio-review-progress">
+              <div className="studio-review-progress-label"><span>Tiến độ duyệt</span><strong>{reviewed}/{questions.length} câu</strong></div>
+              <progress aria-label="Tiến độ duyệt câu hỏi" value={reviewed} max={questions.length}/>
+              <small>{allReviewed ? 'Đã kiểm tra toàn bộ câu hỏi, đáp án và lời giải.' : `Còn ${questions.length - reviewed} câu chưa duyệt.`}</small>
+            </div>
+            <button type="button" className="studio-bulk-review" aria-pressed={allReviewed} disabled={busy || !questions.length} onClick={setAllReviewed}>
+              <span aria-hidden="true">✓</span>{allReviewed ? 'Bỏ duyệt tất cả' : 'Duyệt tất cả'}
+            </button>
+          </div>
           {saveNotice && <p role="status">{saveNotice}</p>}
           {questions.filter(q => filter === 'all' || q.type === filter).slice(reviewPage * 10, reviewPage * 10 + 10).map((q, i) => <article className="studio-question studio-review-card" key={q.id}>
             <div className="studio-question-top"><b>Câu {reviewPage * 10 + i + 1} · {label(q.type)}</b><span>{q.answerOrigin === 'document' ? q.explanation.includes('Lời giải trong tài liệu:') ? 'Đáp án và lời giải gốc' : 'Đáp án gốc · Lời giải do AI đề xuất' : q.answerOrigin === 'teacher' ? 'Đáp án biên soạn trực tiếp' : 'AI đề xuất · Cần kiểm tra'}</span></div>
