@@ -27,7 +27,7 @@ try {
   const incomplete = 'PHẦN I. TRẮC NGHIỆM\nCâu 1: Hai cộng hai?\nA. 3\nB. 4';
   await code.fill(incomplete);
   await page.getByRole('button', { name: 'Kiểm tra & duyệt đề →' }).click();
-  await page.getByRole('alert').filter({ hasText: 'Sửa câu thiếu đáp án' }).waitFor();
+  await page.getByRole('alert').filter({ hasText: 'câu cần xử lý trước khi duyệt' }).waitFor();
   assert.equal(await page.getByRole('radio', { name: 'Đáp án A câu 1', exact: true }).isChecked(), false);
   pass('Missing answer is blocked; A is never auto-selected');
   const saved = page.waitForResponse(response => response.url().endsWith('/api/exam-drafts') && response.request().method() === 'POST');

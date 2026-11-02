@@ -36,6 +36,24 @@ describe('Real exam drafts, incomplete content and strict publication', () => {
     await expect(prepareExamQuestions(owner, input.id, 1)).rejects.toMatchObject({ code: 'INVALID_EXAM' });
     expect(await db.quiz.count()).toBe(0);
   });
+  it('explains answered essays honestly and only excludes them with an explicit request', async () => {
+    const code = 'PHẦN III. TRẢ LỜI NGẮN\nCâu 1: Tên gọi?\nĐáp án: ENIAC\nPHẦN IV. TỰ LUẬN\nCâu 1: Trình bày nhược điểm.\nTrả lời: Máy tính lớn và đắt.';
+    const saved = await saveExamDraft(owner, draft(code));
+    await expect(prepareExamQuestions(owner, saved.id, saved.revision)).rejects.toMatchObject({ code: 'INVALID_EXAM', message: expect.stringContaining('tự luận') });
+    const result = await prepareExamQuestions(owner, saved.id, saved.revision, { excludeManual: true });
+    expect(result.questions).toHaveLength(1); expect(result.questions[0].acceptedAnswers).toEqual(['ENIAC']);
+    expect(result.excludedManualCount).toBe(1);
+    expect((await readExamDraft(owner, saved.id)).code).toBe(code);
+    const chunks = await db.documentChunk.findMany({ where: { documentId: result.documentId } });
+    expect(chunks.map(c => c.content).join('\n')).toContain('Máy tính lớn và đắt.');
+    expect(result.questions[0].reviewed).toBe(false);
+  });
+  it('does not skip missing automatic keys or publish essay-only drafts through manual exclusion', async () => {
+    for (const code of ['Câu 1: [type:short] Tên gọi?\nPHẦN IV. TỰ LUẬN\nCâu 2: Trình bày.\nĐáp án: Có.', 'PHẦN IV. TỰ LUẬN\nCâu 1: Trình bày.\nĐáp án: Có.']) {
+      const saved = await saveExamDraft(owner, draft(code));
+      await expect(prepareExamQuestions(owner, saved.id, saved.revision, { excludeManual: true })).rejects.toMatchObject({ code: 'INVALID_EXAM' });
+    }
+  });
   it('blocks owner swapping, guests, oversized payloads and stale revisions', async () => {
     const input = draft(); const saved = await saveExamDraft(owner, input);
     await expect(readExamDraft(intruder, input.id)).rejects.toMatchObject({ code: 'NOT_FOUND' });

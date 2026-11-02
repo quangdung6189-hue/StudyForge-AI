@@ -52,12 +52,14 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
     const localIssues: ExamIssue[] = [], answerEvidence: string[] = [];
     const add = (issue: string, message: string, severity: 'error' | 'warning' = 'error') => localIssues.push({ code: issue, message, severity, line: block.start + 1 });
     let first = block.lines[0] ?? '', points = 1, type = block.kind;
-    const explicitType = first.match(/\[type:(single|multiple|boolean|short|fill)\]/i);
-    if (explicitType) { type = explicitType[1].toLowerCase() as QuestionType; first = first.replace(explicitType[0], '').trim(); }
+    const explicitType = first.match(/\[type:(single|multiple|boolean|short|fill|essay)\]/i);
+    const explicitEssay = explicitType?.[1].toLowerCase() === 'essay';
+    if (explicitType) { type = explicitEssay ? 'short' : explicitType[1].toLowerCase() as QuestionType; first = first.replace(explicitType[0], '').trim(); }
     const point = first.match(/\[([\d.,]+)\s*(?:điểm|đ|points?)\]/iu);
     if (point) { points = Number(point[1].replace(',', '.')); first = first.replace(point[0], '').trim(); }
     const separated = splitQuestionContent([first, ...block.lines.slice(1)]);
     const layout = bottomUpLayout(separated.body, block.group, explicitType ? type : undefined);
+    if (explicitEssay && !layout.choiceFooter) layout.kind = 'essay';
     if (layout.kind && layout.kind !== 'essay' && !explicitType) type = layout.kind;
     if (layout.choiceFooter) type = layout.kind === 'multiple' ? 'multiple' : 'single';
     for (const notice of layout.notices) add(notice.code, notice.message, notice.requiresReview ? 'error' : 'warning');
@@ -198,7 +200,7 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
 }
 
 export function questionCode(q: ExamQuestion): string {
-  const header = `Câu ${q.number}: [type:${q.type}] [${Number(q.points.toFixed(4))}đ] ${q.stem}`;
+  const header = `Câu ${q.number}: [type:${q.classification === 'ESSAY' ? 'essay' : q.type}] [${Number(q.points.toFixed(4))}đ] ${q.stem}`;
   const lines = [header];
   if (q.type === 'boolean') {
     q.statements.forEach(statement => lines.push(`${statement.letter}) ${statement.text}`));
@@ -208,7 +210,7 @@ export function questionCode(q: ExamQuestion): string {
   else { q.options.forEach(option => lines.push(`${option.letter}. ${option.text}`)); const selected = q.options.filter(option => q.correctOptionIds.includes(option.id)); if (selected.length) lines.push(`Đáp án: ${selected.map(option => option.letter).join(', ')}`); }
   // An ordinary visual edit must not turn an unparsed/contradictory fragment into a verified key.
   // Keep a blocking marker until the teacher explicitly verifies the changed question.
-  if (q.issues.some(issue => issue.severity === 'error' && !['MISSING_ANSWER', 'INVALID_POINTS'].includes(issue.code)) && !q.stem.includes('[Cần xác minh]')) lines[0] += ' [Cần xác minh]';
+  if (q.issues.some(issue => issue.severity === 'error' && !['MISSING_ANSWER', 'INVALID_POINTS', 'ESSAY_REQUIRES_MANUAL_GRADING', 'UNSUPPORTED'].includes(issue.code)) && !q.stem.includes('[Cần xác minh]')) lines[0] += ' [Cần xác minh]';
   if (q.explanation) lines.push(`Lời giải: ${q.explanation}`);
   return lines.join('\n');
 }

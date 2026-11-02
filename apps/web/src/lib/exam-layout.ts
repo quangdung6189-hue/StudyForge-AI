@@ -71,8 +71,8 @@ export function bottomUpLayout(input: string[], section = '', explicitType?: Que
       return { lines: [...body.slice(0, -4), ...candidates.map((line, index) => `${String.fromCharCode(65 + index)}. ${line}`), ...tail], kind: 'single', notices, choiceFooter: true };
     }
   }
-  if (/tu luan/.test(heading) && !/tra loi ngan|tu luan ngan/.test(heading)) return { lines, kind: 'essay', notices, choiceFooter: false };
-  if (!labels.length && /^(?:trinh bay|giai thich|neu bien phap|de xuat bien phap|chung minh|phan tich|viet.*giai thich)/.test(foldExamText(body[0] ?? '').replace(/^\[[^\]]+\]\s*/g, ''))) return { lines, kind: 'essay', notices, choiceFooter: false };
+  if (!explicitType && /tu luan/.test(heading) && !/tra loi ngan|tu luan ngan/.test(heading)) return { lines, kind: 'essay', notices, choiceFooter: false };
+  if (!explicitType && !labels.length && /^(?:trinh bay|giai thich|neu bien phap|de xuat bien phap|chung minh|phan tich|viet.*giai thich)/.test(foldExamText(body[0] ?? '').replace(/^\[[^\]]+\]\s*/g, ''))) return { lines, kind: 'essay', notices, choiceFooter: false };
   const tableHeader = body.findIndex(line => /(?:^|\t)\s*ĐÚNG\s*\t\s*SAI\s*$/iu.test(line));
   if (tableHeader >= 0) {
     const rows = body.slice(tableHeader + 1).map(line => line.split('\t'));

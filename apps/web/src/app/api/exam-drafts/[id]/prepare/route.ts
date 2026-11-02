@@ -7,7 +7,7 @@ import { examDraftError } from '@/server/exam-draft-errors';
 export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser(), { id } = await context.params; z.uuid().parse(id);
-    const { revision } = z.strictObject({ revision: z.number().int().positive() }).parse(JSON.parse((await boundedBody(req, 256)).toString('utf8')));
-    return Response.json(await prepareExamQuestions(user.id, id, revision), { headers: { 'Cache-Control': 'no-store' } });
+    const { revision, excludeManual } = z.strictObject({ revision: z.number().int().positive(), excludeManual: z.boolean().default(false) }).parse(JSON.parse((await boundedBody(req, 256)).toString('utf8')));
+    return Response.json(await prepareExamQuestions(user.id, id, revision, { excludeManual }), { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) { return examDraftError(error); }
 }

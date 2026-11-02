@@ -4,6 +4,7 @@ import { db, transaction } from '@studyforge/db';
 import { chunkText } from '@studyforge/core';
 import { QuestionListSchema, type FullQuestionDTO } from '@studyforge/contracts';
 import { examId, parseExamCode, questionCode } from '@/lib/exam-code';
+import { examValidationMessage, isManualQuestion } from '@/lib/exam-review';
 import { DalError } from './dal';
 
 export const ExamDraftInput = z.strictObject({
@@ -55,12 +56,13 @@ export async function saveExamDraft(ownerId: string, raw: unknown) {
   return { ...input, revision: saved.revision, savedAt: saved.updatedAt.toISOString() };
 }
 
-export async function prepareExamQuestions(ownerId: string, id: string, revision: number) {
+export async function prepareExamQuestions(ownerId: string, id: string, revision: number, options: { excludeManual?: boolean } = {}) {
   return transaction(async tx => {
     const doc = await tx.document.findFirst({ where: { id, ownerId, storageKey: `editor:${id}`, revision }, include: { chunks: true, original: { select: { metadata: true } } } });
     if (!doc) throw new DalError('CONFLICT', 'Bản nháp chưa được lưu hoặc đã thay đổi. Lưu lại trước khi duyệt.');
     const parsed = parseExamCode(doc.rawText ?? '');
-    if (!parsed.questions.length || parsed.issues.some(issue => issue.severity === 'error')) throw Object.assign(new Error('Đề còn câu thiếu đáp án hoặc cần xác minh. Sửa các mục được đánh dấu trước khi duyệt.'), { code: 'INVALID_EXAM' });
+    const selected = options.excludeManual ? parsed.questions.filter(q => !isManualQuestion(q)) : parsed.questions;
+    if (!selected.length || selected.some(q => q.issues.some(issue => issue.severity === 'error'))) throw Object.assign(new Error(!selected.length && parsed.questions.length ? 'Đề chỉ có câu tự luận chấm tay. Giữ bản nháp hoặc chủ động chuyển dạng phù hợp; chưa hỗ trợ xuất bản bài thi chấm tay.' : examValidationMessage(selected)), { code: 'INVALID_EXAM' });
     // Quiz citations bind to an immutable source revision, not the mutable editor draft.
     const snapshotId = examId(`${id}:source-revision:${revision}`);
     let snapshot = await tx.document.findFirst({ where: { id: snapshotId, ownerId }, include: { chunks: true } });
@@ -70,7 +72,7 @@ export async function prepareExamQuestions(ownerId: string, id: string, revision
     const sourceQuestions = parseExamCode(source?.rawText ?? '').questions;
     const identity = randomUUID();
     const questions: FullQuestionDTO[] = [];
-    for (const q of parsed.questions) {
+    for (const q of selected) {
       // Source quote must be an exact substring of persisted draft text, not invented evidence.
       const candidates = [q.sourceText, q.stem.split('\n')[0], ...q.answerEvidence].map(value => value.trim()).filter(Boolean);
       let reference: { chunkId: string; quote: string } | undefined;
@@ -88,6 +90,6 @@ export async function prepareExamQuestions(ownerId: string, id: string, revision
     }
     if (questions.length > 100) throw Object.assign(new Error('Tối đa 100 mục chấm mỗi đề, tính cả từng ý đúng–sai.'), { code: 'INVALID_EXAM' });
     QuestionListSchema.parse(questions);
-    return { documentId: snapshot.id, questions };
+    return { documentId: snapshot.id, questions, excludedManualCount: parsed.questions.length - selected.length };
   });
 }
