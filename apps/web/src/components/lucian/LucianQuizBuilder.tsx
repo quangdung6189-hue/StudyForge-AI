@@ -114,7 +114,6 @@ export function LucianQuizBuilder() {
   const lastSavedContent = useRef('');
   const [savedId, setSavedId] = useState('');
   const [published, setPublished] = useState<Published | null>(null);
-  const [copied, setCopied] = useState(false);
   const pane = useRef<HTMLElement>(null);
   const previousStep = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -246,7 +245,7 @@ export function LucianQuizBuilder() {
       </ol>
       {error && <div className="studio-error" role="alert">{error}{step === 0 && <div><button type="button" className="studio-back" onClick={() => window.location.reload()}>Thử tải lại tài liệu</button></div>}{savedId && <p>Đề nháp đã được lưu. Bạn có thể thử xuất bản lại.</p>}</div>}
       <div className="u042-view"><section className="u042-pane on" ref={pane}>
-        <h2 ref={heading} tabIndex={-1}>{['Chọn tài liệu gốc', 'Thiết kế bài kiểm tra của bạn', 'Kiểm tra trước khi xuất bản', 'Bài kiểm tra đã sẵn sàng'][step]}</h2>
+        <h2 ref={heading} tabIndex={-1}>{['Chọn tài liệu gốc', 'Thiết kế bài kiểm tra của bạn', 'Kiểm tra trước khi xuất bản', 'Duyệt bài kiểm tra thành công'][step]}</h2>
 
         {/* BƯỚC 0: CHỌN TÀI LIỆU GỐC HOẶC SOẠN TRỰC TIẾP */}
         {step === 0 && <>
@@ -403,8 +402,8 @@ export function LucianQuizBuilder() {
           {!savedId && <button className="studio-back" disabled={busy} onClick={() => move(1)}>← Điều chỉnh cấu hình</button>}
         </>}
 
-        {/* BƯỚC 3: HOÀN TẤT VÀ CHIA SẺ */}
-        {step === 3 && published && <div className="u042-done"><span className="u042-big" aria-hidden="true"><svg viewBox="0 0 34 34"><path d="M9 17.5l5.5 5.5L25.5 12"/></svg></span><p>Chia sẻ mã hoặc đường dẫn cho người làm bài.</p><div className="studio-share"><small>MÃ THAM GIA</small><b>{published.shareCode}</b><button onClick={async () => { try { await navigator.clipboard.writeText(published.shareUrl); setCopied(true); } catch { setError('Không sao chép được. Hãy chọn đường dẫn bên dưới.'); } }}>{copied ? 'Đã sao chép đường dẫn ✓' : 'Sao chép đường dẫn'}</button><a href={published.shareUrl}>{published.shareUrl}</a></div><div className="studio-links"><Link href={`/quizzes/take?code=${published.shareCode}`}>Làm thử bài kiểm tra →</Link><Link href="/quizzes">Về ngân hàng đề</Link></div></div>}
+        {/* BƯỚC 3: DUYỆT THÀNH CÔNG */}
+        {step === 3 && published && <div className="u042-done u042-success-celebrate"><div className="u042-success-badge-wrap"><span className="u042-big u042-animated-check" aria-hidden="true"><svg viewBox="0 0 34 34"><path d="M9 17.5l5.5 5.5L25.5 12"/></svg></span><span className="u042-ring u042-ring-1" aria-hidden="true"/><span className="u042-ring u042-ring-2" aria-hidden="true"/></div><div className="u042-success-text"><div className="u042-success-tag">✓ Duyệt thành công</div><p className="u042-success-desc">Tất cả các câu hỏi đã được kiểm tra, xác thực và lưu vào ngân hàng đề thi của bạn.</p></div><div className="studio-links u042-actions"><Link href={`/quizzes/take?code=${published.shareCode}`} className="u042-action-btn u042-btn-primary">Làm thử bài kiểm tra →</Link><Link href="/quizzes" className="u042-action-btn u042-btn-secondary">Về ngân hàng đề</Link></div></div>}
       </section></div>
     </div>
   </div>;
