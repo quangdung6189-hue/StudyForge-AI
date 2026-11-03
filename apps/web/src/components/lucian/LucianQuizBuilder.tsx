@@ -264,10 +264,7 @@ export function LucianQuizBuilder() {
               {analysis && <div className="studio-tags">{typeInfo.filter(item => analysis.counts[item.type] > 0).map(item => <span key={item.type}>{item.title}: {analysis.counts[item.type]}</span>)}</div>}
             </div>
           </>}
-          <div className="u042-foot" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <button type="button" className="code-studio-btn" onClick={() => { setMode('code_editor'); move(1); }}>
-              Mở trình biên soạn · Không cần tài liệu →
-            </button>
+          <div className="u042-foot" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <button className="u042-b u042-next" disabled={!ready || analysisLoading || docsLoading} onClick={() => move(1)}>Tiếp tục cấu hình →</button>
           </div>
         </>}

@@ -35,7 +35,7 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
         .ld-welcome {
           padding: 32px;
           border-radius: 24px;
-          background: var(--ux-surface);
+          background: linear-gradient(135deg, var(--ux-surface), color-mix(in srgb, var(--ux-accent) 6%, var(--ux-surface)));
           border: 1px solid var(--ux-line);
           box-shadow: 0 10px 30px var(--ux-shadow);
           display: flex;
@@ -43,8 +43,20 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           justify-content: space-between;
           flex-wrap: wrap;
           gap: 20px;
+          position: relative;
+          overflow: hidden;
         }
-        .ld-welcome-text { flex: 1; min-width: 220px; }
+        .ld-welcome::after {
+          content: "";
+          position: absolute;
+          right: -40px;
+          top: -40px;
+          width: 220px;
+          height: 220px;
+          background: radial-gradient(circle, color-mix(in srgb, var(--ux-accent) 15%, transparent) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .ld-welcome-text { flex: 1; min-width: 220px; position: relative; z-index: 1; }
         .ld-welcome h2 {
           font-size: 26px;
           font-weight: 800;
@@ -57,12 +69,12 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           color: var(--ux-ink-2);
           margin: 0;
         }
-        .ld-welcome-actions { display: flex; gap: 10px; flex-shrink: 0; }
+        .ld-welcome-actions { display: flex; gap: 10px; flex-shrink: 0; position: relative; z-index: 1; }
         .ld-btn {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 10px 18px;
+          padding: 11px 20px;
           border-radius: 14px;
           border: 1px solid var(--ux-line);
           background: var(--ux-surface);
@@ -71,11 +83,26 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           font-weight: 700;
           cursor: pointer;
           text-decoration: none;
-          transition: transform .15s var(--ux-ease), box-shadow .2s, border-color .2s;
+          transition: all .2s var(--ux-ease);
         }
-        .ld-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--ux-shadow); border-color: var(--ux-line-2); }
-        .ld-btn.primary { background: var(--ux-accent); color: var(--ux-accent-ink); border-color: var(--ux-accent); }
-        .ld-btn.primary:hover { box-shadow: 0 8px 24px var(--ux-shadow-strong); }
+        .ld-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px var(--ux-shadow);
+          border-color: var(--ux-accent);
+          color: var(--ux-accent);
+        }
+        .ld-btn.primary {
+          background: var(--ux-accent);
+          color: #ffffff;
+          border-color: var(--ux-accent);
+          box-shadow: 0 4px 16px color-mix(in srgb, var(--ux-accent) 35%, transparent);
+        }
+        .ld-btn.primary:hover {
+          color: #ffffff;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px color-mix(in srgb, var(--ux-accent) 45%, transparent);
+          filter: brightness(1.05);
+        }
 
         .ld-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
         .ld-stat {
@@ -145,8 +172,14 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           <p>Tổng quan tài liệu và ngân hàng đề thi của bạn. Hãy bắt đầu bằng việc tải tài liệu hoặc tạo đề mới.</p>
         </div>
         <div className="ld-welcome-actions">
-          <Link href="/documents" className="ld-btn primary">⬆️ Tải tài liệu</Link>
-          <Link href="/quizzes/create" className="ld-btn">✨ Tạo đề AI</Link>
+          <Link href="/documents" className="ld-btn primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Tải tài liệu
+          </Link>
+          <Link href="/quizzes/create" className="ld-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            Tạo đề AI
+          </Link>
         </div>
       </div>
 
