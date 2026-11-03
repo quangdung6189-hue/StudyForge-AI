@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import { DOMParser } from '@xmldom/xmldom';
 
-export type AnswerMarkEvidence = { text: string; mark: 'underline' | 'color' | 'highlight'; value: string; paragraph: number; confidence: 'clear' | 'verify' };
+export type AnswerMarkEvidence = { text: string; mark: 'underline' | 'color' | 'highlight' | 'bold' | 'shading'; value: string; paragraph: number; confidence: 'clear' | 'verify' };
 const elements = (node: Document | Element, tag: string): Element[] => Array.from(node.getElementsByTagName(tag));
 const val = (node: Element | undefined, tag: string) => node ? elements(node, tag)[0]?.getAttribute('w:val') ?? '' : '';
 const compact = (value: string) => value.normalize('NFC').replace(/\s+/g, ' ').trim();
@@ -53,7 +53,18 @@ export async function readDocxAnswerMarks(buffer: Buffer, rawText: string): Prom
       const colorNode = runProperties ? elements(runProperties, 'w:color')[0] : undefined;
       const color = (colorNode?.getAttribute('w:themeColor') ? `THEME:${colorNode.getAttribute('w:themeColor')}` : property('w:color')).toUpperCase();
       if (text.trim()) colors.set(color || 'AUTO', (colors.get(color || 'AUTO') ?? 0) + text.length);
-      return { text, color, underline: property('w:u'), highlight: property('w:highlight') };
+      const underline = property('w:u');
+      const shdNode = runProperties ? elements(runProperties, 'w:shd')[0] : undefined;
+      const shd = shdNode?.getAttribute('w:fill');
+      const pPr = elements(paragraph, 'w:pPr')[0];
+      const pShd = pPr ? elements(pPr, 'w:shd')[0]?.getAttribute('w:fill') : undefined;
+      const rawHighlight = property('w:highlight');
+      const highlight = (rawHighlight && !['none', 'white'].includes(rawHighlight.toLowerCase()) ? rawHighlight : '')
+        || (shd && !['auto', 'none', 'clear', 'ffffff', '000000', ''].includes(shd.toLowerCase()) ? shd : '')
+        || (pShd && !['auto', 'none', 'clear', 'ffffff', '000000', ''].includes(pShd.toLowerCase()) ? pShd : '');
+      const boldNode = runProperties ? elements(runProperties, 'w:b')[0] : undefined;
+      const bold = Boolean(boldNode && (boldNode.getAttribute('w:val') === null || !['0', 'false', 'none'].includes(boldNode.getAttribute('w:val') ?? '')));
+      return { text, color, underline, highlight, bold };
     });
     return { index, text: compact(runs.map(run => run.text).join('')), runs };
   });
@@ -68,21 +79,45 @@ export async function readDocxAnswerMarks(buffer: Buffer, rawText: string): Prom
     const nonempty = paragraph.runs.filter(run => run.text.trim());
     const labelRuns: typeof nonempty = []; let labelText = '';
     for (const run of nonempty) { if (labelText.length >= 2) break; labelRuns.push(run); labelText += run.text.trim(); }
-    const underlinedLabel = /^[A-Ha-h][.)]$/.test(labelText) && labelRuns.every(run => !['', 'none', '0', 'false'].includes(run.underline));
+    const isStrictLabel = /^[A-Ha-h][.)]$/.test(labelText);
+    const underlinedLabel = isStrictLabel && labelRuns.every(run => !['', 'none', '0', 'false'].includes(run.underline));
+    const highlightedLabel = isStrictLabel && labelRuns.every(run => Boolean(run.highlight && !['none', 'white'].includes(run.highlight)));
+    const totalTextLength = Math.max(1, paragraph.text.replace(/\s/g, '').length);
     const markedRuns = nonempty.filter(run => run.color && run.color !== 'AUTO' && run.color !== primary && !['000000', 'FFFFFF'].includes(run.color));
     const highlighted = nonempty.filter(run => run.highlight && !['none', 'white'].includes(run.highlight));
-    const competing = (underlinedLabel && (markedRuns.length > 0 || highlighted.length > 0)) || (markedRuns.length > 0 && highlighted.length > 0);
-    const covered = markedRuns.reduce((sum, run) => sum + run.text.replace(/\s/g, '').length, 0) / Math.max(1, paragraph.text.replace(/\s/g, '').length);
-    if (inlineOptions && (underlinedLabel || markedRuns.length || highlighted.length || nonempty.some(run => run.underline && !['none', '0', 'false'].includes(run.underline)))) evidence.push({ text: paragraph.text, mark: 'underline', value: 'inline-option-spans-unresolved', paragraph: paragraph.index, confidence: 'verify' });
+    const underlinedRuns = nonempty.filter(run => run.underline && !['', 'none', '0', 'false'].includes(run.underline));
+    const coveredColor = markedRuns.reduce((sum, run) => sum + run.text.replace(/\s/g, '').length, 0) / totalTextLength;
+    const coveredUnderline = underlinedRuns.reduce((sum, run) => sum + run.text.replace(/\s/g, '').length, 0) / totalTextLength;
+    const coveredHighlight = highlighted.reduce((sum, run) => sum + run.text.replace(/\s/g, '').length, 0) / totalTextLength;
+    const underlinedWhole = coveredUnderline > 0.8 || (nonempty.length > 0 && nonempty.every(run => run.underline && !['', 'none', '0', 'false'].includes(run.underline)));
+    const highlightedWhole = coveredHighlight > 0.8 || (nonempty.length > 0 && nonempty.every(run => run.highlight && !['none', 'white'].includes(run.highlight)));
+    const competing = (underlinedLabel && (markedRuns.length > 0 || highlighted.length > 0)) || (markedRuns.length > 0 && highlighted.length > 0) || (highlightedLabel && markedRuns.length > 0);
+    if (inlineOptions && (underlinedLabel || markedRuns.length || highlighted.length || underlinedRuns.length)) evidence.push({ text: paragraph.text, mark: 'underline', value: 'inline-option-spans-unresolved', paragraph: paragraph.index, confidence: 'verify' });
     else if (competing) evidence.push({ text: paragraph.text, mark: 'highlight', value: 'mixed-marks', paragraph: paragraph.index, confidence: 'verify' });
     else if (underlinedLabel) evidence.push({ text: paragraph.text, mark: 'underline', value: 'option-label', paragraph: paragraph.index, confidence: 'clear' });
-    else if (hasReliableBaseline && covered > 0.8 && markedRuns.every(run => /^[\dA-F]{6}$/.test(run.color)) && new Set(markedRuns.map(run => run.color)).size === 1) evidence.push({ text: paragraph.text, mark: 'color', value: markedRuns[0].color, paragraph: paragraph.index, confidence: 'clear' });
-    else if (markedRuns.length || highlighted.length || nonempty.some(run => run.underline && !['none', '0', 'false'].includes(run.underline))) evidence.push({ text: paragraph.text, mark: highlighted.length ? 'highlight' : markedRuns.length ? 'color' : 'underline', value: highlighted[0]?.highlight || markedRuns[0]?.color || 'partial', paragraph: paragraph.index, confidence: 'verify' });
+    else if (underlinedWhole && !markedRuns.length && !highlighted.length) evidence.push({ text: paragraph.text, mark: 'underline', value: 'option-whole', paragraph: paragraph.index, confidence: 'clear' });
+    else if (hasReliableBaseline && coveredColor > 0.8 && markedRuns.every(run => /^[\dA-F]{6}$/.test(run.color)) && new Set(markedRuns.map(run => run.color)).size === 1) evidence.push({ text: paragraph.text, mark: 'color', value: markedRuns[0].color, paragraph: paragraph.index, confidence: 'clear' });
+    else if (highlightedLabel) evidence.push({ text: paragraph.text, mark: 'highlight', value: highlighted[0]?.highlight || 'label', paragraph: paragraph.index, confidence: 'clear' });
+    else if (highlightedWhole && !markedRuns.length && !underlinedRuns.length) evidence.push({ text: paragraph.text, mark: 'highlight', value: highlighted[0]?.highlight || 'whole', paragraph: paragraph.index, confidence: 'clear' });
+    else if (markedRuns.length || highlighted.length || underlinedRuns.length) evidence.push({ text: paragraph.text, mark: highlighted.length ? 'highlight' : markedRuns.length ? 'color' : 'underline', value: highlighted[0]?.highlight || markedRuns[0]?.color || 'partial', paragraph: paragraph.index, confidence: 'verify' });
   }
   const lines = rawText.split('\n'); const warnings: string[] = [];
   // A single consistent alternative ink can be a key; multiple colors need review.
-  const distinct = new Set(evidence.filter(mark => mark.mark === 'color' && mark.confidence === 'clear').map(mark => mark.value));
-  if (distinct.size > 1) evidence.forEach(mark => { if (mark.mark === 'color') mark.confidence = 'verify'; });
+  const distinctColors = new Set(evidence.filter(mark => mark.mark === 'color' && mark.confidence === 'clear').map(mark => mark.value));
+  if (distinctColors.size > 1) evidence.forEach(mark => { if (mark.mark === 'color') mark.confidence = 'verify'; });
+  const distinctHighlights = new Set(evidence.filter(mark => mark.mark === 'highlight' && mark.confidence === 'clear').map(mark => mark.value));
+  if (distinctHighlights.size > 1) evidence.forEach(mark => { if (mark.mark === 'highlight') mark.confidence = 'verify'; });
+  const hasClearUnderline = evidence.some(mark => mark.mark === 'underline' && mark.confidence === 'clear');
+  const hasClearHighlight = evidence.some(mark => mark.mark === 'highlight' && mark.confidence === 'clear');
+  if (hasClearUnderline && hasClearHighlight) {
+    const underlineCount = evidence.filter(m => m.mark === 'underline' && m.confidence === 'clear').length;
+    const highlightCount = evidence.filter(m => m.mark === 'highlight' && m.confidence === 'clear').length;
+    if (underlineCount >= highlightCount) {
+      evidence.forEach(m => { if (m.mark === 'highlight') m.confidence = 'verify'; });
+    } else {
+      evidence.forEach(m => { if (m.mark === 'underline') m.confidence = 'verify'; });
+    }
+  }
   let clear = 0, unsure = 0;
   for (const mark of evidence) {
     const matches = lines.flatMap((line, index) => compact(line) === mark.text ? [index] : []);

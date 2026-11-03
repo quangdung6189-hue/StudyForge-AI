@@ -7,9 +7,12 @@ export const ExamParserProSchema = z.object({
   exam_metadata: z.object({ title: z.string(), subject: z.string().nullable(), grade: z.number().int().min(1).max(12).nullable(), total_questions: z.number().int().nonnegative() }),
   questions: z.array(z.object({
     id: z.string(), original_number: z.string().nullable(), display_number: z.number().int(), section: z.string(),
-    type: z.enum(['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER', 'ESSAY']),
+    type: z.enum(['MULTIPLE_CHOICE', 'MULTIPLE_SELECT', 'TRUE_FALSE', 'SHORT_ANSWER', 'FILL_IN_BLANK', 'ESSAY']),
+    question_category: z.enum(['trac_nghiem', 'dung_sai', 'chon_nhieu_y_dung', 'dien_cho_trong', 'tra_loi_ngan', 'tu_luan']).optional(),
     question_stem: z.string(), options: z.array(z.object({ key: z.string(), text: z.string() })),
     sub_statements: z.array(z.object({ key: z.string(), text: z.string(), is_true: z.boolean().nullable() })),
+    has_answer: z.boolean().optional(),
+    answer_method: z.string().nullable().optional(),
     correct_answer: z.string().nullable(), answer_source: z.enum(['EXTRACTED', 'AI_SOLVED']).nullable(), explanation: z.string(),
     needs_review: z.boolean(), diagnostics: z.array(z.string()), source_text: z.string(),
   })),
@@ -31,11 +34,16 @@ export function parseExamPro(text: string, title: string): ExamParserProDTO {
       const incomplete = q.issues.some(issue => issue.code === 'MISSING_ANSWER');
       const essay = q.classification === 'ESSAY';
       const answer = blocked || incomplete ? null : q.type === 'boolean' ? q.statements.every(statement => statement.verdict !== null) ? q.statements.map(statement => `${statement.letter}: ${statement.verdict ? 'Đ' : 'S'}`).join(', ') : null : q.type === 'short' || q.type === 'fill' ? q.acceptedAnswers.join(' | ') || null : q.options.filter(option => q.correctOptionIds.includes(option.id)).map(option => option.letter).join(', ') || null;
+      const qType = essay ? 'ESSAY' : q.type === 'boolean' ? 'TRUE_FALSE' : q.type === 'multiple' ? 'MULTIPLE_SELECT' : q.type === 'fill' ? 'FILL_IN_BLANK' : q.type === 'short' ? 'SHORT_ANSWER' : 'MULTIPLE_CHOICE';
+      const category = essay ? 'tu_luan' : q.type === 'boolean' ? 'dung_sai' : q.type === 'multiple' ? 'chon_nhieu_y_dung' : q.type === 'fill' ? 'dien_cho_trong' : q.type === 'short' ? 'tra_loi_ngan' : 'trac_nghiem';
       return {
         id: `Q${index + 1}`, original_number: q.sourceText.match(/^\s*((?:Câu hỏi|Câu|Cau|Question|Bài|Bai)\s*\d+|\d+[.)])/iu)?.[1] ?? null, display_number: index + 1, section: q.group,
-        type: essay ? 'ESSAY' : q.type === 'boolean' ? 'TRUE_FALSE' : q.type === 'single' || q.type === 'multiple' ? 'MULTIPLE_CHOICE' : 'SHORT_ANSWER',
+        type: qType,
+        question_category: category,
         question_stem: q.stem, options: essay ? [] : q.options.map(option => ({ key: option.letter, text: option.text })),
         sub_statements: essay ? [] : q.statements.map(statement => ({ key: statement.letter, text: statement.text, is_true: blocked ? null : statement.verdict })),
+        has_answer: answer !== null,
+        answer_method: answer !== null ? (q.answerMethod ?? 'extracted') : null,
         correct_answer: answer, answer_source: answer !== null ? 'EXTRACTED' : null, explanation: q.explanation,
         needs_review: true, diagnostics: q.issues.map(issue => issue.message), source_text: q.sourceText,
       };

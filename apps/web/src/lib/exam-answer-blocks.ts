@@ -1,9 +1,9 @@
 /** Shared, deterministic answer boundaries. Source strings remain intact for citations. */
-const answerName = '(?:Đáp án(?: đúng| gợi ý)?|Dap an|Đáp số|Dap so|Trả lời(?: ngắn)?|Tra loi|Answer|Lời đáp)';
+const answerName = '(?:Đáp án(?: đúng| gợi ý)?|Dap an|Đáp số|Dap so|Trả lời(?: ngắn)?|Tra loi|Answer|Lời đáp|Key|Đ/A|DA)';
 const solutionName = '(?:Lời giải(?: chi tiết)?|Bài giải|Hướng dẫn(?: giải| chi tiết)?|Giải thích(?: chi tiết| ngắn)?|Gợi ý(?: trả lời| đáp án)?|Loi giai|Giai thich)';
 const prefix = '(?:[-–•]\\s*)?(?:\\*\\*|__)?';
 const suffix = '(?:\\*\\*|__)?';
-const separator = '(?:[:：]|[-–—](?=\\s|$))';
+const separator = '(?:[:：=]|[-–—](?=\\s|$))';
 const marker = new RegExp(`^\\s*${prefix}(${answerName}|${solutionName})${suffix}\\s*(?:${separator}\\s*${suffix}\\s*(.*)|$)`, 'iu');
 const answerKind = new RegExp(`^${answerName}$`, 'iu');
 const inline = new RegExp(`(^|[\\s?!.;])(${prefix}(?:${answerName}|${solutionName})${suffix}\\s*${separator}\\s*${suffix})`, 'giu');

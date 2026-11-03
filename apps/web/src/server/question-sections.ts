@@ -52,11 +52,25 @@ export function analyzeDocument(text: string) {
       if (numbers) { answerNumbers = numbers[1].trim().split(/\s+/); answerHeader = line; continue; }
       const answers = line.match(/^Đáp án\s+([A-F*\s]+)$/iu);
       const row = line.match(/^(\d+)\s*[.):\-]?\s+([A-F])\s*$/iu);
+      const pairs = [...line.matchAll(/(?:^|[\s,|;])(?:Câu\s*)?(\d+)\s*[-.:=]?\s*([A-F])(?=[\s,|;]|$)/giu)];
       if (!answerTables.has(sectionName)) answerTables.set(sectionName, new Map());
+      if (!answerTables.has('')) answerTables.set('', new Map());
       if (answers && answerNumbers.length) {
         const values = answers[1].trim().split(/\s+/);
-        if (values.length === answerNumbers.length) answerNumbers.forEach((number, i) => answerTables.get(sectionName)!.set(number, { answer: values[i].replace('*', ''), quote: `${answerHeader}\n${line}` }));
-      } else if (row) answerTables.get(sectionName)!.set(row[1], { answer: row[2], quote: line });
+        if (values.length === answerNumbers.length) answerNumbers.forEach((number, i) => {
+          const ans = values[i].replace('*', '');
+          answerTables.get(sectionName)!.set(number, { answer: ans, quote: `${answerHeader}\n${line}` });
+          answerTables.get('')!.set(number, { answer: ans, quote: `${answerHeader}\n${line}` });
+        });
+      } else if (pairs.length >= 2) {
+        for (const pair of pairs) {
+          answerTables.get(sectionName)!.set(pair[1], { answer: pair[2].toUpperCase(), quote: line });
+          answerTables.get('')!.set(pair[1], { answer: pair[2].toUpperCase(), quote: line });
+        }
+      } else if (row) {
+        answerTables.get(sectionName)!.set(row[1], { answer: row[2], quote: line });
+        answerTables.get('')!.set(row[1], { answer: row[2], quote: line });
+      }
       continue;
     }
     const question = line.match(/^(?:(?:Câu hỏi|Câu|Cau|Question|Bài|Bai)\s*(\d+)\s*[.:)]?|(?:(\d+)\s*[.)]))\s+(.+)$/iu);
@@ -84,7 +98,9 @@ export function analyzeDocument(text: string) {
     const uppercase = markers.filter(match => match[1] === match[1].toUpperCase());
     const lower = markers.filter(match => match[1] === match[1].toLowerCase());
     const inlineBoolean = /dung\s*[/\-–]?\s*sai/.test(fold(sourceText.slice(0, 100))) || !block.type && markers.filter((match, i) => /\s(?:ĐÚNG|SAI|Đ|S)\s*$/iu.test(linearized.slice(match.index! + match[0].length, markers[i + 1]?.index ?? sourceText.length).trim())).length >= 2;
-    const type = layout.choiceFooter ? layout.kind as 'single' | 'multiple' : layout.kind === 'essay' ? 'unsupported' : inlineBoolean ? 'boolean' : block.type ?? layout.kind ?? (uppercase.length >= 2 ? 'single' : lower.length >= 2 ? 'boolean' : /_{2,}|\.{3,}|\(\s*\.{2,}\s*\)|\u2026/.test(linearized) ? 'fill' : /tinh|bao nhieu|gom may|co may|qua trinh nao|neu ten|viet dap|tra loi ngan|dien vao|dien tu|hoan thanh/.test(fold(linearized)) ? 'short' : 'unsupported');
+    const isMultipleStem = /(?:chọn|những|các)\s+(?:phát biểu|đáp án|mệnh đề|khẳng định|ý|câu)\s+(?:đúng|nào đúng)|chọn nhiều|nhiều hơn một đáp án|chọn tất cả/i.test(fold(linearized));
+    let type = layout.choiceFooter ? layout.kind as 'single' | 'multiple' : layout.kind === 'essay' ? 'unsupported' : inlineBoolean ? 'boolean' : block.type ?? layout.kind ?? (uppercase.length >= 2 ? 'single' : lower.length >= 2 ? 'boolean' : /_{2,}|\.{3,}|\(\s*\.{2,}\s*\)|\u2026/.test(linearized) ? 'fill' : /tinh|bao nhieu|gom may|co may|qua trinh nao|neu ten|viet dap|tra loi ngan|dien vao|dien tu|hoan thanh/.test(fold(linearized)) ? 'short' : 'unsupported');
+    if (isMultipleStem && type === 'single') type = 'multiple';
     const writtenWarnings: string[] = [];
     if (/\[Cần xác minh\]/iu.test(fullText)) writtenWarnings.push('Định dạng đáp án chưa rõ; cần giáo viên đối chiếu bản gốc, không tự điền.');
     if (conflictingWrittenAnswers(textParts.answers, type === 'unsupported')) writtenWarnings.push('Các dòng đáp án trả lời chưa thống nhất; cần đối chiếu bản gốc.');
@@ -117,14 +133,14 @@ export function analyzeDocument(text: string) {
     }
     const choiceMarkers = type === 'single' || type === 'multiple' ? uppercase : [];
     const rawOptions = choiceMarkers.map((match, i) => linearized.slice(match.index! + match[0].length, choiceMarkers[i + 1]?.index ?? linearized.length).trim());
-    const marked = rawOptions.flatMap((option, i) => /\[\s*Đáp án\s*\*?\s*\]|[✓✔]/iu.test(option) || choiceMarkers[i]?.[0].includes('*') ? [i] : []);
+    const marked = rawOptions.flatMap((option, i) => /\[\s*Đáp án\s*\*?\s*\]|[✓✔√☑]|\[[xX✓✔√]\]/iu.test(option) || choiceMarkers[i]?.[0].includes('*') || /\s*\*$/.test(option.trim()) ? [i] : []);
     const localWarnings: string[] = type === 'short' || type === 'fill' ? [...writtenWarnings] : [];
     if (rawOptions.some(option => /\[\s*Đáp án\s*\*/iu.test(option)) || /chua thong nhat|can doi chieu|tham khao/.test(fold(sourceExplanation ?? ''))) localWarnings.push('Đáp án gốc có ghi chú hoặc chưa thống nhất; cần đối chiếu giáo viên.');
     // Footnotes are not answer options. Preserve their uncertainty as a warning.
-    const options = rawOptions.map(option => option.split(/\n\s*\*\s+/)[0].replace(/\[\s*Đáp án\s*\*?\s*\]|[✓✔]/giu, '').trim());
+    const options = rawOptions.map(option => option.split(/\n\s*\*\s+/)[0].replace(/\[\s*Đáp án\s*\*?\s*\]|[✓✔√☑]|\[[xX✓✔√]\]/giu, '').replace(/\s*\*$/g, '').trim());
     const stem = `Câu ${block.number}. ${linearized.slice(0, choiceMarkers[0]?.index ?? linearized.length).trim()}`;
     let documentAnswer: SourceQuestion['documentAnswer'];
-    const tableAnswer = type === 'single' || type === 'multiple' ? answerTables.get(block.section)?.get(block.number) : undefined;
+    const tableAnswer = type === 'single' || type === 'multiple' ? (answerTables.get(block.section)?.get(block.number) ?? answerTables.get('')?.get(block.number)) : undefined;
     const answer = answerLine?.[1].trim() ?? tableAnswer?.answer;
     if (marked.length && (type === 'multiple' || marked.length === 1)) documentAnswer = { indices: marked, acceptedAnswers: [], quote: rawOptions[marked[0]].split(/\n\s*\*\s+/)[0].trim() };
     else if (answer && (type === 'single' || type === 'multiple') && /^[A-F](?:\s*[,;]\s*[A-F])*[.]?$/i.test(answer)) {

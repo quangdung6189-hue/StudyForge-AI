@@ -37,8 +37,9 @@ export function bottomUpLayout(input: string[], section = '', explicitType?: Que
   const notices: LayoutNotice[] = [];
   const heading = foldExamText(section);
   const labels = body.flatMap((line, index) => {
-    const match = line.match(/^\*?([A-H])[.)]\s+(.+)$/u);
-    return match ? [{ label: match[1], text: line, index }] : [];
+    const match = line.match(/^(?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*(?:([A-H])[.)]|[\(\[]([A-H])[\)\]]|([A-H])\*[.)])\s+(.+)$/u);
+    const label = (match ? (match[1] || match[2] || match[3]) : '').toUpperCase();
+    return label ? [{ label, text: line, index }] : [];
   });
   if (labels.length && body.some(line => /^[A-H]\d[^\s]*$/u.test(line))) notices.push({ code: 'OCR_OPTION_LABEL_UNRESOLVED', message: 'Có dòng nghi lỗi OCR nhãn/số (ví dụ D15/0). Giữ nguyên nội dung, cần đối chiếu bản gốc; không tự bổ sung chữ số.', requiresReview: true });
   // Last option block: prose before it (including matching tables and a/b lists) stays stem.
@@ -59,7 +60,8 @@ export function bottomUpLayout(input: string[], section = '', explicitType?: Que
     const sorted = [...entries].sort((a, b) => a.label.localeCompare(b.label));
     if (entries.map(entry => entry.label).join() !== sorted.map(entry => entry.label).join()) notices.push({ code: 'OPTIONS_REORDERED', message: 'Đã xếp phương án theo nhãn A–D, giữ nguyên nội dung và đáp án theo nhãn.', requiresReview: false });
     if (/dung\s*[/–-]?\s*sai|tra loi ngan|tu luan|dien tu/.test(heading)) notices.push({ code: 'FOOTER_OVERRIDES_SECTION', message: 'Cụm phương án lựa chọn cuối câu được ưu tiên hơn tiêu đề phần.', requiresReview: false });
-    const kind = explicitType === 'multiple' || /chon nhieu|nhieu dap an/.test(heading) ? 'multiple' : 'single';
+    const isMultiple = explicitType === 'multiple' || /chon nhieu|nhieu dap an|nhieu y dung|nhieu lua chon/i.test(heading) || /(?:chọn|những|các)\s+(?:phát biểu|đáp án|mệnh đề|khẳng định|ý|câu)\s+(?:đúng|nào đúng)|chọn nhiều|nhiều hơn một đáp án|chọn tất cả/i.test(foldExamText(body[0] ?? ''));
+    const kind = isMultiple ? 'multiple' : 'single';
     if (explicitType && !['single', 'multiple'].includes(explicitType)) notices.push({ code: 'TYPE_LAYOUT_CONFLICT', message: 'Dạng khai báo không khớp cụm A–D cuối câu; cần kiểm tra.', requiresReview: true });
     return { lines: [...body.slice(0, start), ...sorted.map(entry => entry.content), ...tail], kind, notices, choiceFooter: true };
   }
@@ -104,6 +106,7 @@ export function bottomUpLayout(input: string[], section = '', explicitType?: Que
     }
     return { lines, kind: 'boolean', notices, choiceFooter: false };
   }
-  if (/tra loi ngan|tu luan ngan/.test(heading) || !labels.length && /bao nhieu|gom may|co may|ten goi|thuat ngu|qua trinh nao|tinh\s|dem\s/.test(foldExamText(body[0] ?? ''))) return { lines, kind: 'short', notices, choiceFooter: false };
+  if (/dien tu|dien khuyet|dien cho trong/.test(heading) || !labels.length && (/_{2,}|\(\.{2,}\)|\(\u2026\)|\[\s*\.{2,}\s*\]|\[\s*_{2,}\s*\]|dien vao cho|dien tu|dien khuyet/i.test(foldExamText(body.join('\n'))))) return { lines, kind: 'fill', notices, choiceFooter: false };
+  if (/tra loi ngan|tu luan ngan/.test(heading) || !labels.length && /bao nhieu|gom may|co may|ten goi|thuat ngu|qua trinh nao|tinh\s|dem\s|gia tri\s*(?:cua)?/i.test(foldExamText(body[0] ?? ''))) return { lines, kind: 'short', notices, choiceFooter: false };
   return { lines, notices, choiceFooter: false };
 }

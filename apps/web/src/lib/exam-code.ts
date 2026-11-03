@@ -10,6 +10,8 @@ export type ExamQuestion = {
   options: ExamOption[]; statements: ExamStatement[]; correctOptionIds: string[]; acceptedAnswers: string[];
   points: number; explanation: string; startLine: number; endLine: number; sourceText: string;
   issues: ExamIssue[]; answerEvidence: string[];
+  hasAnswer: boolean;
+  answerMethod?: 'highlight' | 'underline' | 'color' | 'bold' | 'marker' | 'table' | 'inline_key' | null;
   classification?: 'ESSAY';
 };
 export const QUESTION_LABELS: Record<QuestionType, string> = { single: 'Trắc nghiệm một đáp án', multiple: 'Trắc nghiệm nhiều đáp án', boolean: 'Đúng – Sai', short: 'Trả lời ngắn', fill: 'Điền từ' };
@@ -32,7 +34,7 @@ export function isSectionHeader(value: string): boolean {
 }
 const headerKind = (text: string): QuestionType | undefined => {
   const value = fold(text);
-  return /dung\s*[/–-]?\s*sai/.test(value) ? 'boolean' : /tra loi ngan/.test(value) ? 'short' : /dien tu|dien khuyet/.test(value) ? 'fill' : /chon nhieu|nhieu dap an/.test(value) ? 'multiple' : /trac nghiem|lua chon/.test(value) ? 'single' : undefined;
+  return /dung\s*[/–-]?\s*sai/.test(value) ? 'boolean' : /chon nhieu|nhieu dap an|nhieu y dung|nhieu lua chon/.test(value) ? 'multiple' : /dien tu|dien khuyet|dien cho trong/.test(value) ? 'fill' : /tra loi ngan/.test(value) ? 'short' : /trac nghiem|lua chon/.test(value) ? 'single' : undefined;
 };
 const qStart = /^(?:Câu hỏi|Câu|Cau|Question|Bài|Bai)\s*(\d+)\s*[.:)]\s*(.*)$|^(\d+)[.)]\s+(.+)$/iu;
 
@@ -76,15 +78,23 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
     for (const [bodyIndex, raw] of layout.lines.slice(1).entries()) {
       const line = normalizeLine(raw); if (!line) continue;
       if (layout.kind === 'essay' || optionStart > 0 && bodyIndex + 1 < optionStart) { stemLines.push(raw); continue; }
-      const choices = [...line.matchAll(/(?:^|\s+)(\*?)([A-Ha-h])[.)]\s+(.*?)(?=(?:\s+\*?[A-Ha-h][.)]\s+)|$)/gu)];
+      const choices = [...line.matchAll(/(?:^|\s+)((?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*)(?:([A-Ha-h])[.)]|[\(\[]([A-Ha-h])[\)\]]|([A-Ha-h])\*[.)])\s+(.*?)(?=(?:\s+(?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*(?:[A-Ha-h][.)]|[\(\[][A-Ha-h][\)\]]|[A-Ha-h]\*[.)]))|$)/gu)];
       const checkbox = line.match(/^\[([xX ]?)\]\s+(.+)$/);
       if (checkbox) checkboxLetters.add(String.fromCharCode(65 + options.length));
       if (choices.length || checkbox) {
-        const entries = checkbox ? [{ label: String.fromCharCode(65 + options.length), text: checkbox[2], marked: checkbox[1].toLowerCase() === 'x', lower: false }] : choices.map(m => ({ label: m[2].toUpperCase(), text: m[3], marked: !!m[1], lower: m[2] === m[2].toLowerCase() }));
+        const entries = checkbox ? [{ label: String.fromCharCode(65 + options.length), text: checkbox[2], marked: checkbox[1].toLowerCase() === 'x', lower: false }] : choices.map(m => {
+          const rawLetter = m[2] || m[3] || m[4];
+          const prefixMarker = m[1] ?? '';
+          const isMarkedPrefix = /[✓✔√☑*]|\[[xX✓✔√]\]/.test(prefixMarker) || Boolean(m[4]);
+          return { label: rawLetter.toUpperCase(), text: m[5], marked: isMarkedPrefix, lower: rawLetter === rawLetter.toLowerCase() };
+        });
         for (const entry of entries) {
           let text = entry.text.trim();
-          const isMarked = entry.marked || /\[\s*Đáp án\s*\]|(?:^|\s)[✓✔]\s*$/iu.test(text);
-          text = text.replace(/\[\s*Đáp án\s*\]|(?:^|\s)[✓✔]\s*$/giu, '').trim();
+          const hasStar = entry.marked || /\s*\*$/.test(text) || /^\s*\*/.test(text);
+          const hasCheck = /(?:^|\s)[✓✔√☑]\s*|\s*[✓✔√☑]\s*$/.test(text) || /(?:^|\s)\[[xX✓✔√]\]\s*|\s*\[[xX✓✔√]\]\s*$/.test(text);
+          const hasAnswerTag = /\[\s*Đáp án\s*\*?\s*\]/iu.test(text);
+          const isMarked = hasStar || hasCheck || hasAnswerTag;
+          text = text.replace(/\[\s*Đáp án\s*\*?\s*\]|(?:^|\s)[✓✔√☑]\s*|\s*[✓✔√☑]\s*$|(?:^|\s)\[[xX✓✔√]\]\s*|\s*\[[xX✓✔√]\]\s*$|^\s*\*|\s*\*$/giu, '').trim();
           if (entry.lower || type === 'boolean') {
             type = 'boolean';
             const verdict = text.match(/\s+(ĐÚNG|SAI|Đ|S)(?:\s+[xX✗✘])?\s*$/iu);
@@ -106,11 +116,13 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
     if (!stem) add('EMPTY_STEM', 'Thiếu nội dung câu hỏi.');
     if (/\[(?:cần xác minh|can xac minh|verify)\]/iu.test(block.lines.join('\n'))) add('REQUIRES_REVIEW', 'Dấu màu/ký hiệu chưa rõ hoặc có mâu thuẫn. Đối chiếu bản gốc trước khi dùng.');
     if (occurrence) add('DUPLICATE_NUMBER', `Trùng số Câu ${block.number} trong cùng phần.`, 'warning');
-    type ??= options.length ? 'single' : /_{2,}|\(\.{2,}\)|\(…\)/.test(stem) ? 'fill' : 'short';
+    const isMultipleStem = /(?:chọn|những|các)\s+(?:phát biểu|đáp án|mệnh đề|khẳng định|ý|câu)\s+(?:đúng|nào đúng)|chọn nhiều|nhiều hơn một đáp án|chọn tất cả/iu.test(stem);
+    if (isMultipleStem && !explicitType && (type === 'single' || !type)) type = 'multiple';
+    type ??= options.length ? (isMultipleStem ? 'multiple' : 'single') : /_{2,}|\(\.{2,}\)|\(…\)|\(\u2026\)|\[\s*\.{2,}\s*\]|\[\s*_{2,}\s*\]|điền\s+(?:vào\s+)?chỗ\s+(?:trống|khuyết)/iu.test(stem) ? 'fill' : 'short';
     if (checkboxLetters.size && !explicitType && !block.kind) type = 'multiple';
     if (!layout.choiceFooter && !options.length && !statements.length && !explicitType && !block.kind && /phân tích|chứng minh|trình bày|vẽ hình|ghép đôi|sắp xếp/iu.test(stem)) add('UNSUPPORTED', 'Câu tự luận dài/ghép đôi/sắp xếp cần chọn lại dạng, không tự coi là trả lời ngắn.');
     if (!layout.choiceFooter && /tự luận/iu.test(block.group) && !/trả lời ngắn/iu.test(block.group) && !explicitType) add('UNSUPPORTED', 'Phần tự luận chưa được hỗ trợ chấm tự động. Chọn lại dạng và xác minh nội dung.');
-    const tableAnswer = table.get(`${block.group}:${block.number}`);
+    const tableAnswer = table.get(`${block.group}:${block.number}`) ?? table.get(`:${block.number}`);
     if (tableAnswer) { answers.push(tableAnswer.answer); answerEvidence.push(tableAnswer.quote); }
     const chosen = new Set(marked); const acceptedAnswers: string[] = [];
     for (const answer of answers) {
@@ -145,11 +157,32 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
       if ([...chosen].some(letter => !options.some(option => option.letter === letter))) add('INVALID_ANSWER', 'Đáp án tham chiếu phương án không tồn tại.');
       if (!chosen.size) add('MISSING_ANSWER', 'Chưa có đáp án. Hệ thống không tự chọn A.');
       if (chosen.size > 1 && type === 'single') {
-        if (explicitType?.[1] === 'single' || block.kind === 'single' && !explicitType) add('MULTIPLE_IN_SINGLE', 'Câu một đáp án đang có nhiều lựa chọn đúng.'); else type = 'multiple';
+        if (explicitType?.[1] === 'single' || (block.kind === 'single' && !explicitType && !isMultipleStem)) add('MULTIPLE_IN_SINGLE', 'Câu một đáp án đang có nhiều lựa chọn đúng.'); else type = 'multiple';
       }
     } else if (!acceptedAnswers.length) add('MISSING_ANSWER', 'Chưa có đáp án trả lời ngắn/điền từ.');
     if ((type === 'short' || type === 'fill') && (options.length || statements.length)) add('TYPE_CONFLICT', 'Dạng trả lời ngắn không được có phương án lựa chọn.');
-    questions.push({ id, globalIndex: questions.length + 1, number: block.number, stem, group: block.group, type, options, statements, correctOptionIds: options.filter(option => chosen.has(option.letter)).map(option => option.id), acceptedAnswers: [...new Set(acceptedAnswers)], points, explanation: explanation.trim(), startLine: block.start + 1, endLine: end, sourceText: lines.slice(block.start, end).join('\n'), issues: localIssues, answerEvidence, ...(layout.kind === 'essay' ? { classification: 'ESSAY' as const } : {}) });
+    let hasAnswer = false;
+    let answerMethod: 'highlight' | 'underline' | 'color' | 'bold' | 'marker' | 'table' | 'inline_key' | null = null;
+    if (type === 'single' || type === 'multiple') {
+      hasAnswer = chosen.size > 0;
+    } else if (type === 'boolean') {
+      hasAnswer = statements.length > 0 && statements.some(s => s.verdict !== null);
+    } else if (type === 'short' || type === 'fill') {
+      hasAnswer = acceptedAnswers.length > 0;
+    }
+    if (hasAnswer) {
+      const evidenceStr = answerEvidence.join('\n');
+      if (/\[\s*Đáp án\s*\]/iu.test(evidenceStr)) {
+        answerMethod = /highlight/i.test(evidenceStr) ? 'highlight' : /underline/i.test(evidenceStr) ? 'underline' : 'marker';
+      } else if (tableAnswer) {
+        answerMethod = 'table';
+      } else if (answers.length > 0 && textParts.answers.length > 0) {
+        answerMethod = 'inline_key';
+      } else if (marked.length > 0 || statements.some(s => s.verdict !== null)) {
+        answerMethod = 'marker';
+      }
+    }
+    questions.push({ id, globalIndex: questions.length + 1, number: block.number, stem, group: block.group, type, options, statements, correctOptionIds: options.filter(option => chosen.has(option.letter)).map(option => option.id), acceptedAnswers: [...new Set(acceptedAnswers)], points, explanation: explanation.trim(), startLine: block.start + 1, endLine: end, sourceText: lines.slice(block.start, end).join('\n'), issues: localIssues, answerEvidence, hasAnswer, answerMethod, ...(layout.kind === 'essay' ? { classification: 'ESSAY' as const } : {}) });
   };
   // Collect answer tables first, including sections whose numbering restarts.
   for (let i = 0; i < lines.length; i++) {
@@ -161,6 +194,13 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
     if (row) { numbers = row[1].split(/[\s|]+/).filter(Boolean); continue; }
     const choices = line.match(/^(?:Chọn|Đáp án)\s+(.+)$/iu);
     if (choices && numbers.length) { const values = choices[1].split(/[\t|]+| {2,}/).filter(Boolean); const cells = values.length === numbers.length ? values : choices[1].split(/\s+/); if (cells.length === numbers.length) numbers.forEach((number, index) => table.set(`${tableSection}:${number}`, { answer: cells[index], quote: line })); }
+    const inlinePairs = [...line.matchAll(/(?:^|[\s,|;])(?:Câu\s*)?(\d+)\s*[-.:=]?\s*([A-Ha-h]|\d+(?:[.,]\d+)?|[a-h]\s*[-:=]\s*(?:Đúng|Sai|Đ|S|true|false))(?=[\s,|;]|$)/giu)];
+    if (inTable && inlinePairs.length >= 2) {
+      for (const pair of inlinePairs) {
+        table.set(`${tableSection}:${pair[1]}`, { answer: pair[2], quote: line });
+        table.set(`:${pair[1]}`, { answer: pair[2], quote: line });
+      }
+    }
   }
   inTable = false;
   for (let index = 0; index < lines.length; index++) {

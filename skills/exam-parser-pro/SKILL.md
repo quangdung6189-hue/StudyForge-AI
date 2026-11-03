@@ -7,40 +7,82 @@ description: Build, review and regression-test Vietnamese multi-subject exam ext
 
 ## Vai trò và phạm vi
 
-Chuẩn hóa đề Việt Nam thành dữ liệu có nguồn kiểm chứng. Đầu ra phân loại `MULTIPLE_CHOICE`, `TRUE_FALSE`, `SHORT_ANSWER`, `ESSAY`. Không hứa chính xác tuyệt đối với OCR/file tùy ý. Skill là quy trình cho agent; website phải có parser backend thật, test và quyền sở hữu. Đọc `AGENTS.md` và `skills/exam-document-reader/SKILL.md` trước khi sửa.
+Chuẩn hóa đề Việt Nam thành dữ liệu có nguồn kiểm chứng. Đầu ra phân loại chính xác 4 nhóm trọng tâm: `MULTIPLE_CHOICE` (trắc nghiệm 1 đáp án), `MULTIPLE_SELECT` (trắc nghiệm chọn nhiều ý đúng), `TRUE_FALSE` (đúng – sai), `FILL_IN_BLANK` / `SHORT_ANSWER` (điền chỗ trống / trả lời ngắn), cùng nhóm `ESSAY` (tự luận).
+Hỗ trợ trích xuất toàn diện dấu vết đáp án (bôi màu highlight, tô nền shading, gạch chân, đổi màu chữ, in đậm, ký tự đánh dấu `*`, `✓`, `[x]`, bảng đáp án) và phân định rạch ròi giữa câu ĐÃ CÓ ĐÁP ÁN vs câu CHƯA CÓ ĐÁP ÁN.
+Không hứa chính xác tuyệt đối với OCR/file tùy ý. Skill là quy trình cho agent; website phải có parser backend thật, test và quyền sở hữu. Đọc `AGENTS.md` và `skills/exam-document-reader/SKILL.md` trước khi sửa.
 
 ## 1. Giữ nguồn trước khi sửa
 
 - Giữ file riêng tư, chữ nguồn, trang/đoạn và số câu ban đầu. Tạo số hiển thị liên tục riêng, không thay `original_number` chỉ vì số bị lặp giữa các phần.
 - Unicode NFC, UTF-8/UTF-16, NBSP, xuống dòng và ranh giới trang phải được xử lý có kiểm soát. Không đổi dấu phẩy thập phân, phân số, đơn vị, công thức, dấu âm hoặc chữ số để làm đề “có vẻ đúng”.
-- Dấu `*` chỉ là đáp án khi ở đúng vị trí nhãn phương án; `2 * 3`, chú thích `*` và ký hiệu trong công thức không phải khóa. `✓`, `SAI X`, `ĐÚNG`, `Trả lời`, `Đáp án`, `Giải thích` phải tách khỏi nội dung khi có cấu trúc rõ.
+- Dấu `*` chỉ là đáp án khi ở đúng vị trí nhãn phương án (`*A.` hoặc `A*.`); `2 * 3`, chú thích `*` và ký hiệu trong công thức không phải khóa. `✓`, `✔`, `√`, `☑`, `[x]`, `SAI X`, `ĐÚNG`, `Trả lời`, `Đáp án`, `Key:`, `Đ/A:`, `Giải thích` phải tách khỏi nội dung khi có cấu trúc rõ.
 - Tách dòng trước ranh giới `Câu 10:`/`PHẦN II` bị dính và giữa các nhãn lựa chọn có bằng chứng. Không tạo câu mới từ mọi chữ “Câu” trong lời dẫn hoặc từ dấu thập phân.
 
-## 2. Phân loại từ đáy lên
+## 2. Phân loại chính xác 4 nhóm câu hỏi (Bottom-Up)
 
-### Ưu tiên 1: cụm lựa chọn cuối câu
+### Nhóm 1: Trắc nghiệm 1 đáp án (MULTIPLE_CHOICE / single)
 
-1. Tìm cụm kết quả A–D cuối phần thân, trước đáp án/lời giải. Nếu có đủ nhãn riêng biệt, đó là trắc nghiệm lựa chọn, kể cả tiêu đề phần nói đúng–sai, điền từ hoặc trả lời ngắn.
-2. Bảng ghép nối `1,2… / a),b)…`, danh sách phát biểu, công thức và chỗ trống nằm trước A–D phải giữ trong `question_stem`; không biến thành các câu đúng–sai riêng.
+1. Tìm cụm kết quả A–D cuối phần thân, trước đáp án/lời giải. Nếu có đủ nhãn riêng biệt và chỉ có 1 đáp án đúng -> `MULTIPLE_CHOICE`.
+2. Bảng ghép nối `1,2… / a),b)…`, danh sách phát biểu nằm trước A–D phải giữ trong `question_stem`; không biến thành các câu đúng–sai riêng.
 3. Cột PDF A,C,B,D: sắp theo nhãn, giữ nguyên text và khóa theo nhãn. Không sắp theo nội dung/ngữ nghĩa. Nhãn trùng hoặc thiếu báo lỗi.
-4. Mất A nhưng còn B–D: có thể gợi ý A chỉ khi một dòng ứng viên độc lập có ranh giới rõ. Mất toàn bộ nhãn: chỉ gợi ý khi đúng phần lựa chọn, có câu dẫn và đúng 4 dòng ngắn độc lập. Cả hai trường hợp phải có chẩn đoán và yêu cầu xác minh trước publication, không tuyên bố đáp án đã được trích chắc chắn.
-5. Không tự sửa `D15/0` thành `D. 15/10`, hoặc thêm mẫu số/chữ số từ kiến thức. Giữ nguyên và yêu cầu nhìn file gốc. Khôi phục nhãn không cho phép sửa giá trị đáp án.
-6. Giữ tương thích câu 2–8 phương án của hệ thống; JSON `MULTIPLE_CHOICE` không bắt buộc xóa phương án thứ 5–8 của tài liệu thật. Phân biệt chọn một/chọn nhiều trong dữ liệu nội bộ.
 
-### Ưu tiên 2: đúng–sai khi không có lựa chọn cuối câu
+### Nhóm 2: Trắc nghiệm chọn nhiều ý đúng (MULTIPLE_SELECT / multiple)
+
+1. Có phương án lựa chọn A, B, C, D... và thỏa mãn ít nhất một điều kiện:
+   - Tiêu đề section: "Trắc nghiệm nhiều đáp án", "Chọn nhiều đáp án đúng", "Nhiều ý đúng", "Multiple select".
+   - Câu dẫn chứa cụm từ: "chọn các phát biểu đúng", "những đáp án đúng là", "các mệnh đề đúng gồm", "có thể chọn nhiều hơn một đáp án", "chọn tất cả các".
+   - Có từ 2 phương án trở lên được đánh dấu đáp án (bôi màu, gạch chân, dấu `*`, hoặc key ghi `A, C` hay `A và B`).
+2. Xuất dữ liệu `type: 'MULTIPLE_SELECT'` và `question_category: 'chon_nhieu_y_dung'`.
+
+### Nhóm 3: Đúng – Sai (TRUE_FALSE / boolean) khi không có lựa chọn cuối câu
 
 - Giữ ngữ cảnh chung và từng ý a–d. Giá trị `is_true` là `true`, `false` hoặc `null`; không đánh dấu không có nghĩa là Sai.
 - Bảng có cột ĐÚNG/SAI: giữ tab/ô rỗng. Một X trong cột Sai phải vẫn là Sai sau làm sạch. Cả hai ô có X hoặc ký hiệu lạ cần xác minh; ô trống giữ unknown.
 - Danh sách số trong phần đúng–sai được giữ làm các nhận định, không tự tách thành câu mới khi có câu cha. Gợi ý nhãn từ dòng trần chỉ khi đủ ranh giới và phải cần duyệt.
 - Mệnh đề đơn trong phần đúng–sai vẫn là một nhận định, kể cả kết thúc bằng dấu hỏi. Không tự giải nó trong bước phân loại.
 
-### Ưu tiên 3: trả lời ngắn hoặc tự luận
+### Nhóm 4: Điền chỗ trống & Trả lời ngắn (FILL_IN_BLANK & SHORT_ANSWER)
 
-- Trả lời ngắn: phần trả lời ngắn hoặc yêu cầu đếm/tính một giá trị, thuật ngữ ngắn, tên gọi/quá trình. Dòng hỏi độc lập kết thúc `?` trong phần trả lời ngắn có thể là một câu riêng dù không ghi số; giữ dấu vết số hiển thị tự tạo.
-- Tự luận: phần tự luận hoặc yêu cầu trình bày/giải thích nguyên nhân/nêu biện pháp/phân tích/chứng minh có lời giải dài. a,b,c trong tự luận là ngữ cảnh/subpart, không tự biến thành đúng–sai.
+- **Điền chỗ trống (`FILL_IN_BLANK` / `fill`)**: Có ký hiệu chỗ trống cần điền: `_____`, `.....`, `[...]`, `(...)`, `{...}`, `\u2026` hoặc câu lệnh "Điền vào chỗ trống", "Điền từ còn thiếu".
+- **Trả lời ngắn (`SHORT_ANSWER` / `short`)**: Phần trả lời ngắn hoặc yêu cầu đếm/tính một giá trị, thuật ngữ ngắn, tên gọi/quá trình. Dòng hỏi độc lập kết thúc `?` trong phần trả lời ngắn có thể là một câu riêng dù không ghi số; giữ dấu vết số hiển thị tự tạo.
+- **Tự luận (`ESSAY`)**: Phần tự luận hoặc yêu cầu trình bày/giải thích nguyên nhân/nêu biện pháp/phân tích/chứng minh có lời giải dài. a,b,c trong tự luận là ngữ cảnh/subpart, không tự biến thành đúng–sai.
 - Tự luận không bị loại khỏi JSON và không được ép thành câu trả lời ngắn để vào engine trắc nghiệm. Cần contract/rubric và quy trình chấm riêng trước khi publication loại này.
 
-## 3. Đáp án và nguồn gốc
+## 3. Nhận diện câu CÓ ĐÁP ÁN vs KHÔNG CÓ ĐÁP ÁN
+
+### Quy ước bằng chứng đáp án (Answer Evidence)
+
+1. **Bôi màu highlight & Shading**:
+   - DOCX: `<w:highlight>` (yellow, green, cyan...) hoặc `<w:shd w:fill="HEX">` trên nhãn hoặc toàn bộ phương án.
+   - Nhãn hoặc phương án có highlight với màu nhất quán toàn tài liệu -> `confidence: 'clear'`, `answerMethod: 'highlight'`.
+2. **Kẻ gạch chân (Underline)**:
+   - DOCX: `<w:u>` trên nhãn phương án (`A.`) hoặc toàn bộ phương án (>80% ký tự) -> `confidence: 'clear'`, `answerMethod: 'underline'`.
+3. **Màu chữ tương phản (Contrasting Font Color)**:
+   - DOCX: `<w:color>` khác màu cơ bản (>80% ký tự) với màu sắc nhất quán -> `confidence: 'clear'`, `answerMethod: 'color'`.
+4. **In đậm (Bold)**:
+   - Nhãn hoặc phương án in đậm trong khi các phương án khác trong câu không in đậm -> `confidence: 'clear'`, `answerMethod: 'bold'`.
+5. **Ký tự đánh dấu trực tiếp**:
+   - Ngôi sao `*A.`, `A*.`
+   - Dấu tích `✓ A.`, `✔ A.`, `√ A.`, `☑ A.`
+   - Đóng mở ngoặc `[x] A.`, `[✓] A.`, `(A)`
+   - Tách bỏ ký tự đánh dấu khỏi nội dung hiển thị của phương án, ghi nhận `answerMethod: 'marker'`.
+6. **Dòng đáp án và Bảng đáp án**:
+   - Dòng: `Đáp án: A`, `Key: B`, `Đ/A: C`, `DA: D`, `Đáp số: 15`.
+   - Bảng đáp án cuối bài: lưới bảng hoặc danh sách inline `1. A   2. B   3. C   4. D`, `1-A, 2-B, 3-C`.
+
+### Quy tắc phân định Có / Không có đáp án
+
+- **Câu ĐÃ CÓ đáp án**:
+  + `has_answer: true` (`hasAnswer: true`).
+  + Trích xuất đúng đáp án vào `correct_answer`, ghi nhận nguồn `EXTRACTED` (`answerOrigin: 'document'`) và `answer_method`.
+- **Câu CHƯA CÓ đáp án**:
+  + `has_answer: false` (`hasAnswer: false`).
+  + `correct_answer: null`, `answer_source: null`.
+  + Thêm chẩn đoán `MISSING_ANSWER` ("Câu hỏi chưa có đáp án").
+  + Đặt `needs_review: true`.
+  + **TUYỆT ĐỐI KHÔNG đoán mò, không mặc định chọn A, không gán False cho các ý đúng/sai**.
+
+## 4. Đáp án và nguồn gốc
 
 - Parser xác định cấu trúc trước, không dùng kiến thức để “sửa” câu. Giữ đáp án gốc nếu evidence rõ, trích đoạn nguồn thật. Màu/gạch chân cần giữ OOXML/ảnh/bằng chứng; không suy từ plain text đã mất màu.
 - Nhiều evidence trái nhau: giữ cảnh báo, `correct_answer: null`, không chọn evidence thuận ý. Mọi chỉnh sửa hình thức không được tự xóa cảnh báo; cần người dùng xác minh hoặc sửa nguồn rõ ràng.
