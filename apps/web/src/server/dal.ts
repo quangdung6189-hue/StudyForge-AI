@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { db, transaction, readWithRetry } from '@studyforge/db';
+import { db, transaction, readWithRetry, Prisma } from '@studyforge/db';
 import {
   attemptDeadline,
   isExpired,
@@ -205,6 +205,8 @@ export async function listUserQuizzes(userId: string) {
       isPublished: true,
       durationMinutes: true,
       shareCode: true,
+      allowReview: true,
+      deadline: true,
       createdAt: true,
     },
   });
@@ -216,6 +218,8 @@ export async function listUserQuizzes(userId: string) {
     isPublished: q.isPublished,
     durationMinutes: q.durationMinutes,
     shareCode: q.shareCode,
+    allowReview: q.allowReview,
+    deadline: q.deadline ? q.deadline.toISOString() : null,
     createdAt: q.createdAt.toISOString(),
   }));
 }
@@ -300,6 +304,66 @@ export async function updateOwnedQuizQuestions(
 
     return { success: true };
   });
+}
+
+export async function updateOwnedQuizSettings(
+  userId: string,
+  quizId: string,
+  settings: {
+    title?: string;
+    description?: string;
+    durationMinutes?: number;
+    allowReview?: boolean;
+    deadline?: string | null;
+    isPublished?: boolean;
+    mode?: 'exam' | 'practice';
+  }
+) {
+  const quiz = await db.quiz.findFirst({
+    where: { id: quizId, ownerId: userId },
+    include: {
+      versions: { orderBy: { version: 'desc' }, take: 1 },
+    },
+  });
+  if (!quiz) throw new DalError('NOT_FOUND', 'Bài kiểm tra không tồn tại');
+
+  let updatedDescription = settings.description !== undefined ? settings.description : quiz.description;
+  if (settings.mode) {
+    const cleanDesc = updatedDescription.replace(/\[mode:(?:exam|practice)\]\s*/g, '');
+    updatedDescription = settings.mode === 'practice' ? `[mode:practice] ${cleanDesc}`.trim() : cleanDesc;
+  }
+
+  const updateData: any = {};
+  if (settings.title !== undefined) updateData.title = settings.title.trim();
+  if (updatedDescription !== undefined) updateData.description = updatedDescription;
+  if (settings.durationMinutes !== undefined) updateData.durationMinutes = settings.durationMinutes;
+  if (settings.allowReview !== undefined) updateData.allowReview = settings.allowReview;
+  if (settings.deadline !== undefined) updateData.deadline = settings.deadline ? new Date(settings.deadline) : null;
+  if (settings.isPublished !== undefined) updateData.isPublished = settings.isPublished;
+
+  const updated = await db.quiz.update({
+    where: { id: quiz.id },
+    data: updateData,
+  });
+
+  if (quiz.versions.length > 0) {
+    const latestVersion = quiz.versions[0];
+    const oldSnapshot = latestVersion.snapshot as unknown as QuizSnapshot;
+    const newSnapshot: QuizSnapshot = {
+      ...oldSnapshot,
+      title: updateData.title ?? oldSnapshot.title,
+      description: updateData.description ?? oldSnapshot.description,
+      durationMinutes: updateData.durationMinutes ?? oldSnapshot.durationMinutes,
+      deadline: updateData.deadline !== undefined ? (updateData.deadline ? updateData.deadline.toISOString() : null) : oldSnapshot.deadline,
+      allowReview: updateData.allowReview !== undefined ? updateData.allowReview : oldSnapshot.allowReview,
+    };
+    await db.quizVersion.update({
+      where: { id: latestVersion.id },
+      data: { snapshot: newSnapshot as any },
+    });
+  }
+
+  return updated;
 }
 
 export async function publishOwnedQuiz(
@@ -394,7 +458,7 @@ export async function publishOwnedQuiz(
 
 // ==================== EXAM ATTEMPTS DAL (ZERO LEAK) ====================
 
-export async function startQuizAttempt(user: UserDTO, params: { quizId?: string; shareCode?: string }) {
+export async function startQuizAttempt(user: UserDTO, params: { quizId?: string; shareCode?: string; retry?: boolean }) {
   const cleanShareCode = typeof params.shareCode === 'string' ? params.shareCode.trim().toUpperCase() : undefined;
   const cleanQuizId = typeof params.quizId === 'string' ? params.quizId.trim() : undefined;
 
@@ -421,6 +485,7 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
 
   const latestVersion = quiz.versions[0];
   const snapshot = latestVersion.snapshot as unknown as QuizSnapshot;
+  const isPracticeMode = quiz.description.includes('[mode:practice]') || snapshot.description?.includes('[mode:practice]');
 
   const now = new Date();
   if (snapshot.deadline && new Date(snapshot.deadline).getTime() <= now.getTime()) {
@@ -439,6 +504,41 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
   });
 
   if (existingAttempt) {
+    // If student already submitted and requested retry (or in practice mode):
+    if ((params.retry || isPracticeMode) && existingAttempt.status === 'submitted') {
+      await db.attemptAnswer.deleteMany({ where: { attemptId: existingAttempt.id } });
+      const newSeed = randomBytes(32).toString('hex');
+      const startedAt = now;
+      const expiresAt = attemptDeadline(startedAt, snapshot.durationMinutes, snapshot.deadline ? new Date(snapshot.deadline) : null);
+      const retried = await db.attempt.update({
+        where: { id: existingAttempt.id },
+        data: {
+          seed: newSeed,
+          startedAt,
+          expiresAt,
+          status: 'started',
+          score: null,
+          totalPoints: null,
+          passed: null,
+          result: Prisma.DbNull,
+          submittedAt: null,
+        },
+        include: { answers: true },
+      });
+      const questions = studentQuestions(snapshot, newSeed);
+      return {
+        attemptId: retried.id,
+        quizTitle: snapshot.title,
+        durationMinutes: snapshot.durationMinutes,
+        startedAt: retried.startedAt.toISOString(),
+        expiresAt: retried.expiresAt.toISOString(),
+        questions,
+        answers: {},
+        isSubmitted: false,
+        isPracticeMode,
+      };
+    }
+
     const questions = studentQuestions(snapshot, existingAttempt.seed);
     const answers: AnswerMap = {};
     for (const a of existingAttempt.answers) {
@@ -457,6 +557,7 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
       totalPoints: existingAttempt.totalPoints ?? undefined,
       passed: existingAttempt.passed ?? undefined,
       details: (existingAttempt.status === 'submitted' && snapshot.allowReview) ? (existingAttempt.result as any) : undefined,
+      isPracticeMode,
     };
   }
 
@@ -483,11 +584,12 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
     attemptId: attempt.id,
     quizTitle: snapshot.title,
     durationMinutes: snapshot.durationMinutes,
-    startedAt: startedAt.toISOString(),
-    expiresAt: expiresAt.toISOString(),
+    startedAt: attempt.startedAt.toISOString(),
+    expiresAt: attempt.expiresAt.toISOString(),
     questions,
     answers: {},
     isSubmitted: false,
+    isPracticeMode,
   };
 }
 

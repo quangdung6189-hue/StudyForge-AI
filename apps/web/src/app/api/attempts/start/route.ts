@@ -13,8 +13,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: { code: 'INVALID_INPUT', message: 'Mã đề thi hoặc ID không hợp lệ' } }, { status: 400 });
     }
 
-    const { quizId, shareCode } = parse.data;
-    const attempt = await startQuizAttempt(user, { quizId, shareCode });
+    const { quizId, shareCode, retry } = parse.data;
+    const attempt = await startQuizAttempt(user, { quizId, shareCode, retry });
     return NextResponse.json(attempt);
   } catch (err: any) {
     const status = err.code === 'UNAUTHORIZED' ? 401 : err.code === 'NOT_FOUND' ? 404 : err.code === 'EXPIRED' ? 410 : 500;

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { QuizSettingsModal } from '@/components/lucian/QuizSettingsModal';
 
 export default function QuizzesListPage() {
   const [quizzes, setQuizzes] = useState<any[]>([]);
@@ -32,6 +33,9 @@ export default function QuizzesListPage() {
       setTimeout(() => setCopiedCode(null), 2000);
     });
   };
+
+  const [customQuiz, setCustomQuiz] = useState<any | null>(null);
+  const openCustomize = (quiz: any) => setCustomQuiz(quiz);
 
   const filteredQuizzes = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -314,6 +318,242 @@ export default function QuizzesListPage() {
           border-color: var(--ux-accent);
           color: var(--ux-accent);
         }
+
+        .badge-practice {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 800;
+          background: color-mix(in srgb, var(--ux-mint) 18%, transparent);
+          color: var(--ux-mint);
+          border: 1px solid color-mix(in srgb, var(--ux-mint) 32%, transparent);
+        }
+        .badge-exam {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 800;
+          background: color-mix(in srgb, var(--ux-accent) 18%, transparent);
+          color: var(--ux-accent);
+          border: 1px solid color-mix(in srgb, var(--ux-accent) 32%, transparent);
+        }
+
+        .qz-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.72);
+          backdrop-filter: blur(6px);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          animation: qzFadeIn 0.2s ease-out;
+        }
+        .qz-modal {
+          width: 100%;
+          max-width: 580px;
+          max-height: 90vh;
+          overflow-y: auto;
+          background: var(--ux-surface);
+          border: 1px solid var(--ux-line);
+          border-radius: 24px;
+          box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5);
+          display: flex;
+          flex-direction: column;
+          animation: qzScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes qzFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes qzScaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .qz-modal-head {
+          padding: 20px 24px;
+          border-bottom: 1px solid var(--ux-line);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .qz-modal-head h2 {
+          font-size: 18px;
+          font-weight: 800;
+          margin: 0;
+          color: var(--ux-ink);
+        }
+        .qz-modal-close {
+          border: 0;
+          background: var(--ux-surface-2);
+          color: var(--ux-ink-2);
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          font-size: 18px;
+          transition: background 0.2s;
+        }
+        .qz-modal-close:hover {
+          background: var(--ux-surface-3);
+          color: var(--ux-ink);
+        }
+
+        .qz-modal-body {
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .qz-mode-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .qz-mode-card {
+          padding: 16px;
+          border-radius: 16px;
+          border: 2px solid var(--ux-line);
+          background: var(--ux-surface-2);
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.2s;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .qz-mode-card:hover {
+          border-color: var(--ux-accent);
+        }
+        .qz-mode-card.active {
+          border-color: var(--ux-accent);
+          background: color-mix(in srgb, var(--ux-accent) 12%, var(--ux-surface));
+          box-shadow: 0 4px 16px color-mix(in srgb, var(--ux-accent) 20%, transparent);
+        }
+        .qz-mode-title {
+          font-size: 14.5px;
+          font-weight: 800;
+          color: var(--ux-ink);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .qz-mode-desc {
+          font-size: 12px;
+          color: var(--ux-ink-2);
+          line-height: 1.5;
+        }
+
+        .qz-form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+        }
+        .qz-form-label {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--ux-ink);
+        }
+        .qz-form-input, .qz-form-textarea {
+          width: 100%;
+          border-radius: 12px;
+          background: var(--ux-surface-2);
+          border: 1px solid var(--ux-line);
+          padding: 10px 14px;
+          font-size: 13.5px;
+          color: var(--ux-ink);
+          font-family: inherit;
+        }
+        .qz-form-input:focus, .qz-form-textarea:focus {
+          border-color: var(--ux-accent);
+          outline: none;
+        }
+        .qz-form-textarea {
+          min-height: 72px;
+          resize: vertical;
+        }
+
+        .qz-checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--ux-ink);
+          cursor: pointer;
+        }
+        .qz-checkbox-label input {
+          width: 17px;
+          height: 17px;
+          accent-color: var(--ux-accent);
+          cursor: pointer;
+        }
+
+        .qz-edit-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 18px;
+          border-radius: 12px;
+          background: var(--ux-surface-2);
+          border: 1px dashed var(--ux-accent);
+          color: var(--ux-accent);
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 700;
+          transition: background 0.2s;
+        }
+        .qz-edit-link:hover {
+          background: color-mix(in srgb, var(--ux-accent) 10%, var(--ux-surface-2));
+        }
+
+        .qz-modal-foot {
+          padding: 16px 24px;
+          border-top: 1px solid var(--ux-line);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .qz-btn-cancel {
+          padding: 10px 18px;
+          border-radius: 12px;
+          border: 1px solid var(--ux-line-2);
+          background: transparent;
+          color: var(--ux-ink-2);
+          font-size: 13.5px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .qz-btn-save {
+          padding: 10px 22px;
+          border-radius: 12px;
+          background: var(--ux-accent);
+          border: 0;
+          color: white;
+          font-size: 13.5px;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 4px 14px color-mix(in srgb, var(--ux-accent) 30%, transparent);
+          transition: transform 0.2s;
+        }
+        .qz-btn-save:hover:not(:disabled) {
+          transform: translateY(-1px);
+        }
+        .qz-btn-unpub {
+          padding: 10px 14px;
+          border-radius: 12px;
+          border: 1px solid var(--ux-danger);
+          background: color-mix(in srgb, var(--ux-danger) 10%, transparent);
+          color: var(--ux-danger);
+          font-size: 12.5px;
+          font-weight: 700;
+          cursor: pointer;
+        }
       `}</style>
 
       {/* Header */}
@@ -393,22 +633,32 @@ export default function QuizzesListPage() {
         </div>
       ) : (
         <div className="qz-grid">
-          {filteredQuizzes.map((quiz) => (
+          {filteredQuizzes.map((quiz) => {
+            const isPractice = quiz.description?.includes('[mode:practice]');
+            const displayDesc = (quiz.description || 'Bài kiểm tra ôn tập và đánh giá kiến thức.').replace(/\[mode:(?:practice|exam)\]\s*/g, '');
+            return (
             <div key={quiz.id} className="qz-card">
               <div className="qz-card-head">
-                <span className={quiz.isPublished ? 'badge-pub' : 'badge-draft'}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: quiz.isPublished ? 'var(--ux-mint)' : 'var(--ux-ink-3)' }} />
-                  {quiz.isPublished ? 'Đã phát hành' : 'Bản nháp'}
-                </span>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span className={quiz.isPublished ? 'badge-pub' : 'badge-draft'}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: quiz.isPublished ? 'var(--ux-mint)' : 'var(--ux-ink-3)' }} />
+                    {quiz.isPublished ? 'Đã phát hành' : 'Bản nháp'}
+                  </span>
+                  {quiz.isPublished && (
+                    <span className={isPractice ? 'badge-practice' : 'badge-exam'}>
+                      {isPractice ? '🔄 Luyện tập' : '📝 Bài kiểm tra'}
+                    </span>
+                  )}
+                </div>
                 <span className="qz-duration">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  {quiz.durationMinutes || 15} phút
+                  {quiz.durationMinutes >= 1440 ? 'Tự do' : `${quiz.durationMinutes || 15} phút`}
                 </span>
               </div>
 
               <div>
                 <h3 className="qz-name" title={quiz.title}>{quiz.title}</h3>
-                <p className="qz-desc">{quiz.description || 'Bài kiểm tra ôn tập và đánh giá kiến thức.'}</p>
+                <p className="qz-desc">{displayDesc}</p>
               </div>
 
               {quiz.shareCode && (
@@ -439,21 +689,45 @@ export default function QuizzesListPage() {
                 {quiz.shareCode && (
                   <Link href={`/quizzes/take?code=${quiz.shareCode}`} className="qz-btn-take">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    Làm bài thi
+                    {isPractice ? 'Luyện tập' : 'Làm bài thi'}
                   </Link>
                 )}
-                <Link
-                  href={quiz.isPublished ? `/quizzes/create?quizId=${quiz.id}` : `/quizzes/create?quizId=${quiz.id}`}
-                  className="qz-btn-edit"
-                  title="Chỉnh sửa hoặc xem cấu trúc đề"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                  {quiz.isPublished ? 'Chi tiết' : 'Biên soạn'}
-                </Link>
+                {quiz.isPublished ? (
+                  <button
+                    type="button"
+                    className="qz-btn-edit"
+                    onClick={() => openCustomize(quiz)}
+                    title="Tùy chỉnh chế độ bài thi hoặc bài luyện tập, chỉnh sửa thông tin"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Tùy chỉnh
+                  </button>
+                ) : (
+                  <Link
+                    href={`/quizzes/create?quizId=${quiz.id}`}
+                    className="qz-btn-edit"
+                    title="Biên soạn tiếp đề thi"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                    Biên soạn
+                  </Link>
+                )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
+      )}
+
+      {customQuiz && (
+        <QuizSettingsModal
+          quiz={customQuiz}
+          onClose={() => setCustomQuiz(null)}
+          onSaved={() => {
+            setCustomQuiz(null);
+            void fetchQuizzes();
+          }}
+        />
       )}
     </div>
   );

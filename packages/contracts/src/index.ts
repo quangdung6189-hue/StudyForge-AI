@@ -93,16 +93,16 @@ export const QuizSnapshotSchema = z.strictObject({
   deadline: z.iso.datetime().nullable(), allowReview: z.boolean(), questions: QuestionListSchema,
 });
 export type QuizSnapshot = z.infer<typeof QuizSnapshotSchema>;
-export const QuizSummarySchema = z.strictObject({ id: IdSchema, title: z.string(), isPublished: z.boolean(), durationMinutes: z.number(), createdAt: z.iso.datetime() });
+export const QuizSummarySchema = z.strictObject({ id: IdSchema, title: z.string(), description: z.string().optional(), isPublished: z.boolean(), durationMinutes: z.number(), allowReview: z.boolean().optional(), deadline: z.string().nullable().optional(), shareCode: z.string().nullable().optional(), createdAt: z.iso.datetime() });
 export const QuizDetailSchema = QuizSummarySchema.extend({ description: z.string(), shareCode: z.string().nullable(), questions: QuestionListSchema });
 
-export const AttemptStartSchema = z.strictObject({ quizId: IdSchema.optional(), shareCode: z.string().trim().min(4).max(64).regex(/^[A-Za-z0-9_-]+$/).optional() })
+export const AttemptStartSchema = z.strictObject({ quizId: IdSchema.optional(), shareCode: z.string().trim().min(4).max(64).regex(/^[A-Za-z0-9_-]+$/).optional(), retry: z.boolean().optional() })
   .refine(v => Boolean(v.quizId || v.shareCode), 'Provide quizId or shareCode');
 export const AnswerMapSchema = z.record(IdSchema, z.array(z.string().max(4000)).max(20)).refine(v => Object.keys(v).length <= 100, 'Too many answers');
 export const SaveAnswersSchema = z.strictObject({ answers: AnswerMapSchema });
 export type AnswerMap = z.infer<typeof AnswerMapSchema>;
 export const AttemptStartResponseSchema = z.strictObject({
-  attemptId: IdSchema, quizTitle: z.string(), durationMinutes: z.number(), startedAt: z.iso.datetime(), expiresAt: z.iso.datetime(), questions: z.array(StudentAttemptQuestionSchema),
+  attemptId: IdSchema, quizTitle: z.string(), durationMinutes: z.number(), startedAt: z.iso.datetime(), expiresAt: z.iso.datetime(), questions: z.array(StudentAttemptQuestionSchema), isPracticeMode: z.boolean().optional(),
 });
 export const GradedQuestionSchema = z.strictObject({
   questionId: IdSchema, earnedPoints: z.number(), points: z.number(), correct: z.boolean(),

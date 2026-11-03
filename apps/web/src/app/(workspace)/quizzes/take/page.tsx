@@ -22,17 +22,22 @@ export default function TakeQuizPage() {
   answersRef.current = answers;
 
   // Start Exam
-  const handleStart = async (codeToUse?: string) => {
+  const handleStart = async (codeToUse?: string, retry = false) => {
     const raw = codeToUse || shareCode;
     const code = raw.trim().toUpperCase();
     if (!code) return;
     setErrorMsg('');
+    if (retry) {
+      setResult(null);
+      setAnswers({});
+      setCurrentIdx(0);
+    }
 
     try {
       const res = await fetch('/api/attempts/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shareCode: code }),
+        body: JSON.stringify({ shareCode: code, retry }),
       });
 
       const data = await res.json();
@@ -468,6 +473,29 @@ export default function TakeQuizPage() {
               </svg>
               <span>Luyện lại câu sai ({incorrectQuestions.length})</span>
             </Link>
+            <button
+              type="button"
+              onClick={() => handleStart(shareCode || initialCode, true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white',
+                border: 0,
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '14px',
+                boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.25)',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+              <span>Làm lại bài thi (Luyện tập)</span>
+            </button>
           </div>
         </div>
 
