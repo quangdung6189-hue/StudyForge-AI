@@ -15,7 +15,7 @@ const ICONS: Record<string, string> = {
   '/documents': '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
   '/quizzes/create': '<rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
   '/quizzes': '<path d="M5 5.5h14a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1h-7l-4.5 3.5V17H5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1z"/>',
-  '/quizzes/take': '<path d="M5 10h14M12 10v14M19 10v14M5 10h14"/>',
+  '/quizzes/take': '<path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2h-5.5"/><polyline points="14 2 14 8 20 8"/><path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l1-3.95 5.42-5.44Z"/>',
   '/study': '<path d="M5 19.5V13M5 9V4.5M12 19.5V11M12 7V4.5M19 19.5V15M19 11V4.5M3 13h4M10 7h4M17 15h4"/>',
 };
 
@@ -48,72 +48,77 @@ export function AppSidebar({ user }: AppSidebarProps) {
   return (
     <aside className="ux u040" data-wide={isWide}>
       <style>{`
-        .u040{--rw:76px;position:relative;display:flex;gap:10px}
-        .u040[data-wide="true"]{--rw:200px}
-        .u040-rail{position:relative;flex:none;width:var(--rw);padding:12px 10px;border-radius:24px;background:var(--ux-surface);color:var(--ux-ink);overflow:hidden;transition:width .6s var(--ux-spring)}
-        .u040-top{display:flex;align-items:center;gap:10px;height:44px;margin-bottom:14px}
-        .u040-logo{width:36px;height:36px;flex:none;margin-left:10px;border-radius:12px;background:var(--ux-grad);color:#fff;font-weight:800;font-size:18px;display:grid;place-items:center}
-        .u040-name{font-size:15.5px;font-weight:780;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--rw) - 90px);opacity:0;transition:opacity .25s}
-        .u040[data-wide="true"] .u040-name{opacity:1;transition:opacity .3s .15s}
-        .u040-tog{position:absolute;right:-1px;top:16px;width:30px;height:36px;border:0;padding:0;border-radius:10px 0 0 10px;background:color-mix(in srgb,var(--ux-surface-2) 14%,transparent);color:var(--ux-ink);display:grid;place-items:center;opacity:0;transition:opacity .2s;cursor:pointer}
+        .u040{--rw:76px;position:relative;display:flex;background:#0F1523;border-right:1px solid rgba(255,255,255,0.06);transition:width .4s var(--ux-spring)}
+        .u040[data-wide="true"]{--rw:210px}
+        .u040-rail{position:relative;flex:none;width:var(--rw);padding:14px 10px;background:#0F1523;color:var(--ux-ink);overflow:hidden;transition:width .4s var(--ux-spring);display:flex;flex-direction:column;justify-content:space-between;min-height:100vh}
+        .u040-top{display:flex;align-items:center;gap:12px;height:44px;margin-bottom:18px}
+        .u040-logo{width:36px;height:36px;flex:none;margin-left:8px;border-radius:12px;background:var(--ux-grad);color:#fff;font-weight:800;font-size:17px;display:grid;place-items:center;box-shadow:0 4px 12px rgba(99,102,241,0.3)}
+        .u040-name{font-size:15px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--rw) - 90px);opacity:0;color:#F8FAFC;transition:opacity .2s}
+        .u040[data-wide="true"] .u040-name{opacity:1;transition:opacity .25s .1s}
+        .u040-tog{position:absolute;right:2px;top:18px;width:28px;height:34px;border:0;padding:0;border-radius:8px;background:rgba(255,255,255,0.05);color:#94A3B8;display:grid;place-items:center;opacity:0;transition:opacity .2s,background .2s,color .2s;cursor:pointer}
         .u040-rail:hover .u040-tog,.u040-tog:focus-visible,.u040[data-wide="true"] .u040-tog{opacity:1}
+        .u040-tog:hover{color:#F8FAFC;background:rgba(255,255,255,0.08)}
         @media (hover:none){.u040-tog{opacity:1}}
-        .u040-tog svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .5s var(--ux-spring)}
+        .u040-tog svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .4s var(--ux-spring)}
         .u040[data-wide="true"] .u040-tog svg{transform:rotate(180deg)}
-        .u040-nav{position:relative;margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
-        .u040-hl{position:absolute;left:0;right:0;top:0;height:48px;border-radius:15px;background:color-mix(in srgb,var(--ux-page) 15%,transparent);transform:translateY(var(--y,0));transition:transform .5s var(--ux-spring);pointer-events:none}
-        .u040-hl::before{content:"";position:absolute;left:-10px;top:12px;bottom:12px;width:4px;border-radius:0 4px 4px 0;background:var(--ux-grad)}
-        .u040-it{position:relative;display:flex;align-items:center;gap:14px;width:100%;height:48px;padding:0 0 0 16px;border:0;border-radius:15px;background:none;color:inherit;opacity:.62;text-align:left;transition:opacity .25s;cursor:pointer;text-decoration:none}
-        .u040-it:hover,.u040-it[aria-current="page"]{opacity:1}
-        .u040-it svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-        .u040-it span{font-size:14.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--rw) - 48px);opacity:0;transform:translateX(-8px);transition:opacity .2s,transform .35s var(--ux-ease)}
-        .u040[data-wide="true"] .u040-it span{opacity:1;transform:none;transition:opacity .3s var(--ux-ease),transform .5s var(--ux-spring);transition-delay:calc(.12s + var(--i) * 35ms)}
-        .u040-me{position:absolute;left:10px;right:10px;bottom:12px;display:flex;align-items:center;gap:10px;padding:0 8px;border-radius:14px;background:color-mix(in srgb,var(--ux-surface-2) 10%,transparent)}
-        .u040-av{width:32px;height:32px;border-radius:50%;background:var(--ux-grad);color:#fff;font-weight:800;font-size:14px;display:grid;place-items:center;flex:none}
-        .u040-me-info{min-width:0}
-        .u040-me-name{font-size:13px;font-weight:700;color:var(--ux-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .u040-me-role{font-size:11px;color:color-mix(in srgb,var(--ux-ink-2) 85%,transparent);font-weight:600;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .u040-logout{background:none;border:0;color:color-mix(in srgb,var(--ux-ink-2) 85%,transparent);cursor:pointer;font-size:16px;padding:6px;border-radius:8px;transition:color .2s,background-color .2s}
-        .u040-logout:hover{color:var(--ux-danger);background:color-mix(in srgb,var(--ux-danger) 12%,transparent)}
+        .u040-nav{position:relative;margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+        .u040-hl{position:absolute;left:0;right:0;top:0;height:48px;border-radius:12px;background:rgba(99,102,241,0.12);transform:translateY(var(--y,0));transition:transform .35s var(--ux-spring);pointer-events:none}
+        .u040-hl::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3.5px;border-radius:0 3px 3px 0;background:#6366F1}
+        .u040-it{position:relative;display:flex;align-items:center;gap:14px;width:100%;height:48px;padding:0 0 0 16px;border:0;border-radius:12px;background:none;color:#94A3B8;opacity:.78;text-align:left;transition:opacity .2s,color .2s,background-color .2s;cursor:pointer;text-decoration:none}
+        .u040-it:hover{opacity:1;color:#F8FAFC;background:rgba(255,255,255,0.04)}
+        .u040-it[aria-current="page"]{opacity:1;color:#818CF8;font-weight:700}
+        .u040-it svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+        .u040-it[aria-current="page"] svg{stroke:#818CF8}
+        .u040-it span{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--rw) - 48px);opacity:0;transform:translateX(-6px);transition:opacity .2s,transform .25s var(--ux-ease)}
+        .u040[data-wide="true"] .u040-it span{opacity:1;transform:none;transition:opacity .25s var(--ux-ease),transform .35s var(--ux-spring);transition-delay:calc(.08s + var(--i) * 25ms)}
+        .u040-me{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);margin-top:auto}
+        .u040-av{width:32px;height:32px;border-radius:50%;background:var(--ux-grad);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center;flex:none}
+        .u040-me-info{min-width:0;flex:1}
+        .u040-me-name{font-size:13px;font-weight:700;color:#F8FAFC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .u040-me-role{font-size:10.5px;color:#94A3B8;font-weight:600;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.03em}
+        .u040-logout{background:none;border:0;color:#94A3B8;cursor:pointer;display:grid;place-items:center;width:32px;height:32px;border-radius:8px;transition:color .2s,background-color .2s;flex:none}
+        .u040-logout:hover{color:#EF4444;background:rgba(239,68,68,0.12)}
       `}</style>
 
       <nav className="u040-rail" aria-label="Main menu">
-        <div className="u040-top">
-          <span className="u040-logo" aria-hidden="true">SF</span>
-          <span className="u040-name">StudyForge AI</span>
+        <div>
+          <div className="u040-top">
+            <span className="u040-logo" aria-hidden="true">SF</span>
+            <span className="u040-name">StudyForge AI</span>
+          </div>
+          <button
+            className="u040-tog"
+            type="button"
+            aria-expanded={isWide}
+            aria-label={isWide ? 'Thu gọn menu' : 'Mở rộng menu'}
+            onClick={() => setIsWide(!isWide)}
+          >
+            <svg viewBox="0 0 16 16"><path d="M6 3.5L10.5 8 6 12.5"/></svg>
+          </button>
+          <ul className="u040-nav">
+            <li className="u040-hl" role="presentation" style={{ transform: `translateY(${activeIndex * 54}px)` }}></li>
+            {navItems.map((item, i) => {
+              const isActive = item.href === active;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="u040-it"
+                    style={{ '--i': i } as React.CSSProperties}
+                    aria-current={isActive ? 'page' : undefined}
+                    onClick={() => {
+                      setActive(item.href);
+                      if (!isWide) setIsWide(false);
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ICONS[item.href] || '' }} />
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </div>
-        <button
-          className="u040-tog"
-          type="button"
-          aria-expanded={isWide}
-          aria-label={isWide ? 'Thu gọn menu' : 'Mở rộng menu'}
-          onClick={() => setIsWide(!isWide)}
-        >
-          <svg viewBox="0 0 16 16"><path d="M6 3.5L10.5 8 6 12.5"/></svg>
-        </button>
-        <ul className="u040-nav">
-          <li className="u040-hl" role="presentation" style={{ transform: `translateY(${activeIndex * 52}px)` }}></li>
-          {navItems.map((item, i) => {
-            const isActive = item.href === active;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="u040-it"
-                  style={{ '--i': i } as React.CSSProperties}
-                  aria-current={isActive ? 'page' : undefined}
-                  onClick={() => {
-                    setActive(item.href);
-                    if (!isWide) setIsWide(false);
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ICONS[item.href] || '' }} />
-                  <span>{item.label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
         {user && (
           <div className="u040-me">
             <span className="u040-av">{user.name.charAt(0).toUpperCase()}</span>
@@ -123,8 +128,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 {user.role === 'teacher' ? 'Giáo viên' : user.role === 'admin' ? 'Quản trị' : 'Học sinh'}
               </div>
             </div>
-            <button className="u040-logout" type="button" onClick={handleLogout} aria-label="Đăng xuất">
-              🚪
+            <button className="u040-logout" type="button" onClick={handleLogout} aria-label="Đăng xuất" title="Đăng xuất">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
             </button>
           </div>
         )}
