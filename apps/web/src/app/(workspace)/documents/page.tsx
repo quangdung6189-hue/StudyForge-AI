@@ -5,6 +5,7 @@ import type { DocumentDTO, QuestionType } from '@studyforge/contracts';
 import type { analyzeDocument } from '@/server/question-sections';
 import { LucianUpload } from '@/components/lucian/LucianUpload';
 import { LucianDocumentTabs } from '@/components/lucian/LucianDocumentTabs';
+import { DocxViewer } from '@/components/DocxViewer';
 import './documents.css';
 
 type Analysis = ReturnType<typeof analyzeDocument>;
@@ -19,7 +20,7 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentDTO[]>([]), [doc, setDoc] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true), [reading, setReading] = useState(false), [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [origView, setOrigView] = useState<'paper' | 'embedded'>('paper');
+  const [zoom, setZoom] = useState(100);
   const [rawText, setRawText] = useState(''), [active, setActive] = useState('questions'), [filter, setFilter] = useState('all'), [search, setSearch] = useState('');
   const [error, setError] = useState(''), [notice, setNotice] = useState(''), [libSearch, setLibSearch] = useState('');
   const [questionPage, setQuestionPage] = useState(0);
@@ -149,78 +150,119 @@ export default function DocumentsPage() {
           {filter !== 'unsupported' && !questions.length && <div className="documents-empty">Chưa có câu phù hợp. Xem văn bản hoặc bản gốc để kiểm tra bố cục; bạn vẫn có thể dùng AI tạo câu mới từ kiến thức đã đọc.</div>}
         </>}
         {active === 'text' && <div className="u039-row documents-text"><div className="documents-text-top"><label htmlFor="document-text">Văn bản theo thứ tự trang</label><button disabled={!dirty || reading || saving} onClick={() => void save()}>{saving ? 'Đang lưu…' : 'Lưu & phân loại lại'}</button></div><textarea id="document-text" value={rawText} onChange={event => setRawText(event.target.value)} spellCheck={false}/><p className="documents-hint">Giữ tiêu đề PHẦN I/II/III, số Câu, nhãn A/B/C/D và dấu đáp án. Không thêm đáp án nếu bản gốc chưa ghi.</p></div>}
-        {active === 'original' && (
-          <div className="u039-row documents-original">
-            <div className="documents-original-bar">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="documents-qpill" style={{ background: 'var(--ux-accent)', color: 'white' }}>
-                  {doc.fileType.includes('pdf') ? 'FILE PDF' : doc.fileType.includes('word') ? 'FILE WORD' : doc.fileType.startsWith('image/') ? 'FILE ẢNH' : 'VĂN BẢN'}
-                </span>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ux-ink)' }}>{doc.title}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {doc.fileType === 'application/pdf' && (
-                  <div className="documents-view-toggle">
-                    <button
-                      type="button"
-                      className={`documents-view-btn${origView === 'paper' ? ' active' : ''}`}
-                      onClick={() => setOrigView('paper')}
+        {active === 'original' && (() => {
+          const isWord = doc.fileType.includes('word') || doc.fileType.includes('officedocument') || doc.title.toLowerCase().endsWith('.docx') || doc.title.toLowerCase().endsWith('.doc');
+          const isPdf = doc.fileType === 'application/pdf' || doc.title.toLowerCase().endsWith('.pdf');
+          const isImage = doc.fileType.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(doc.title);
+          return (
+            <div className="u039-row documents-original" style={{ padding: 0 }}>
+              <div className="documents-file-viewer-wrapper">
+                <div className="documents-file-viewer-bar">
+                  <div className="documents-file-viewer-info">
+                    <span
+                      className="documents-qpill"
+                      style={{
+                        background: isWord ? '#2563EB' : isPdf ? '#DC2626' : isImage ? '#7C3AED' : 'var(--ux-accent)',
+                        color: 'white',
+                      }}
                     >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                      Đọc văn bản
-                    </button>
-                    <button
-                      type="button"
-                      className={`documents-view-btn${origView === 'embedded' ? ' active' : ''}`}
-                      onClick={() => setOrigView('embedded')}
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-                      File PDF nhúng
-                    </button>
+                      {isWord ? 'FILE WORD (.DOCX)' : isPdf ? 'FILE PDF' : isImage ? 'FILE ẢNH' : 'VĂN BẢN'}
+                    </span>
+                    <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--ux-ink)' }}>{doc.title}</span>
                   </div>
-                )}
-                <a href={`/api/documents/${doc.id}/file`} target="_blank" rel="noreferrer" className="documents-download-btn">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  Mở trong tab mới ↗
-                </a>
-              </div>
-            </div>
 
-            {doc.fileType === 'application/pdf' && origView === 'embedded' ? (
-              <div className="documents-pdf-wrapper">
-                <iframe title="Bản PDF gốc" src={`/api/documents/${doc.id}/file`} style={{ width: '100%', height: '700px', border: 0 }} />
-              </div>
-            ) : doc.fileType.startsWith('image/') ? (
-              <div style={{ textAlign: 'center', padding: '16px', background: 'var(--ux-surface-2)', borderRadius: '16px' }}>
-                <img alt="Tài liệu gốc để đối chiếu" src={`/api/documents/${doc.id}/file`} style={{ maxWidth: '100%', maxHeight: '800px', borderRadius: '12px', boxShadow: '0 8px 30px var(--ux-shadow)' }} />
-              </div>
-            ) : (
-              <div className="documents-original-paper">
-                <div className="documents-original-paper-head">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="documents-qpill" style={{ background: 'var(--ux-accent)', color: 'white' }}>BẢN ĐỌC GỐC</span>
-                    <span style={{ fontSize: '13px', color: 'var(--ux-ink-2)', fontWeight: 600 }}>Hiển thị trực tiếp nội dung văn bản bóc tách từng trang</span>
-                  </div>
-                  <span style={{ fontSize: '12px', color: 'var(--ux-ink-3)' }}>{doc.chunks?.length ?? 1} trang / phân đoạn</span>
-                </div>
-                <div className="documents-original-paper-body">
-                  {doc.chunks && doc.chunks.length > 0 ? (
-                    doc.chunks.map((chunk, idx) => (
-                      <div key={chunk.id || idx} className="documents-page-sheet">
-                        <div className="documents-page-number">Trang {chunk.pageNumber ?? (idx + 1)}</div>
-                        <pre className="documents-page-content">{chunk.content}</pre>
+                  <div className="documents-file-viewer-actions">
+                    {(isWord || isImage) && (
+                      <div className="documents-zoom-controls">
+                        <button
+                          type="button"
+                          className="documents-zoom-btn"
+                          onClick={() => setZoom(z => Math.max(50, z - 15))}
+                          disabled={zoom <= 50}
+                          title="Thu nhỏ"
+                        >
+                          −
+                        </button>
+                        <button
+                          type="button"
+                          className="documents-zoom-btn documents-zoom-label"
+                          onClick={() => setZoom(100)}
+                          title="Đặt lại kích thước 100%"
+                        >
+                          {zoom}%
+                        </button>
+                        <button
+                          type="button"
+                          className="documents-zoom-btn"
+                          onClick={() => setZoom(z => Math.min(200, z + 15))}
+                          disabled={zoom >= 200}
+                          title="Phóng to"
+                        >
+                          +
+                        </button>
                       </div>
-                    ))
-                  ) : (
-                    <div className="documents-page-sheet">
+                    )}
+
+                    <a
+                      href={`/api/documents/${doc.id}/file?download=1`}
+                      className="documents-download-btn"
+                      title="Tải file gốc về máy tính"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Tải file gốc ⬇
+                    </a>
+
+                    <a
+                      href={`/api/documents/${doc.id}/file`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="documents-download-btn"
+                      title="Mở file trực tiếp trong tab mới của trình duyệt"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                      </svg>
+                      Mở trong tab mới ↗
+                    </a>
+                  </div>
+                </div>
+
+                {isWord ? (
+                  <DocxViewer url={`/api/documents/${doc.id}/file`} zoom={zoom} />
+                ) : isPdf ? (
+                  <iframe
+                    title={`Bản PDF gốc - ${doc.title}`}
+                    src={`/api/documents/${doc.id}/file`}
+                    className="documents-pdf-frame"
+                  />
+                ) : isImage ? (
+                  <div className="documents-image-viewer">
+                    <img
+                      alt={doc.title}
+                      src={`/api/documents/${doc.id}/file`}
+                      style={{
+                        transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined,
+                        transformOrigin: 'center center',
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="docx-viewer-shell" style={{ padding: '24px' }}>
+                    <div className="documents-page-sheet" style={{ width: '100%', maxWidth: '820px' }}>
                       <pre className="documents-page-content">{doc.rawText || 'Không có nội dung văn bản.'}</pre>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          );
+        })()}
         {active === 'questions' && rows.length > 20 && <nav className="documents-tools" aria-label="Trang câu hỏi tài liệu"><button disabled={!questionPage} onClick={() => setQuestionPage(value => value - 1)}>← Trang trước</button><span>Trang {questionPage + 1}/{Math.ceil(rows.length / 20)}</span><button disabled={(questionPage + 1) * 20 >= rows.length} onClick={() => setQuestionPage(value => value + 1)}>Trang sau →</button></nav>}
       </LucianDocumentTabs>
     </> : <div className="documents-empty">Chọn tài liệu từ thư viện hoặc tải file mới để bắt đầu.</div>}</section></div>

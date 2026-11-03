@@ -12,8 +12,25 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     const doc = await db.document.findFirst({ where: { id, ownerId: user.id } });
     if (!doc) return Response.json({ error: { code: 'NOT_FOUND', message: 'Không tìm thấy tài liệu.' } }, { status: 404 });
     const bytes = await readOriginalDocument(user.id, doc.storageKey, id);
-    const safeTypes = ['application/pdf', 'text/plain', 'image/png', 'image/jpeg', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const url = new URL(req.url);
+    const isDownload = url.searchParams.get('download') === '1';
+    const safeTypes = [
+      'application/pdf',
+      'text/plain',
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+    ];
     const mime = safeTypes.includes(doc.fileType) ? doc.fileType : 'application/octet-stream';
+    let filename = doc.title;
+    if (doc.fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && !filename.toLowerCase().endsWith('.docx')) {
+      filename += '.docx';
+    } else if (doc.fileType === 'application/pdf' && !filename.toLowerCase().endsWith('.pdf')) {
+      filename += '.pdf';
+    }
+    const disposition = isDownload || mime === 'application/octet-stream' ? 'attachment' : 'inline';
     let start = 0, end = bytes.length - 1;
     const range = req.headers.get('range');
     if (range) {
@@ -30,7 +47,18 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
       const next = Math.min(cursor + 64 * 1024, end + 1);
       controller.enqueue(new Uint8Array(bytes.subarray(cursor, next))); cursor = next;
     } });
-    return new Response(stream, { status: range ? 206 : 200, headers: { 'Content-Type': mime, 'Content-Disposition': `${mime === 'application/octet-stream' ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(doc.title)}`, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'SAMEORIGIN', 'Accept-Ranges': 'bytes', ...(range ? { 'Content-Range': `bytes ${start}-${end}/${bytes.length}` } : {}) } });
+    return new Response(stream, {
+      status: range ? 206 : 200,
+      headers: {
+        'Content-Type': mime,
+        'Content-Disposition': `${disposition}; filename*=UTF-8''${encodeURIComponent(filename)}`,
+        'Cache-Control': 'private, no-store',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'Accept-Ranges': 'bytes',
+        ...(range ? { 'Content-Range': `bytes ${start}-${end}/${bytes.length}` } : {}),
+      },
+    });
   } catch (error) {
     if ((error as { code?: string }).code === 'UNAUTHORIZED') return uploadErrorResponse(error);
     const msg = (error as Error)?.message || 'Không mở được file gốc. Bạn có thể tải lại file.';
