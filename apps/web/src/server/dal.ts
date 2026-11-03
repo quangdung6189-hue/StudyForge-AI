@@ -126,6 +126,72 @@ export async function updateOwnedDocument(userId: string, documentId: string, up
   });
 }
 
+export async function deleteOwnedDocument(userId: string, documentId: string) {
+  const existing = await db.document.findFirst({
+    where: { id: documentId, ownerId: userId },
+    include: {
+      banks: {
+        include: {
+          quiz: {
+            include: {
+              attempts: { select: { id: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!existing) {
+    throw new DalError('NOT_FOUND', 'Tài liệu không tồn tại hoặc bạn không có quyền truy cập');
+  }
+
+  if (existing.storageKey.startsWith('editor-source:') || existing.storageKey.startsWith('editor:')) {
+    throw new DalError('CONFLICT', 'Bản thảo biên soạn được bảo vệ. Hãy xóa từ Trình biên soạn đề thi.');
+  }
+
+  const hasAttempts = existing.banks.some(b => b.quiz?.attempts && b.quiz.attempts.length > 0);
+  if (hasAttempts) {
+    throw new DalError(
+      'CONFLICT',
+      'Tài liệu này đã được dùng để tạo đề thi có học sinh làm bài. Không thể xóa để bảo toàn kết quả thi.'
+    );
+  }
+
+  return transaction(async tx => {
+    for (const bank of existing.banks) {
+      if (bank.quiz) {
+        await tx.quizVersion.deleteMany({ where: { quizId: bank.quiz.id } });
+        await tx.quiz.delete({ where: { id: bank.quiz.id } });
+      }
+      await tx.questionOption.deleteMany({ where: { question: { bankId: bank.id } } });
+      await tx.question.deleteMany({ where: { bankId: bank.id } });
+      await tx.questionBank.delete({ where: { id: bank.id } });
+    }
+
+    await tx.documentChunk.deleteMany({ where: { documentId } });
+    await tx.documentFile.deleteMany({ where: { documentId } });
+    await tx.document.delete({ where: { id: documentId } });
+
+    try {
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const root = process.env.STUDYFORGE_ROOT ?? process.cwd();
+      const metaFile = path.join(root, '.data', 'document-extraction', `${documentId}.json`);
+      await fs.unlink(metaFile);
+    } catch {}
+
+    if (!existing.storageKey.startsWith('db:')) {
+      try {
+        const { documentStorage } = await import('./document-files');
+        await documentStorage().discardUpload({ id: userId }, existing.storageKey);
+      } catch {}
+    }
+
+    return { id: documentId, success: true };
+  });
+}
+
 // ==================== QUIZZES DAL ====================
 
 export async function listUserQuizzes(userId: string) {
