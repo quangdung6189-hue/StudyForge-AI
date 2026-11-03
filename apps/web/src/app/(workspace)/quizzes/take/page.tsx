@@ -145,8 +145,9 @@ export default function TakeQuizPage() {
             align-items: center;
             justify-content: center;
             padding: 40px 16px;
-            background-color: #090D16;
+            background-color: var(--ux-page);
             overflow: hidden;
+            transition: background-color .2s ease;
           }
           .ambient-radial-glow {
             position: absolute;
@@ -157,10 +158,11 @@ export default function TakeQuizPage() {
             height: 560px;
             max-width: 92vw;
             max-height: 92vh;
-            background: radial-gradient(ellipse 65% 55% at 50% 50%, rgba(99, 102, 241, 0.08) 0%, rgba(56, 189, 248, 0.04) 45%, transparent 75%);
+            background: radial-gradient(ellipse 65% 55% at 50% 50%, rgba(99, 102, 241, 0.12) 0%, rgba(56, 189, 248, 0.05) 45%, transparent 75%);
             pointer-events: none;
             z-index: 0;
             filter: blur(24px);
+            opacity: var(--ux-glow-opacity, 0.8);
           }
           .join-card {
             position: relative;
@@ -169,35 +171,36 @@ export default function TakeQuizPage() {
             max-width: 480px;
             padding: 44px 36px;
             border-radius: 16px; /* rounded-2xl */
-            background: #161E31;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
+            background: var(--ux-surface);
+            border: 1px solid var(--ux-line);
+            box-shadow: 0 25px 50px -12px var(--ux-shadow-strong), 0 0 0 1px var(--ux-line);
             text-align: center;
             backdrop-filter: blur(8px);
+            transition: background-color .2s ease, border-color .2s ease;
           }
           .join-icon-badge {
             width: 56px;
             height: 56px;
             margin: 0 auto 20px;
             border-radius: 16px;
-            background: rgba(99, 102, 241, 0.10); /* bg-indigo-500/10 */
-            border: 1px solid rgba(99, 102, 241, 0.20); /* border-indigo-500/20 */
+            background: var(--ux-accent-soft);
+            border: 1px solid var(--ux-accent-soft);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #818CF8;
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12);
+            color: var(--ux-accent-text);
+            box-shadow: 0 4px 16px var(--ux-shadow);
           }
           .join-title {
             font-size: 24px;
             font-weight: 800;
-            color: #F8FAFC;
+            color: var(--ux-ink);
             margin: 0 0 8px;
             letter-spacing: -0.02em;
           }
           .join-desc {
             font-size: 14px;
-            color: #94A3B8;
+            color: var(--ux-ink-3);
             margin: 0 0 24px;
             line-height: 1.5;
           }
@@ -205,28 +208,28 @@ export default function TakeQuizPage() {
             width: 100%;
             height: 54px;
             border-radius: 12px;
-            background: #0B0F19; /* Inset depth: darker than card */
-            border: 1px solid rgba(51, 65, 85, 0.8); /* border-slate-700/80 */
+            background: var(--ux-surface-2); /* Inset depth: darker than card */
+            border: 1px solid var(--ux-line-2);
             text-align: center;
             font-size: 19px;
             font-weight: 700;
             letter-spacing: 3px;
-            color: #F8FAFC;
+            color: var(--ux-ink);
             outline: none;
             margin: 0 0 16px;
             text-transform: uppercase;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
-            transition: border-color 0.2s, box-shadow 0.2s;
+            box-shadow: inset 0 2px 4px var(--ux-shadow);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
           }
           .join-input::placeholder {
-            color: #64748B; /* text-slate-500 */
+            color: var(--ux-ink-3);
             letter-spacing: 1px;
             font-weight: 500;
             font-size: 15px;
           }
           .join-input:focus {
-            border-color: #6366F1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4), inset 0 2px 4px rgba(0, 0, 0, 0.4);
+            border-color: var(--ux-accent);
+            box-shadow: 0 0 0 3px var(--ux-accent-soft), inset 0 2px 4px var(--ux-shadow);
           }
           .join-btn {
             width: 100%;
@@ -260,14 +263,14 @@ export default function TakeQuizPage() {
             align-items: center;
             justify-content: center;
             gap: 6px;
-            color: #EF4444;
+            color: var(--ux-danger);
             font-size: 13px;
             font-weight: 600;
             margin-bottom: 16px;
             padding: 8px 12px;
-            background: rgba(239, 68, 68, 0.1);
+            background: color-mix(in srgb, var(--ux-danger) 10%, transparent);
             border-radius: 8px;
-            border: 1px solid rgba(239, 68, 68, 0.2);
+            border: 1px solid color-mix(in srgb, var(--ux-danger) 25%, transparent);
           }
         `}</style>
 
@@ -331,9 +334,9 @@ export default function TakeQuizPage() {
           .res-card {
             padding: 40px 32px;
             border-radius: 16px;
-            background: #161E31;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            background: var(--ux-surface);
+            border: 1px solid var(--ux-line);
+            box-shadow: 0 25px 50px -12px var(--ux-shadow-strong);
             margin-bottom: 24px;
             text-align: center;
           }
@@ -347,19 +350,19 @@ export default function TakeQuizPage() {
             justify-content: center;
           }
           .res-icon-pass {
-            background: rgba(16, 185, 129, 0.12);
-            border: 1px solid rgba(16, 185, 129, 0.25);
-            color: #10B981;
+            background: color-mix(in srgb, var(--ux-mint) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--ux-mint) 25%, transparent);
+            color: var(--ux-mint);
           }
           .res-icon-fail {
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            color: #EF4444;
+            background: color-mix(in srgb, var(--ux-danger) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--ux-danger) 25%, transparent);
+            color: var(--ux-danger);
           }
           .res-score {
             font-size: 56px;
             font-weight: 900;
-            color: ${result.passed ? '#10B981' : '#EF4444'};
+            color: ${result.passed ? 'var(--ux-mint)' : 'var(--ux-danger)'};
             letter-spacing: -0.03em;
             margin: 8px 0 4px;
           }
@@ -369,15 +372,15 @@ export default function TakeQuizPage() {
             border-radius: 999px;
             font-size: 13px;
             font-weight: 800;
-            background: ${result.passed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'};
-            color: ${result.passed ? '#10B981' : '#EF4444'};
+            background: ${result.passed ? 'color-mix(in srgb, var(--ux-mint) 15%, transparent)' : 'color-mix(in srgb, var(--ux-danger) 15%, transparent)'};
+            color: ${result.passed ? 'var(--ux-mint)' : 'var(--ux-danger)'};
             margin-bottom: 20px;
           }
           .res-review-item {
             padding: 20px;
             border-radius: 14px;
-            background: #0B0F19;
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: var(--ux-surface-2);
+            border: 1px solid var(--ux-line);
             margin-bottom: 16px;
             text-align: left;
           }
@@ -385,10 +388,10 @@ export default function TakeQuizPage() {
             margin-top: 10px;
             padding: 10px 14px;
             border-radius: 8px;
-            background: #161E31;
+            background: var(--ux-surface);
             font-size: 13px;
-            color: #CBD5E1;
-            border-left: 3px solid #6366F1;
+            color: var(--ux-ink-2);
+            border-left: 3px solid var(--ux-accent);
           }
         `}</style>
 
@@ -418,7 +421,7 @@ export default function TakeQuizPage() {
           <div className="res-status">
             {result.passed ? 'KẾT QUẢ: ĐẠT' : 'KẾT QUẢ: CẦN CỐ GẮNG'}
           </div>
-          <p style={{ fontSize: '14px', color: '#94A3B8', margin: '0 0 24px', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '14px', color: 'var(--ux-ink-3)', margin: '0 0 24px', lineHeight: 1.5 }}>
             {result.passed
               ? 'Chúc mừng bạn đã hoàn thành xuất sắc bài kiểm tra!'
               : 'Hãy xem lại các câu chưa chính xác và tiếp tục luyện tập.'}
@@ -433,9 +436,9 @@ export default function TakeQuizPage() {
                 gap: '8px',
                 padding: '12px 24px',
                 borderRadius: '12px',
-                background: '#0B0F19',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                color: '#F8FAFC',
+                background: 'var(--ux-surface-2)',
+                border: '1px solid var(--ux-line)',
+                color: 'var(--ux-ink)',
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '14px',
@@ -451,7 +454,7 @@ export default function TakeQuizPage() {
                 gap: '8px',
                 padding: '12px 28px',
                 borderRadius: '12px',
-                background: '#4F46E5',
+                background: 'var(--ux-accent)',
                 color: 'white',
                 textDecoration: 'none',
                 fontWeight: 600,
@@ -470,7 +473,7 @@ export default function TakeQuizPage() {
 
         {questionsList.length > 0 && (
           <div>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#F8FAFC', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--ux-ink)', marginBottom: '16px' }}>
               Chi tiết giải thích & Căn cứ trích dẫn nguồn:
             </h3>
             {questionsList.map((q: any, idx: number) => (
@@ -478,24 +481,24 @@ export default function TakeQuizPage() {
                 key={idx}
                 className="res-review-item"
                 style={{
-                  borderLeft: `4px solid ${q.correct ? '#10B981' : '#EF4444'}`,
+                  borderLeft: `4px solid ${q.correct ? 'var(--ux-mint)' : 'var(--ux-danger)'}`,
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <b style={{ fontSize: '14px', color: q.correct ? '#10B981' : '#EF4444' }}>
+                  <b style={{ fontSize: '14px', color: q.correct ? 'var(--ux-mint)' : 'var(--ux-danger)' }}>
                     Câu {idx + 1}: {q.correct ? '✓ Đúng' : '✕ Chưa đúng'} (+{q.earnedPoints}/{q.points} điểm)
                   </b>
                 </div>
 
                 {q.explanation && (
-                  <div style={{ fontSize: '13px', color: '#CBD5E1', marginTop: '8px', lineHeight: 1.6 }}>
-                    <b style={{ color: '#F8FAFC' }}>Giải thích chi tiết:</b> {q.explanation}
+                  <div style={{ fontSize: '13px', color: 'var(--ux-ink-2)', marginTop: '8px', lineHeight: 1.6 }}>
+                    <b style={{ color: 'var(--ux-ink)' }}>Giải thích chi tiết:</b> {q.explanation}
                   </div>
                 )}
 
                 {q.sourceRefs?.length > 0 && (
                   <div className="citation-tag">
-                    <b style={{ color: '#818CF8' }}>Trích dẫn tài liệu:</b> "{q.sourceRefs[0].quote}"
+                    <b style={{ color: 'var(--ux-accent)' }}>Trích dẫn tài liệu:</b> "{q.sourceRefs[0].quote}"
                   </div>
                 )}
               </div>
@@ -517,9 +520,9 @@ export default function TakeQuizPage() {
         .exam-header {
           padding: 16px 24px;
           border-radius: 16px;
-          background: #161E31;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+          background: var(--ux-surface);
+          border: 1px solid var(--ux-line);
+          box-shadow: 0 10px 25px -5px var(--ux-shadow);
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -531,11 +534,11 @@ export default function TakeQuizPage() {
           font-family: monospace;
           font-size: 22px;
           font-weight: 800;
-          color: ${timeLeftSec < 120 ? '#EF4444' : '#818CF8'};
+          color: ${timeLeftSec < 120 ? 'var(--ux-danger)' : 'var(--ux-accent)'};
           padding: 6px 14px;
           border-radius: 10px;
-          background: #0B0F19;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          background: var(--ux-surface-2);
+          border: 1px solid var(--ux-line);
           display: flex;
           align-items: center;
           gap: 8px;
@@ -551,14 +554,14 @@ export default function TakeQuizPage() {
         .q-box {
           padding: 32px;
           border-radius: 16px;
-          background: #161E31;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+          background: var(--ux-surface);
+          border: 1px solid var(--ux-line);
+          box-shadow: 0 10px 25px -5px var(--ux-shadow);
         }
         .q-stem {
           font-size: 18px;
           font-weight: 700;
-          color: #F8FAFC;
+          color: var(--ux-ink);
           line-height: 1.55;
           margin-bottom: 24px;
         }
@@ -570,9 +573,9 @@ export default function TakeQuizPage() {
         .opt-btn {
           padding: 16px 20px;
           border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: #0B0F19;
-          color: #F8FAFC;
+          border: 1px solid var(--ux-line);
+          background: var(--ux-surface-2);
+          color: var(--ux-ink);
           text-align: left;
           font-size: 15px;
           font-weight: 500;
@@ -583,22 +586,22 @@ export default function TakeQuizPage() {
           gap: 12px;
         }
         .opt-btn:hover {
-          border-color: rgba(99, 102, 241, 0.4);
-          background: #1A2234;
+          border-color: var(--ux-accent);
+          background: var(--ux-surface-3);
         }
         .opt-btn.selected {
-          border-color: #6366F1;
-          background: rgba(99, 102, 241, 0.14);
-          color: #818CF8;
+          border-color: var(--ux-accent);
+          background: var(--ux-accent-soft);
+          color: var(--ux-accent-text);
           font-weight: 700;
-          box-shadow: 0 0 0 1px #6366F1;
+          box-shadow: 0 0 0 1px var(--ux-accent);
         }
         .palette {
           padding: 24px;
           border-radius: 16px;
-          background: #161E31;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+          background: var(--ux-surface);
+          border: 1px solid var(--ux-line);
+          box-shadow: 0 10px 25px -5px var(--ux-shadow);
           height: fit-content;
         }
         .palette-grid {
@@ -610,56 +613,56 @@ export default function TakeQuizPage() {
         .palette-num {
           height: 42px;
           border-radius: 10px;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: #0B0F19;
+          border: 1px solid var(--ux-line);
+          background: var(--ux-surface-2);
           font-size: 14px;
           font-weight: 700;
-          color: #94A3B8;
+          color: var(--ux-ink-3);
           display: grid;
           place-items: center;
           cursor: pointer;
           transition: all 0.15s ease;
         }
         .palette-num:hover {
-          border-color: rgba(99, 102, 241, 0.4);
-          color: #F8FAFC;
+          border-color: var(--ux-accent);
+          color: var(--ux-ink);
         }
         .palette-num.done {
-          background: #10B981;
+          background: var(--ux-mint);
           color: white;
-          border-color: #10B981;
+          border-color: var(--ux-mint);
         }
         .palette-num.current {
-          border-color: #6366F1;
-          color: #818CF8;
-          box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+          border-color: var(--ux-accent);
+          color: var(--ux-accent-text);
+          box-shadow: 0 0 0 2px var(--ux-accent);
           font-weight: 800;
         }
       `}</style>
 
       <div className="exam-header">
         <div>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ux-ink-3)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             Bài kiểm tra đang diễn ra
           </div>
-          <div style={{ fontSize: '18px', fontWeight: 800, color: '#F8FAFC', marginTop: '2px' }}>
+          <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--ux-ink)', marginTop: '2px' }}>
             {attempt.quizTitle}
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ fontSize: '12px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--ux-ink-3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             {saveStatus === 'saving' ? (
               <span>Đang lưu...</span>
             ) : saveStatus === 'saved' ? (
-              <span style={{ color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ color: 'var(--ux-mint)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
                 Đã đồng bộ
               </span>
             ) : (
-              <span style={{ color: '#EF4444' }}>Lỗi lưu</span>
+              <span style={{ color: 'var(--ux-danger)' }}>Lỗi lưu</span>
             )}
           </div>
           <div className="timer-badge">
@@ -675,10 +678,10 @@ export default function TakeQuizPage() {
       <div className="exam-layout">
         <div className="q-box">
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 800, color: '#818CF8', letterSpacing: '0.04em' }}>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ux-accent-text)', letterSpacing: '0.04em' }}>
               CÂU {currentIdx + 1} / {attempt.questions.length}
             </span>
-            <span style={{ fontSize: '13px', color: '#94A3B8', fontWeight: 600 }}>
+            <span style={{ fontSize: '13px', color: 'var(--ux-ink-3)', fontWeight: 600 }}>
               {currentQ.points} điểm
             </span>
           </div>
@@ -687,7 +690,7 @@ export default function TakeQuizPage() {
 
           {(!currentQ.options || currentQ.options.length === 0 || currentQ.type === 'fill' || currentQ.type === 'short') ? (
             <div style={{ marginTop: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#CBD5E1', marginBottom: '8px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ux-ink-2)', marginBottom: '8px' }}>
                 Nhập câu trả lời của bạn:
               </label>
               <input
@@ -705,9 +708,9 @@ export default function TakeQuizPage() {
                   width: '100%',
                   padding: '14px 16px',
                   borderRadius: '12px',
-                  border: '1px solid rgba(51, 65, 85, 0.8)',
-                  background: '#0B0F19',
-                  color: '#F8FAFC',
+                  border: '1px solid var(--ux-line-2)',
+                  background: 'var(--ux-surface-2)',
+                  color: 'var(--ux-ink)',
                   fontSize: '15px',
                   outline: 'none',
                 }}
@@ -729,9 +732,9 @@ export default function TakeQuizPage() {
                         width: '28px',
                         height: '28px',
                         borderRadius: '50%',
-                        background: isSelected ? '#6366F1' : '#161E31',
-                        border: isSelected ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
-                        color: isSelected ? 'white' : '#94A3B8',
+                        background: isSelected ? 'var(--ux-accent)' : 'var(--ux-surface)',
+                        border: isSelected ? 'none' : '1px solid var(--ux-line)',
+                        color: isSelected ? 'white' : 'var(--ux-ink-2)',
                         display: 'grid',
                         placeItems: 'center',
                         fontWeight: 800,
@@ -758,9 +761,9 @@ export default function TakeQuizPage() {
                 gap: '8px',
                 padding: '12px 20px',
                 borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                background: '#0B0F19',
-                color: '#F8FAFC',
+                border: '1px solid var(--ux-line)',
+                background: 'var(--ux-surface-2)',
+                color: 'var(--ux-ink)',
                 fontWeight: 600,
                 fontSize: '14px',
                 cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
@@ -783,7 +786,7 @@ export default function TakeQuizPage() {
                   gap: '8px',
                   padding: '12px 24px',
                   borderRadius: '12px',
-                  background: '#4F46E5',
+                  background: 'var(--ux-accent)',
                   color: 'white',
                   border: 0,
                   fontWeight: 600,
@@ -809,7 +812,7 @@ export default function TakeQuizPage() {
                   gap: '8px',
                   padding: '12px 28px',
                   borderRadius: '12px',
-                  background: '#10B981',
+                  background: 'var(--ux-mint)',
                   color: 'white',
                   border: 0,
                   fontWeight: 700,
@@ -828,10 +831,10 @@ export default function TakeQuizPage() {
         </div>
 
         <div className="palette">
-          <div style={{ fontSize: '14px', fontWeight: 800, color: '#F8FAFC' }}>
+          <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--ux-ink)' }}>
             Danh sách câu hỏi
           </div>
-          <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--ux-ink-3)', marginTop: '2px' }}>
             Đã làm: {answeredCount} / {attempt.questions.length} câu
           </div>
 
@@ -862,7 +865,7 @@ export default function TakeQuizPage() {
                 width: '100%',
                 height: '46px',
                 borderRadius: '12px',
-                background: '#10B981',
+                background: 'var(--ux-mint)',
                 color: 'white',
                 border: 0,
                 fontWeight: 700,

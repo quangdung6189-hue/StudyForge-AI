@@ -22,7 +22,7 @@ export function AppHeader({ title }: { title?: string }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <span
           style={{
-            color: '#F8FAFC',
+            color: 'var(--ux-ink)',
             fontSize: '15px',
             fontWeight: 750,
             letterSpacing: '-0.015em',
@@ -31,6 +31,7 @@ export function AppHeader({ title }: { title?: string }) {
             whiteSpace: 'nowrap',
             maxWidth: '50vw',
             display: 'inline-block',
+            transition: 'color .2s ease',
           }}
         >
           {title || currentTitle}

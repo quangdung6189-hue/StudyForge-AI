@@ -8,6 +8,8 @@
   --ux-surface: #FFFFFF;
   --ux-surface-2: #F1F4F9;
   --ux-surface-3: #E4E8EE;
+  --ux-sidebar: #FFFFFF;
+  --ux-header: #FFFFFF;
   --ux-ink: #111827;
   --ux-ink-2: #4B5563;
   --ux-ink-3: #596372;
@@ -15,7 +17,9 @@
   --ux-line-2: rgba(17, 24, 39, 0.16);
   --ux-accent: #4F46E5;
   --ux-accent-2: #06B6D4;
-  --ux-accent-soft: rgba(79, 70, 229, 0.12);
+  --ux-accent-soft: rgba(79, 70, 229, 0.10);
+  --ux-accent-text: #4F46E5;
+  --ux-accent-bar: #4F46E5;
   --ux-accent-ink: #FFFFFF;
   --ux-mint: #059669;
   --ux-warn: #D97706;
@@ -30,11 +34,41 @@
   --ux-radius: 14px;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ux-page: #F6F8FA;
+  --ux-surface: #FFFFFF;
+  --ux-surface-2: #F1F4F9;
+  --ux-surface-3: #E4E8EE;
+  --ux-sidebar: #FFFFFF;
+  --ux-header: #FFFFFF;
+  --ux-ink: #111827;
+  --ux-ink-2: #4B5563;
+  --ux-ink-3: #596372;
+  --ux-line: rgba(17, 24, 39, 0.08);
+  --ux-line-2: rgba(17, 24, 39, 0.16);
+  --ux-accent: #4F46E5;
+  --ux-accent-2: #06B6D4;
+  --ux-accent-soft: rgba(79, 70, 229, 0.10);
+  --ux-accent-text: #4F46E5;
+  --ux-accent-bar: #4F46E5;
+  --ux-accent-ink: #FFFFFF;
+  --ux-mint: #059669;
+  --ux-warn: #D97706;
+  --ux-danger: #DC2626;
+  --ux-glass: rgba(255, 255, 255, 0.75);
+  --ux-glass-line: rgba(255, 255, 255, 0.9);
+  --ux-shadow: rgba(15, 23, 42, 0.08);
+  --ux-shadow-strong: rgba(15, 23, 42, 0.2);
+  --ux-grad: linear-gradient(135deg, #4F46E5 0%, #06B6D4 55%, #059669 100%);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
     --ux-page: #090D16;
     --ux-sidebar: #0F1523;
+    --ux-header: #0F1523;
     --ux-surface: #161E31;
     --ux-surface-2: #0B0F19;
     --ux-surface-3: #1A2234;
@@ -46,6 +80,8 @@
     --ux-accent: #6366F1;
     --ux-accent-2: #38BDF8;
     --ux-accent-soft: rgba(99, 102, 241, 0.12);
+    --ux-accent-text: #818CF8;
+    --ux-accent-bar: #6366F1;
     --ux-accent-ink: #FFFFFF;
     --ux-mint: #10B981;
     --ux-warn: #F59E0B;
@@ -62,6 +98,7 @@
   color-scheme: dark;
   --ux-page: #090D16;
   --ux-sidebar: #0F1523;
+  --ux-header: #0F1523;
   --ux-surface: #161E31;
   --ux-surface-2: #0B0F19;
   --ux-surface-3: #1A2234;
@@ -73,6 +110,8 @@
   --ux-accent: #6366F1;
   --ux-accent-2: #38BDF8;
   --ux-accent-soft: rgba(99, 102, 241, 0.12);
+  --ux-accent-text: #818CF8;
+  --ux-accent-bar: #6366F1;
   --ux-accent-ink: #FFFFFF;
   --ux-mint: #10B981;
   --ux-warn: #F59E0B;
@@ -142,53 +181,82 @@ body {
   }
 }
 
-/* App Layout Grid & Utilities */
+/* App Layout Grid & Sticky Shell Structure */
 .app-shell {
-  flex: 1;
   display: flex;
   flex-direction: row;
-  min-height: 100vh;
-  min-width: 0;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  width: 100%;
+  overflow: hidden;
   background-color: var(--ux-page);
+  transition: background-color .2s ease;
 }
 
 .app-main {
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
   min-width: 0;
   overflow: hidden;
   background-color: var(--ux-page);
+  transition: background-color .2s ease;
 }
 
 .app-header {
   height: 64px;
-  background: var(--ux-sidebar, #0F1523);
+  flex: 0 0 64px;
+  background: var(--ux-header, var(--ux-sidebar));
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--ux-line, rgba(255, 255, 255, 0.06));
+  border-bottom: 1px solid var(--ux-line);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
+  transition: background-color .2s ease, border-color .2s ease;
 }
 
 .app-content {
   flex: 1;
-  padding: 32px;
+  height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
   overflow-y: auto;
-  width: 100%;
-  max-width: none;
+  overflow-x: hidden;
+  padding: 32px;
+  -webkit-overflow-scrolling: touch;
 }
 
 @media (max-width: 768px) {
   .app-shell {
     flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    max-height: none;
+    overflow: visible;
+  }
+  .app-main {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
   }
   .app-content {
+    height: auto;
+    overflow-y: visible;
     padding: 16px;
   }
 }

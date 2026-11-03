@@ -48,36 +48,36 @@ export function AppSidebar({ user }: AppSidebarProps) {
   return (
     <aside className="ux u040" data-wide={isWide}>
       <style>{`
-        .u040{--rw:76px;position:relative;display:flex;background:#0F1523;border-right:1px solid rgba(255,255,255,0.06);transition:width .4s var(--ux-spring)}
+        .u040{--rw:76px;position:sticky;top:0;height:100vh;height:100dvh;flex:0 0 auto;display:flex;background:var(--ux-sidebar);border-right:1px solid var(--ux-line);transition:width .4s var(--ux-spring),background-color .2s ease,border-color .2s ease;z-index:30}
         .u040[data-wide="true"]{--rw:210px}
-        .u040-rail{position:relative;flex:none;width:var(--rw);padding:14px 10px;background:#0F1523;color:var(--ux-ink);overflow:hidden;transition:width .4s var(--ux-spring);display:flex;flex-direction:column;justify-content:space-between;min-height:100vh}
+        .u040-rail{position:relative;flex:none;width:var(--rw);padding:14px 10px;background:var(--ux-sidebar);color:var(--ux-ink);overflow-y:auto;overflow-x:hidden;transition:width .4s var(--ux-spring),background-color .2s ease;display:flex;flex-direction:column;justify-content:space-between;height:100%}
         .u040-top{display:flex;align-items:center;gap:12px;height:44px;margin-bottom:18px}
-        .u040-logo{width:36px;height:36px;flex:none;margin-left:8px;border-radius:12px;background:var(--ux-grad);color:#fff;font-weight:800;font-size:17px;display:grid;place-items:center;box-shadow:0 4px 12px rgba(99,102,241,0.3)}
-        .u040-name{font-size:15px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--rw) - 90px);opacity:0;color:#F8FAFC;transition:opacity .2s}
+        .u040-logo{width:36px;height:36px;flex:none;margin-left:8px;border-radius:12px;background:var(--ux-grad);color:#fff;font-weight:800;font-size:17px;display:grid;place-items:center;box-shadow:0 4px 12px rgba(99,102,241,0.25)}
+        .u040-name{font-size:15px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--rw) - 90px);opacity:0;color:var(--ux-ink);transition:opacity .2s,color .2s ease}
         .u040[data-wide="true"] .u040-name{opacity:1;transition:opacity .25s .1s}
-        .u040-tog{position:absolute;right:2px;top:18px;width:28px;height:34px;border:0;padding:0;border-radius:8px;background:rgba(255,255,255,0.05);color:#94A3B8;display:grid;place-items:center;opacity:0;transition:opacity .2s,background .2s,color .2s;cursor:pointer}
+        .u040-tog{position:absolute;right:2px;top:18px;width:28px;height:34px;border:0;padding:0;border-radius:8px;background:var(--ux-surface-2);color:var(--ux-ink-3);display:grid;place-items:center;opacity:0;transition:opacity .2s,background .2s,color .2s;cursor:pointer}
         .u040-rail:hover .u040-tog,.u040-tog:focus-visible,.u040[data-wide="true"] .u040-tog{opacity:1}
-        .u040-tog:hover{color:#F8FAFC;background:rgba(255,255,255,0.08)}
+        .u040-tog:hover{color:var(--ux-ink);background:var(--ux-surface-3)}
         @media (hover:none){.u040-tog{opacity:1}}
         .u040-tog svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .4s var(--ux-spring)}
         .u040[data-wide="true"] .u040-tog svg{transform:rotate(180deg)}
         .u040-nav{position:relative;margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
-        .u040-hl{position:absolute;left:0;right:0;top:0;height:48px;border-radius:12px;background:rgba(99,102,241,0.12);transform:translateY(var(--y,0));transition:transform .35s var(--ux-spring);pointer-events:none}
-        .u040-hl::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3.5px;border-radius:0 3px 3px 0;background:#6366F1}
-        .u040-it{position:relative;display:flex;align-items:center;gap:14px;width:100%;height:48px;padding:0 0 0 16px;border:0;border-radius:12px;background:none;color:#94A3B8;opacity:.78;text-align:left;transition:opacity .2s,color .2s,background-color .2s;cursor:pointer;text-decoration:none}
-        .u040-it:hover{opacity:1;color:#F8FAFC;background:rgba(255,255,255,0.04)}
-        .u040-it[aria-current="page"]{opacity:1;color:#818CF8;font-weight:700}
+        .u040-hl{position:absolute;left:0;right:0;top:0;height:48px;border-radius:12px;background:var(--ux-accent-soft);transform:translateY(var(--y,0));transition:transform .35s var(--ux-spring),background-color .2s ease;pointer-events:none}
+        .u040-hl::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3.5px;border-radius:0 3px 3px 0;background:var(--ux-accent-bar)}
+        .u040-it{position:relative;display:flex;align-items:center;gap:14px;width:100%;height:48px;padding:0 0 0 16px;border:0;border-radius:12px;background:none;color:var(--ux-ink-2);opacity:.85;text-align:left;transition:opacity .2s,color .2s,background-color .2s;cursor:pointer;text-decoration:none}
+        .u040-it:hover{opacity:1;color:var(--ux-ink);background:var(--ux-surface-2)}
+        .u040-it[aria-current="page"]{opacity:1;color:var(--ux-accent-text);font-weight:700}
         .u040-it svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
-        .u040-it[aria-current="page"] svg{stroke:#818CF8}
+        .u040-it[aria-current="page"] svg{stroke:var(--ux-accent-text)}
         .u040-it span{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--rw) - 48px);opacity:0;transform:translateX(-6px);transition:opacity .2s,transform .25s var(--ux-ease)}
         .u040[data-wide="true"] .u040-it span{opacity:1;transform:none;transition:opacity .25s var(--ux-ease),transform .35s var(--ux-spring);transition-delay:calc(.08s + var(--i) * 25ms)}
-        .u040-me{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);margin-top:auto}
+        .u040-me{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:var(--ux-surface-2);border:1px solid var(--ux-line);margin-top:auto;transition:background-color .2s ease,border-color .2s ease}
         .u040-av{width:32px;height:32px;border-radius:50%;background:var(--ux-grad);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center;flex:none}
         .u040-me-info{min-width:0;flex:1}
-        .u040-me-name{font-size:13px;font-weight:700;color:#F8FAFC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .u040-me-role{font-size:10.5px;color:#94A3B8;font-weight:600;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.03em}
-        .u040-logout{background:none;border:0;color:#94A3B8;cursor:pointer;display:grid;place-items:center;width:32px;height:32px;border-radius:8px;transition:color .2s,background-color .2s;flex:none}
-        .u040-logout:hover{color:#EF4444;background:rgba(239,68,68,0.12)}
+        .u040-me-name{font-size:13px;font-weight:700;color:var(--ux-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .u040-me-role{font-size:10.5px;color:var(--ux-ink-3);font-weight:600;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.03em}
+        .u040-logout{background:none;border:0;color:var(--ux-ink-3);cursor:pointer;display:grid;place-items:center;width:32px;height:32px;border-radius:8px;transition:color .2s,background-color .2s;flex:none}
+        .u040-logout:hover{color:var(--ux-danger);background:color-mix(in srgb,var(--ux-danger) 12%,transparent)}
       `}</style>
 
       <nav className="u040-rail" aria-label="Main menu">
