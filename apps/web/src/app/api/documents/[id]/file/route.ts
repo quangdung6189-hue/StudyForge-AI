@@ -11,7 +11,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     const user = await requireUser(); const { id } = await context.params;
     const doc = await db.document.findFirst({ where: { id, ownerId: user.id } });
     if (!doc) return Response.json({ error: { code: 'NOT_FOUND', message: 'Không tìm thấy tài liệu.' } }, { status: 404 });
-    const bytes = await readOriginalDocument(user.id, doc.storageKey);
+    const bytes = await readOriginalDocument(user.id, doc.storageKey, id);
     const safeTypes = ['application/pdf', 'text/plain', 'image/png', 'image/jpeg', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     const mime = safeTypes.includes(doc.fileType) ? doc.fileType : 'application/octet-stream';
     let start = 0, end = bytes.length - 1;
@@ -33,6 +33,10 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     return new Response(stream, { status: range ? 206 : 200, headers: { 'Content-Type': mime, 'Content-Disposition': `${mime === 'application/octet-stream' ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(doc.title)}`, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'SAMEORIGIN', 'Accept-Ranges': 'bytes', ...(range ? { 'Content-Range': `bytes ${start}-${end}/${bytes.length}` } : {}) } });
   } catch (error) {
     if ((error as { code?: string }).code === 'UNAUTHORIZED') return uploadErrorResponse(error);
-    return Response.json({ error: { code: 'FILE_UNAVAILABLE', message: 'Không mở được file gốc. Bạn có thể tải lại file.' } }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
+    const msg = (error as Error)?.message || 'Không mở được file gốc. Bạn có thể tải lại file.';
+    return new Response(
+      `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:36px;font-family:system-ui,-apple-system,sans-serif;background:#090D16;color:#e2e8f0;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;}h3{color:#f87171;margin-bottom:8px;font-size:18px;}p{color:#94a3b8;font-size:13.5px;max-width:480px;line-height:1.6;margin:0 0 16px;}.btn{display:inline-block;padding:8px 16px;background:#4F46E5;color:#fff;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;}</style></head><body><h3>Không thể hiển thị trực tiếp file gốc</h3><p>${msg}<br/>Văn bản bóc tách và toàn bộ câu hỏi vẫn được bảo toàn đầy đủ.</p><a href="javascript:location.reload()" class="btn">Thử tải lại</a></body></html>`,
+      { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'SAMEORIGIN', 'Cache-Control': 'no-store' } }
+    );
   }
 }

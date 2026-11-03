@@ -6,16 +6,44 @@ import { LocalPrivateStorage } from '@studyforge/storage';
 const root = () => process.env.STUDYFORGE_ROOT ?? process.cwd();
 export const documentStorage = (directory = path.resolve(root(), process.env.PRIVATE_STORAGE_DIR ?? '.data/storage')) => new LocalPrivateStorage(directory, async (principal, key) => Boolean(await db.document.findFirst({ where: { ownerId: principal.id, storageKey: key }, select: { id: true } })));
 
-export async function readOriginalDocument(userId: string, storageKey: string) {
-  if (storageKey.startsWith('db:')) {
-    const record = await readWithRetry(() => db.documentFile.findFirst({ where: { documentId: storageKey.slice(3), document: { ownerId: userId, storageKey } }, select: { content: true } }));
-    if (!record) throw new Error('Không tìm thấy file gốc thuộc tài khoản của bạn.');
-    return Buffer.from(record.content);
+export async function readOriginalDocument(userId: string, storageKey: string, documentId?: string) {
+  const docId = documentId ?? (storageKey.startsWith('db:') ? storageKey.slice(3) : null);
+  if (docId) {
+    const record = await readWithRetry(() => db.documentFile.findFirst({
+      where: { documentId: docId, document: { ownerId: userId } },
+      select: { content: true }
+    }));
+    if (record?.content) return Buffer.from(record.content);
   }
-  // Earlier releases resolved relative storage against apps/web. Retain access to those originals.
-  const configured = process.env.PRIVATE_STORAGE_DIR ?? '.data/storage';
-  const locations = [...new Set([path.resolve(root(), configured), path.resolve(root(), 'apps/web', configured), path.resolve(root(), '.data/storage'), path.resolve(root(), 'apps/web/.data/storage')])];
-  for (const location of locations) { try { return await documentStorage(location).read({ id: userId }, storageKey); } catch {} }
+  const configured = process.env.PRIVATE_STORAGE_DIR ?? '.data/uploads';
+  const locations = [
+    ...new Set([
+      path.resolve(root(), configured),
+      path.resolve(root(), 'apps/web', configured),
+      path.resolve(root(), '.data/storage'),
+      path.resolve(root(), 'apps/web/.data/storage'),
+      path.resolve(root(), '.data/uploads'),
+      path.resolve(root(), 'apps/web/.data/uploads'),
+    ])
+  ];
+  for (const location of locations) {
+    try {
+      const bytes = await documentStorage(location).read({ id: userId }, storageKey);
+      if (bytes && bytes.length > 0) return bytes;
+    } catch {}
+  }
+
+  // Fallback: if raw binary bytes were lost on ephemeral storage, fall back to stored rawText
+  if (docId) {
+    const fallbackDoc = await readWithRetry(() => db.document.findFirst({
+      where: { id: docId, ownerId: userId },
+      select: { rawText: true }
+    }));
+    if (fallbackDoc?.rawText) {
+      return Buffer.from(fallbackDoc.rawText, 'utf8');
+    }
+  }
+
   throw new Error('Không tìm được file gốc trong kho riêng. Văn bản đã lưu vẫn được giữ; bạn có thể tải lại file.');
 }
 const metadataPath = (id: string) => {

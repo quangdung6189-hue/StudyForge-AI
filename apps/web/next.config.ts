@@ -55,13 +55,23 @@ const nextConfig: NextConfig = {
   },
   experimental: { serverActions: { bodySizeLimit: '1mb' } },
   async headers() {
-    return [{ source: '/:path*', headers: [
-      { key: 'X-Content-Type-Options', value: 'nosniff' },
-      { key: 'Referrer-Policy', value: 'same-origin' },
-      { key: 'X-Frame-Options', value: 'DENY' },
-    ] }, { source: '/api/documents/:id/file', headers: [
-      { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-    ] }];
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'same-origin' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        ],
+      },
+      {
+        source: '/api/documents/:id/file',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        ],
+      },
+    ];
   },
 };
 export default nextConfig;

@@ -92,4 +92,9 @@
 .documents-studio .documents-page-sheet{background:var(--ux-surface);border:1px solid var(--ux-line);border-radius:14px;padding:24px;box-shadow:0 4px 14px var(--ux-shadow);position:relative}
 .documents-studio .documents-page-number{font-size:11px;font-weight:800;color:var(--ux-accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px dashed var(--ux-line)}
 .documents-studio .documents-page-content{white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:13px;line-height:1.8;color:var(--ux-ink);margin:0}
+.documents-studio .documents-original-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;background:var(--ux-surface-2);border:1px solid var(--ux-line);padding:10px 14px;border-radius:14px}
+.documents-studio .documents-view-toggle{display:inline-flex;gap:4px;background:var(--ux-surface);padding:3px;border-radius:10px;border:1px solid var(--ux-line-2)}
+.documents-studio .documents-view-btn{padding:6px 12px;border-radius:7px;border:0;background:transparent;color:var(--ux-ink-2);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px}
+.documents-studio .documents-view-btn.active{background:var(--ux-accent);color:#fff}
+.documents-studio .documents-pdf-wrapper{background:var(--ux-surface-2);border-radius:14px;overflow:hidden;border:1px solid var(--ux-line);min-height:640px}
 @media(prefers-reduced-motion:reduce){.documents-studio .documents-file,.documents-studio .documents-stat,.documents-studio .documents-primary,.documents-studio .documents-toolbtn{transition:none;transform:none!important}}
