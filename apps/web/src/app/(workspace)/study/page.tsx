@@ -205,37 +205,107 @@ export default function StudyPage() {
         }
 
         .study-doc-select {
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 14px 18px;
+          gap: 12px;
+          padding: 12px 18px;
           border-radius: 16px;
           background: var(--ux-surface);
           border: 1px solid var(--ux-line);
           margin-bottom: 20px;
           box-shadow: 0 4px 14px var(--ux-shadow);
         }
-        .study-doc-select label {
-          font-size: 12.5px;
+        .study-doc-label {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
           font-weight: 700;
           color: var(--ux-ink-2);
           white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .study-doc-label svg {
+          color: var(--ux-accent);
+          flex-shrink: 0;
+        }
+        .study-select-wrap {
+          position: relative;
+          flex: 1;
+          min-width: 0;
+          width: 100%;
+          display: flex;
+          align-items: center;
         }
         .study-select-input {
-          flex: 1;
-          height: 38px;
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+          box-sizing: border-box;
+          height: 40px;
           border-radius: 10px;
           background: var(--ux-surface-2);
           border: 1px solid var(--ux-line-2);
           color: var(--ux-ink);
           font-size: 13px;
           font-weight: 600;
-          padding: 0 12px;
+          padding: 0 34px 0 14px;
           cursor: pointer;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+          transition: border-color .2s, box-shadow .2s;
         }
         .study-select-input:focus {
           border-color: var(--ux-accent);
+          box-shadow: 0 0 0 3px var(--ux-accent-soft);
           outline: none;
+        }
+        .study-select-chevron {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--ux-ink-3);
+          pointer-events: none;
+        }
+        .study-select-loading {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--ux-accent);
+          flex-shrink: 0;
+        }
+        .study-mini-spin {
+          width: 14px;
+          height: 14px;
+          border: 2px solid var(--ux-accent-soft);
+          border-top-color: var(--ux-accent);
+          border-radius: 50%;
+          animation: study-spin .7s linear infinite;
+        }
+        @keyframes study-spin {
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 640px) {
+          .study-doc-select {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 14px;
+          }
+          .study-doc-label {
+            margin-bottom: 2px;
+          }
         }
 
         .study-progress-card {
@@ -435,22 +505,41 @@ export default function StudyPage() {
 
       {/* Document Selector */}
       <div className="study-doc-select">
-        <label htmlFor="doc-picker">Chọn tài liệu ôn tập:</label>
-        <select
-          id="doc-picker"
-          className="study-select-input"
-          value={selectedDocId}
-          disabled={loadingDocs || loading}
-          onChange={(e) => void handleSelectDoc(e.target.value)}
-        >
-          <option value="default">Bộ câu hỏi phương pháp ôn tập & ghi nhớ chuẩn</option>
-          {documents.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.title} ({d.fileType?.toUpperCase() || 'FILE'})
-            </option>
-          ))}
-        </select>
-        {loading && <span style={{ fontSize: '12px', color: 'var(--ux-accent)', fontWeight: 600 }}>Đang nạp câu hỏi…</span>}
+        <label htmlFor="doc-picker" className="study-doc-label">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+            <path d="M6 6h10" />
+            <path d="M6 10h10" />
+          </svg>
+          <span>Chọn tài liệu ôn tập:</span>
+        </label>
+
+        <div className="study-select-wrap">
+          <select
+            id="doc-picker"
+            className="study-select-input"
+            value={selectedDocId}
+            disabled={loadingDocs || loading}
+            onChange={(e) => void handleSelectDoc(e.target.value)}
+          >
+            <option value="default">Bộ câu hỏi phương pháp ôn tập & ghi nhớ chuẩn</option>
+            {documents.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.title} ({d.fileType?.toUpperCase() || 'FILE'})
+              </option>
+            ))}
+          </select>
+          <svg className="study-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+
+        {loading && (
+          <div className="study-select-loading">
+            <div className="study-mini-spin" />
+            <span>Đang nạp…</span>
+          </div>
+        )}
       </div>
 
       {/* Progress tracking */}
