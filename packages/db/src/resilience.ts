@@ -25,7 +25,14 @@ export async function readWithRetry<T>(read: () => PromiseLike<T>): Promise<T> {
 export function runtimeDatabaseUrl(value: string): string {
   const url = new URL(value);
   if (!['postgres:', 'postgresql:'].includes(url.protocol) || !url.hostname.endsWith('.neon.tech')) return value;
-  const defaults = { connect_timeout: '15', pool_timeout: '15', connection_limit: '5' };
+
+  // If pooled connection host is used, ensure pgbouncer=true parameter is set for Prisma compatibility
+  if (url.hostname.includes('-pooler.') && !url.searchParams.has('pgbouncer')) {
+    url.searchParams.set('pgbouncer', 'true');
+  }
+
+  const connectionLimit = process.env.DB_CONNECTION_LIMIT ?? '30';
+  const defaults = { connect_timeout: '15', pool_timeout: '20', connection_limit: connectionLimit };
   for (const [key, setting] of Object.entries(defaults)) if (!url.searchParams.has(key)) url.searchParams.set(key, setting);
   return url.toString();
 }

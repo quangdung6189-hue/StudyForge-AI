@@ -594,26 +594,29 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
 }
 
 export async function saveAttemptAnswers(userId: string, attemptId: string, answers: AnswerMap) {
-  return transaction(async tx => {
-    const attempt = await tx.attempt.findFirst({
-      where: { id: attemptId, userId },
-      include: { quizVersion: true },
-    });
+  const attempt = await db.attempt.findFirst({
+    where: { id: attemptId, userId },
+    include: { quizVersion: true },
+  });
 
-    if (!attempt) throw new DalError('NOT_FOUND', 'Lượt làm bài không tồn tại');
-    if (attempt.status === 'submitted') throw new DalError('CONFLICT', 'Bài thi đã được nộp');
-    if (isExpired(attempt.expiresAt)) throw new DalError('EXPIRED', 'Thời gian làm bài đã kết thúc');
+  if (!attempt) throw new DalError('NOT_FOUND', 'Lượt làm bài không tồn tại');
+  if (attempt.status === 'submitted') throw new DalError('CONFLICT', 'Bài thi đã được nộp');
+  if (isExpired(attempt.expiresAt)) throw new DalError('EXPIRED', 'Thời gian làm bài đã kết thúc');
 
-    const snapshot = attempt.quizVersion.snapshot as unknown as QuizSnapshot;
-    const validQuestionIds = new Set(
-      studentQuestions(snapshot, attempt.seed).map(q => q.id)
-    );
+  const snapshot = attempt.quizVersion.snapshot as unknown as QuizSnapshot;
+  const validQuestionIds = new Set(
+    studentQuestions(snapshot, attempt.seed).map(q => q.id)
+  );
 
-    for (const [questionId, values] of Object.entries(answers)) {
-      if (!validQuestionIds.has(questionId)) {
-        continue; // Prevent unknown question IDs from poisoning the attempt
-      }
-      await tx.attemptAnswer.upsert({
+  const operations = [];
+  const now = new Date();
+  for (const [questionId, values] of Object.entries(answers)) {
+    if (!validQuestionIds.has(questionId)) {
+      continue; // Prevent unknown question IDs from poisoning the attempt
+    }
+    const valArray = Array.isArray(values) ? values : [String(values)];
+    operations.push(
+      db.attemptAnswer.upsert({
         where: {
           attemptId_questionId: {
             attemptId,
@@ -623,17 +626,22 @@ export async function saveAttemptAnswers(userId: string, attemptId: string, answ
         create: {
           attemptId,
           questionId,
-          values: Array.isArray(values) ? values : [String(values)],
+          values: valArray,
+          savedAt: now,
         },
         update: {
-          values: Array.isArray(values) ? values : [String(values)],
-          savedAt: new Date(),
+          values: valArray,
+          savedAt: now,
         },
-      });
-    }
+      })
+    );
+  }
 
-    return { savedAt: new Date().toISOString(), status: 'saved' };
-  });
+  if (operations.length > 0) {
+    await db.$transaction(operations);
+  }
+
+  return { savedAt: now.toISOString(), status: 'saved' };
 }
 
 export async function submitQuizAttempt(userId: string, attemptId: string, answers?: AnswerMap) {

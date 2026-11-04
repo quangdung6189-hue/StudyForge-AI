@@ -121,10 +121,21 @@ export const db = new Proxy({} as PrismaClient, {
 export { Prisma };
 export type Transaction = Prisma.TransactionClient;
 
-/** Serializable transactions serialize publication, autosave and submission. */
-export async function transaction<T>(work: (tx: Transaction) => Promise<T>): Promise<T> {
+/**
+ * Run interactive transaction with automatic retry on transient serialization/timeout codes.
+ * Defaults to ReadCommitted on PostgreSQL to prevent high-concurrency lockouts, and Serializable on SQLite.
+ */
+export async function transaction<T>(
+  work: (tx: Transaction) => Promise<T>,
+  options?: { isolationLevel?: Prisma.TransactionIsolationLevel; timeout?: number; maxWait?: number }
+): Promise<T> {
+  const isSqlite = !process.env.DATABASE_URL || process.env.DATABASE_URL.startsWith('file:');
+  const isolationLevel = isSqlite ? 'Serializable' : (options?.isolationLevel ?? 'ReadCommitted');
+  const timeout = options?.timeout ?? 15000;
+  const maxWait = options?.maxWait ?? 15000;
+
   for (let i = 0; ; i++) {
-    try { return await db.$transaction(work, { isolationLevel: 'Serializable', timeout: 15000, maxWait: 15000 }); }
+    try { return await db.$transaction(work, { isolationLevel, timeout, maxWait }); }
     catch (error) {
       const code = (error as { code?: string }).code;
       // Replaying an expired interactive transaction only repeats its full timeout.

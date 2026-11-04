@@ -15,11 +15,13 @@ export default function TakeQuizPage() {
   const [timeLeftSec, setTimeLeftSec] = useState<number>(0);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [result, setResult] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
   const answersRef = useRef(answers);
   answersRef.current = answers;
+  const lastSavedRef = useRef<Record<string, string[]>>({});
 
   // Start Exam
   const handleStart = async (codeToUse?: string, retry = false) => {
@@ -27,10 +29,12 @@ export default function TakeQuizPage() {
     const code = raw.trim().toUpperCase();
     if (!code) return;
     setErrorMsg('');
+    setSubmitError('');
     if (retry) {
       setResult(null);
       setAnswers({});
       setCurrentIdx(0);
+      lastSavedRef.current = {};
     }
 
     try {
@@ -47,9 +51,22 @@ export default function TakeQuizPage() {
       }
 
       setAttempt(data);
-      if (data.answers && Object.keys(data.answers).length > 0) {
-        setAnswers(data.answers);
+      let initialAnswers: Record<string, string[]> = data.answers || {};
+      try {
+        const cached = localStorage.getItem(`sf_attempt_${data.attemptId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object') {
+            initialAnswers = { ...initialAnswers, ...parsed };
+          }
+        }
+      } catch {}
+
+      if (Object.keys(initialAnswers).length > 0) {
+        setAnswers(initialAnswers);
       }
+      lastSavedRef.current = data.answers || {};
+
       if (data.isSubmitted) {
         setResult(data);
       }
@@ -66,7 +83,7 @@ export default function TakeQuizPage() {
     }
   }, [initialCode]);
 
-  // Countdown timer calculated directly from server expiresAt
+  // Countdown timer calculated directly from server expiresAt with auto-submit jitter
   useEffect(() => {
     if (!attempt || result) return;
     const interval = setInterval(() => {
@@ -74,29 +91,56 @@ export default function TakeQuizPage() {
       setTimeLeftSec(remaining);
       if (remaining <= 0) {
         clearInterval(interval);
-        handleSubmit();
+        // Random jitter (0 - 1500ms) prevents thundering herd when 100 students reach 0:00 simultaneously
+        const jitter = Math.floor(Math.random() * 1500);
+        setTimeout(() => {
+          handleSubmit();
+        }, jitter);
       }
     }, 1000);
     return () => clearInterval(interval);
   }, [attempt, result]);
 
-  // Periodic autosave
+  // Delta autosave: Only send dirty (modified) answers to drastically cut DB load and query duration
   useEffect(() => {
     if (!attempt || result || Object.keys(answers).length === 0) return;
+
+    // Cache locally immediately on each change
+    try {
+      localStorage.setItem(`sf_attempt_${attempt.attemptId}`, JSON.stringify(answers));
+    } catch {}
+
     const saveTimer = setTimeout(async () => {
+      // Find modified answers since last successful save
+      const dirty: Record<string, string[]> = {};
+      for (const [qId, vals] of Object.entries(answers)) {
+        const saved = lastSavedRef.current[qId];
+        if (!saved || JSON.stringify(saved) !== JSON.stringify(vals)) {
+          dirty[qId] = vals;
+        }
+      }
+
+      if (Object.keys(dirty).length === 0) {
+        return; // Already synchronized
+      }
+
       setSaveStatus('saving');
       try {
         const res = await fetch(`/api/attempts/${attempt.attemptId}/save-answers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ answers }),
+          body: JSON.stringify({ answers: dirty }),
         });
-        if (res.ok) setSaveStatus('saved');
-        else setSaveStatus('error');
+        if (res.ok) {
+          lastSavedRef.current = { ...lastSavedRef.current, ...dirty };
+          setSaveStatus('saved');
+        } else {
+          setSaveStatus('error');
+        }
       } catch {
         setSaveStatus('error');
       }
-    }, 1500);
+    }, 1000);
 
     return () => clearTimeout(saveTimer);
   }, [answers, attempt, result]);
@@ -117,18 +161,42 @@ export default function TakeQuizPage() {
   const handleSubmit = async (overrideAnswers?: Record<string, string[]>) => {
     if (!attempt || submitting) return;
     setSubmitting(true);
-    try {
-      const finalAnswers = overrideAnswers || answersRef.current;
-      const res = await fetch(`/api/attempts/${attempt.attemptId}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: finalAnswers }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setResult(data);
+    setSubmitError('');
+
+    const finalAnswers = overrideAnswers || answersRef.current;
+    const maxRetries = 2;
+
+    for (let attemptCount = 0; attemptCount <= maxRetries; attemptCount++) {
+      try {
+        const res = await fetch(`/api/attempts/${attempt.attemptId}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answers: finalAnswers }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          try {
+            localStorage.removeItem(`sf_attempt_${attempt.attemptId}`);
+          } catch {}
+          setResult(data);
+          setSubmitting(false);
+          return;
+        }
+
+        if (attemptCount === maxRetries) {
+          setSubmitError(data.error?.message || 'Không thể nộp bài do nghẽn mạng máy chủ. Vui lòng bấm thử lại.');
+        }
+      } catch (err: any) {
+        if (attemptCount === maxRetries) {
+          setSubmitError('Lỗi kết nối khi nộp bài. Vui lòng kiểm tra mạng và bấm Thử nộp lại.');
+        }
       }
-    } catch {}
+
+      if (attemptCount < maxRetries) {
+        await new Promise(r => setTimeout(r, 1000 * (attemptCount + 1)));
+      }
+    }
+
     setSubmitting(false);
   };
 
@@ -805,6 +873,11 @@ export default function TakeQuizPage() {
               <span>Câu trước</span>
             </button>
 
+            {submitError && (
+              <div style={{ color: 'var(--ux-danger)', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>{submitError}</span>
+              </div>
+            )}
             {currentIdx < attempt.questions.length - 1 ? (
               <button
                 onClick={() => setCurrentIdx(prev => Math.min(attempt.questions.length - 1, prev + 1))}
@@ -885,6 +958,11 @@ export default function TakeQuizPage() {
           </div>
 
           <div style={{ marginTop: '24px' }}>
+            {submitError && (
+              <div style={{ color: 'var(--ux-danger)', fontSize: '12px', fontWeight: 600, marginBottom: '10px', textAlign: 'center', lineHeight: 1.4 }}>
+                {submitError}
+              </div>
+            )}
             <button
               type="button"
               onClick={() => handleSubmit()}
