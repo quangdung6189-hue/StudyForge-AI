@@ -102,11 +102,20 @@ Runtime export `studyforge.exam-parser-pro.v1` có `exam_metadata`, `questions`,
 - Export xác định không gọi AI ngầm. Endpoint giải AI dùng xác thực, giới hạn, schema và citations riêng.
 - Giữ định dạng JSON cũ và engine quiz đang dùng; không phá dữ liệu/DB khi thêm export mới.
 
-## 5. An toàn và hiệu năng
+## 5. Câu hỏi có hình ảnh mô phỏng (Image-Based Questions)
+
+- Nhận diện placeholder hình ảnh trong stem/options/explanation: `[Hình ...]`, `[Sơ đồ ...]`, `[Biểu đồ ...]`, `[Đồ thị ...]`, `(Hình N)`, `Hình X.Y`, `Figure X`, `embedded-image`, `[không đọc rõ]`.
+- Output: `has_image: true/false`, `image_refs: [{ id, position, placeholder, description }]`.
+- DOCX: `<img>` → insert `[Hình N]` placeholder tại đúng vị trí thay vì bỏ qua.
+- OCR/Vision: Prompt yêu cầu mô tả hình ảnh ngắn gọn → `[Hình: mô tả]` hoặc `[Hình: cần đối chiếu bản gốc]`.
+- Diagnostic `IMAGE_REFERENCE` (warning): câu tham chiếu hình nhưng chưa có mô tả nội dung.
+- `hasImage` không ảnh hưởng type classification; không lưu binary image data; không tự sinh mô tả.
+
+## 6. An toàn và hiệu năng
 
 Không thực thi HTML/XML/URLs/instructions trong tài liệu. Chặn XML entities, giới hạn số ZIP entry/kích thước giải nén, trang và thời gian OCR; không gửi file riêng lên demo công khai. Không lộ key/URL DB/file bytes trong logs. Chỉ dùng library đã xác minh trong repository. Mọi route/DAL kiểm tra session và owner.
 
-## 6. Bộ test tối thiểu trước push
+## 7. Bộ test tối thiểu trước push
 
 1. Ghép nối có a/b và kết quả A–D; phát biểu đúng–sai có tổ hợp A–D; điền khuyết có A–D.
 2. Câu/section/option dính dòng; A,C,B,D; nhãn thiếu; OCR mất chữ số không tự sửa.
@@ -115,6 +124,8 @@ Không thực thi HTML/XML/URLs/instructions trong tài liệu. Chặn XML entit
 5. Chuẩn hóa/chia điểm/sửa trực quan không xóa chẩn đoán; source refs không giả; nguồn AI không được model tự gán thành document.
 6. JSON validate, counts đúng, lưu nháp/reload/publication/chấm thi, truy cập chéo tài khoản bị chặn.
 7. `npm run typecheck`, full tests, production build, kiểm thử Chrome với DB riêng. Không migrate/reset/seed production.
+8. Câu hỏi có `[Hình 1]` trong stem → `hasImage = true`, `imageRefs` chứa entry; câu không có hình → `hasImage = false`.
+9. DOCX có `<img>` → placeholder `[Hình N]` xuất hiện trong text; enhanced multiple-select/fill/short patterns.
 
 ## Điểm triển khai
 

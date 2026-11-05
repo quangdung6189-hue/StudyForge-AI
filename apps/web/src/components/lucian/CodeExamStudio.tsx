@@ -135,7 +135,7 @@ export function CodeExamStudio({ initialCode, documentText, documentTitle, sourc
     catch (err) { setError((err as Error).message); } finally { setBusy(false); }
   };
   const addQuestion = (type: QuestionType) => {
-    const q: ExamQuestion = { id: '', globalIndex: 0, number: Math.max(0, ...parsed.questions.map(q => q.number)) + 1, group: active?.group ?? '', type, stem: 'Nội dung câu hỏi mới', options: type === 'single' || type === 'multiple' ? ['A', 'B', 'C', 'D'].map(letter => ({ id: letter, letter, text: `Phương án ${letter}` })) : [], statements: type === 'boolean' ? ['a', 'b', 'c', 'd'].map(letter => ({ id: letter, letter, text: `Nhận định ${letter}`, verdict: null })) : [], correctOptionIds: [], acceptedAnswers: [], points: 1, explanation: '', startLine: 0, endLine: 0, sourceText: '', issues: [], answerEvidence: [], hasAnswer: false };
+    const q: ExamQuestion = { id: '', globalIndex: 0, number: Math.max(0, ...parsed.questions.map(q => q.number)) + 1, group: active?.group ?? '', type, stem: 'Nội dung câu hỏi mới', options: type === 'single' || type === 'multiple' ? ['A', 'B', 'C', 'D'].map(letter => ({ id: letter, letter, text: `Phương án ${letter}` })) : [], statements: type === 'boolean' ? ['a', 'b', 'c', 'd'].map(letter => ({ id: letter, letter, text: `Nhận định ${letter}`, verdict: null })) : [], correctOptionIds: [], acceptedAnswers: [], points: 1, explanation: '', startLine: 0, endLine: 0, sourceText: '', issues: [], answerEvidence: [], hasAnswer: false, hasImage: false, imageRefs: [] };
     change(code.trimEnd() + '\n\n' + questionCode(q));
   };
   const setType = (q: ExamQuestion, type: QuestionType | 'essay') => {

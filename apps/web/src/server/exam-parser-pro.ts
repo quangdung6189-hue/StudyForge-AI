@@ -12,6 +12,13 @@ export const ExamParserProSchema = z.object({
     question_stem: z.string(), options: z.array(z.object({ key: z.string(), text: z.string() })),
     sub_statements: z.array(z.object({ key: z.string(), text: z.string(), is_true: z.boolean().nullable() })),
     has_answer: z.boolean().optional(),
+    has_image: z.boolean().optional(),
+    image_refs: z.array(z.object({
+      id: z.string(),
+      position: z.enum(['stem', 'option', 'explanation']),
+      placeholder: z.string(),
+      description: z.string(),
+    })).optional(),
     answer_method: z.string().nullable().optional(),
     correct_answer: z.string().nullable(), answer_source: z.enum(['EXTRACTED', 'AI_SOLVED']).nullable(), explanation: z.string(),
     needs_review: z.boolean(), diagnostics: z.array(z.string()), source_text: z.string(),
@@ -43,12 +50,14 @@ export function parseExamPro(text: string, title: string): ExamParserProDTO {
         question_stem: q.stem, options: essay ? [] : q.options.map(option => ({ key: option.letter, text: option.text })),
         sub_statements: essay ? [] : q.statements.map(statement => ({ key: statement.letter, text: statement.text, is_true: blocked ? null : statement.verdict })),
         has_answer: answer !== null,
+        has_image: q.hasImage,
+        image_refs: q.imageRefs.map(ref => ({ id: ref.id, position: ref.position, placeholder: ref.placeholder, description: ref.description })),
         answer_method: answer !== null ? (q.answerMethod ?? 'extracted') : null,
         correct_answer: answer, answer_source: answer !== null ? 'EXTRACTED' : null, explanation: q.explanation,
         needs_review: true, diagnostics: q.issues.map(issue => issue.message), source_text: q.sourceText,
       };
     }),
-    warnings: [...repaired.notices.map(notice => notice.message), 'Đáp án chưa có được giữ null; dùng chế độ AI phân tích trên hệ thống nếu cần gợi ý và duyệt trước khi xuất bản.', 'Tự luận được lưu để giáo viên duyệt, không tự đưa vào engine chấm trắc nghiệm.'],
+    warnings: [...repaired.notices.map(notice => notice.message), 'Đáp án chưa có được giữ null; dùng chế độ AI phân tích trên hệ thống nếu cần gợi ý và duyệt trước khi xuất bản.', 'Tự luận được lưu để giáo viên duyệt, không tự đưa vào engine chấm trắc nghiệm.', ...(parsed.questions.some(q => q.hasImage) ? ['Có câu hỏi tham chiếu hình ảnh/sơ đồ/đồ thị; cần đối chiếu bản gốc để đảm bảo nội dung hình đầy đủ.'] : [])],
   };
   return ExamParserProSchema.parse(result);
 }

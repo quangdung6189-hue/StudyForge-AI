@@ -58,6 +58,43 @@ This skill guides development and verification. It does not replace the website'
 12. Enforce authenticated ownership in every DAL/route. Protect draft saves with revisions; preserve immutable source snapshots for saved quizzes. Never send answer keys, explanations or evidence in active student exam payloads.
 13. Test on isolated DBs and real browser/backend flows before commit. Never migrate/reset/seed production for a parser/UI change.
 
+## 5. Câu hỏi có hình ảnh mô phỏng (Image-Based Questions)
+
+### Nhận diện hình ảnh
+
+1. **Placeholder patterns**: Parser nhận diện các dấu hiệu hình ảnh trong stem, options hoặc explanation:
+   - `[Hình ...]`, `[Sơ đồ ...]`, `[Biểu đồ ...]`, `[Đồ thị ...]`, `[Bảng ...]`
+   - `(Hình N)`, `Hình X.Y`, `Figure X`, `Diagram`
+   - `[không đọc rõ]`, `[hình ảnh]`, `embedded-image`
+   - `[Ảnh ...]`, `[Minh họa ...]`
+
+2. **DOCX extraction**: Khi gặp `<img>` trong HTML từ Mammoth, thay vì bỏ qua:
+   - Insert placeholder `[Hình N]` hoặc `[Hình N: alt text]` vào đúng vị trí trong text
+   - Track `imageCount` cho toàn bộ document
+
+3. **OCR/Vision**: Prompt đã được nâng cấp để:
+   - Mô tả hình ảnh: `[Hình: đồ thị hàm số bậc hai có đỉnh tại (2,3)]`
+   - Mô tả sơ đồ: `[Hình: sơ đồ mạch điện nối tiếp gồm R1 và R2]`
+   - Hình phức tạp: `[Hình: cần đối chiếu bản gốc]` + cảnh báo
+
+### Dữ liệu đầu ra
+
+- `hasImage: boolean` — Câu hỏi có chứa/phụ thuộc hình ảnh hay không
+- `imageRefs: ImageRef[]` — Danh sách hình ảnh liên quan, mỗi ref gồm:
+  - `id`: Định danh hình (ví dụ: `img-1`)
+  - `position`: Vị trí (`stem` | `option` | `explanation`)
+  - `placeholder`: Text gốc (ví dụ: `[Hình 1]`, `Hình 2.3`)
+  - `description`: Mô tả nội dung (rỗng nếu chưa có từ OCR)
+- Diagnostic `IMAGE_REFERENCE` (warning): Khi câu hỏi có tham chiếu hình nhưng chưa có mô tả
+
+### Quy tắc
+
+- Parser chỉ detect pattern, không tự sinh mô tả — mô tả chỉ đến từ OCR output hoặc alt text DOCX
+- `hasImage` không ảnh hưởng đến type classification — câu MC có hình vẫn là MC
+- Hình ảnh không thay đổi answer provenance
+- Không lưu binary image data trong parser output — chỉ metadata/placeholder
+- Câu có hình mà thiếu mô tả vẫn parse bình thường, chỉ thêm warning
+
 ## Mandatory regression cases
 
 - Mixed MCQ/true-false/short; numbering resets per section.
@@ -72,6 +109,10 @@ This skill guides development and verification. It does not replace the website'
 - Draft owner swapping, stale revision, lost response, two quizzes from one source.
 - Actual save/publish/take workflow with strict student payload allowlist.
 - Browser 375px/desktop, both themes, keyboard and reduced motion.
+- Image-based questions: `[Hình 1]` in stem → `hasImage = true`; DOCX `<img>` → placeholder inserted; OCR with diagrams → structured description.
+- Multiple-select enhanced detection: stem signals `gồm những`, `bao gồm những`, `liệt kê các`, `những ý nào`, `ý nào sau đây đúng`.
+- Fill-in-blank enhanced detection: `{blank}`, `[blank]`, `....` (4+ dots), `hoàn thành câu`, `bổ sung`.
+- Short-answer enhanced detection: `kết quả là`, `đáp số`, `bằng bao nhiêu`, `số nào`, `là gì`.
 
 ## Existing implementation entry points
 

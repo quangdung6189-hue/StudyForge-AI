@@ -5,12 +5,21 @@ import { conflictingWrittenAnswers, isGlobalAnswerHeading, matchingWrittenAnswer
 export type ExamIssue = { code: string; message: string; line: number; severity: 'error' | 'warning' };
 export type ExamOption = { id: string; letter: string; text: string };
 export type ExamStatement = ExamOption & { verdict: boolean | null };
+export type ImageRef = {
+  id: string;
+  position: 'stem' | 'option' | 'explanation';
+  placeholder: string;
+  description: string;
+  sourceIndex?: number;
+};
 export type ExamQuestion = {
   id: string; globalIndex: number; number: number; stem: string; group: string; type: QuestionType;
   options: ExamOption[]; statements: ExamStatement[]; correctOptionIds: string[]; acceptedAnswers: string[];
   points: number; explanation: string; startLine: number; endLine: number; sourceText: string;
   issues: ExamIssue[]; answerEvidence: string[];
   hasAnswer: boolean;
+  hasImage: boolean;
+  imageRefs: ImageRef[];
   answerMethod?: 'highlight' | 'underline' | 'color' | 'bold' | 'marker' | 'table' | 'inline_key' | null;
   classification?: 'ESSAY';
 };
@@ -37,6 +46,46 @@ const headerKind = (text: string): QuestionType | undefined => {
   return /dung\s*[/–-]?\s*sai/.test(value) ? 'boolean' : /chon nhieu|nhieu dap an|nhieu y dung|nhieu lua chon/.test(value) ? 'multiple' : /dien tu|dien khuyet|dien cho trong/.test(value) ? 'fill' : /tra loi ngan/.test(value) ? 'short' : /trac nghiem|lua chon/.test(value) ? 'single' : undefined;
 };
 const qStart = /^(?:Câu hỏi|Câu|Cau|Question|Bài|Bai)\s*(\d+)\s*[.:)]\s*(.*)$|^(\d+)[.)]\s+(.+)$/iu;
+
+/** Patterns that indicate an image placeholder or reference in exam text. */
+const imagePatterns = [
+  /\[(?:Hình|Hinh|hình|hinh)\s*[^\]]*\]/giu,
+  /\[(?:Sơ đồ|So do|sơ đồ|Biểu đồ|Bieu do|biểu đồ|Đồ thị|Do thi|đồ thị)\s*[^\]]*\]/giu,
+  /\[(?:Bảng|Bang|bảng)\s*[^\]]*\]/giu,
+  /\((?:Hình|Hinh|hình)\s+\d[^\)]*\)/giu,
+  /(?:Hình|Hinh|Figure|Fig\.?|Diagram)\s+\d+(?:\.\d+)?(?:\s*[.:])?/giu,
+  /\[(?:không đọc rõ|hình ảnh|image|figure|diagram)\]/giu,
+  /embedded-image/gi,
+  /\[(?:Ảnh|Anh|Photo|Minh họa|Minh hoa)\s*[^\]]*\]/giu,
+];
+
+/** Detect image references in text, returning all found placeholders with positions. */
+export function detectImageRefs(stem: string, options: { letter: string; text: string }[], explanation: string): { hasImage: boolean; imageRefs: ImageRef[] } {
+  const refs: ImageRef[] = [];
+  let counter = 0;
+  const scan = (text: string, position: ImageRef['position']) => {
+    const occupied: [number, number][] = [];
+    for (const pattern of imagePatterns) {
+      pattern.lastIndex = 0;
+      for (const match of text.matchAll(pattern)) {
+        const start = match.index ?? 0, end = start + match[0].length;
+        if (occupied.some(([s, e]) => Math.max(start, s) < Math.min(end, e))) continue;
+        occupied.push([start, end]);
+        counter++;
+        refs.push({
+          id: `img-${counter}`,
+          position,
+          placeholder: match[0],
+          description: '',
+        });
+      }
+    }
+  };
+  scan(stem, 'stem');
+  for (const option of options) scan(option.text, 'option');
+  scan(explanation, 'explanation');
+  return { hasImage: refs.length > 0, imageRefs: refs };
+}
 
 export function parseExamCode(code: string): { questions: ExamQuestion[]; groups: string[]; issues: ExamIssue[] } {
   const lines = unglueExamText(code).text.split('\n');
@@ -182,7 +231,11 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
         answerMethod = 'marker';
       }
     }
-    questions.push({ id, globalIndex: questions.length + 1, number: block.number, stem, group: block.group, type, options, statements, correctOptionIds: options.filter(option => chosen.has(option.letter)).map(option => option.id), acceptedAnswers: [...new Set(acceptedAnswers)], points, explanation: explanation.trim(), startLine: block.start + 1, endLine: end, sourceText: lines.slice(block.start, end).join('\n'), issues: localIssues, answerEvidence, hasAnswer, answerMethod, ...(layout.kind === 'essay' ? { classification: 'ESSAY' as const } : {}) });
+    const imageDetection = detectImageRefs(stem, options, explanation.trim());
+    if (imageDetection.hasImage && imageDetection.imageRefs.every(ref => !ref.description)) {
+      add('IMAGE_REFERENCE', 'Câu hỏi có tham chiếu hình ảnh/sơ đồ/đồ thị nhưng chưa có mô tả nội dung hình; cần đối chiếu bản gốc.', 'warning');
+    }
+    questions.push({ id, globalIndex: questions.length + 1, number: block.number, stem, group: block.group, type, options, statements, correctOptionIds: options.filter(option => chosen.has(option.letter)).map(option => option.id), acceptedAnswers: [...new Set(acceptedAnswers)], points, explanation: explanation.trim(), startLine: block.start + 1, endLine: end, sourceText: lines.slice(block.start, end).join('\n'), issues: localIssues, answerEvidence, hasAnswer, hasImage: imageDetection.hasImage, imageRefs: imageDetection.imageRefs, answerMethod, ...(layout.kind === 'essay' ? { classification: 'ESSAY' as const } : {}) });
   };
   // Collect answer tables first, including sections whose numbering restarts.
   for (let i = 0; i < lines.length; i++) {

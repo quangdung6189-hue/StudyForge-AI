@@ -2,11 +2,15 @@ import type { QuestionType } from '@studyforge/contracts';
 import { bottomUpLayout, unglueExamText } from '@/lib/exam-layout';
 import { conflictingWrittenAnswers, isGlobalAnswerHeading, isWrittenAnswerHeading, matchingWrittenAnswers, nextNonemptyLines, readAnswerMarker, sameWrittenAnswers, splitQuestionContent, textAnswerParts, writtenAnswerSections, writtenAnswerValues } from '@/lib/exam-answer-blocks';
 
+import { detectImageRefs } from '@/lib/exam-code';
+
 export type SourceQuestion = {
   key: string; type: QuestionType; stem: string; options: string[]; sourceText: string;
   number?: string; group?: string; section?: string; pageNumber?: number;
   warnings?: string[]; sourceExplanation?: string;
   documentAnswer?: { indices: number[]; acceptedAnswers: string[]; quote: string };
+  hasImage?: boolean;
+  imageRefs?: { id: string; position: 'stem' | 'option' | 'explanation'; placeholder: string; description: string }[];
 };
 export type UnclassifiedQuestion = { key: string; type: 'unsupported'; stem: string; reason: string; pageNumber: number; number?: string; section?: string; documentAnswer?: SourceQuestion['documentAnswer']; sourceExplanation?: string; warnings?: string[] };
 const fold = (text: string) => text.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replaceAll('đ', 'd');
@@ -160,7 +164,8 @@ export function analyzeDocument(text: string) {
     }
     const finalOptions = type === 'boolean' ? ['Đúng', 'Sai'] : options;
     if ((type === 'single' || type === 'multiple') && finalOptions.length < 2) { warnings.push(`Câu ${block.number}: chưa đọc đủ phương án; cần kiểm tra bố cục.`); continue; }
-    questions.push({ ...base, key: String(index + 1), type, stem, options: finalOptions, ...(documentAnswer ? { documentAnswer } : {}), ...(localWarnings.length ? { warnings: localWarnings } : {}) });
+    const imageDetection = detectImageRefs(stem, finalOptions.map((text, i) => ({ letter: String.fromCharCode(65 + i), text })), '');
+    questions.push({ ...base, key: String(index + 1), type, stem, options: finalOptions, ...(documentAnswer ? { documentAnswer } : {}), ...(localWarnings.length ? { warnings: localWarnings } : {}), ...(imageDetection.hasImage ? { hasImage: true, imageRefs: imageDetection.imageRefs } : {}) });
   }
   const numberCounts = new Map<string, number>();
   for (const block of blocks) numberCounts.set(block.number, (numberCounts.get(block.number) ?? 0) + 1);

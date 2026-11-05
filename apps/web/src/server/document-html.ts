@@ -3,17 +3,18 @@ import { DOMParser } from '@xmldom/xmldom';
 /** Convert Mammoth's semantic HTML to plain text, preserving numbered lists and table cells.
  * Never render uploaded HTML in the browser and never load external resources.
  */
-export function documentHtmlToText(html: string): { text: string; hasImages: boolean } {
+export function documentHtmlToText(html: string): { text: string; hasImages: boolean; imageCount: number } {
   if (html.length > 8_000_000) throw new Error('Document HTML too large');
   const document = new DOMParser({ errorHandler: { warning() {}, error() {}, fatalError() { throw new Error('Invalid document structure'); } } }).parseFromString(`<html><body>${html}</body></html>`, 'text/html');
   let hasImages = false;
+  let imageCount = 0;
   function walk(node: Node, depth = 0): string {
     if (node.nodeType === 3) return node.nodeValue ?? '';
     if (node.nodeType !== 1 && node.nodeType !== 9) return '';
     const element = node as Element, tag = element.tagName?.toLowerCase();
     const children = () => Array.from(node.childNodes).map(child => walk(child, depth)).join('');
     if (tag === 'script' || tag === 'style') return '';
-    if (tag === 'img') { hasImages = true; return ''; }
+    if (tag === 'img') { hasImages = true; imageCount++; const alt = element.getAttribute('alt') || ''; return alt ? ` [Hình ${imageCount}: ${alt}] ` : ` [Hình ${imageCount}] `; }
     if (tag === 'br') return '\n';
     if (tag === 'sup') return `^(${children()})`;
     if (tag === 'sub') return `_(${children()})`;
@@ -45,5 +46,5 @@ export function documentHtmlToText(html: string): { text: string; hasImages: boo
     if (/^[A-Fa-f][.)]\s+/u.test(ln) && /\t\s*[A-Fa-f][.)]\s+/u.test(ln)) out.push(...ln.split(/\t+/));
     else out.push(ln);
   }
-  return { text: out.join('\n'), hasImages };
+  return { text: out.join('\n'), hasImages, imageCount };
 }

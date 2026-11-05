@@ -60,7 +60,7 @@ export function bottomUpLayout(input: string[], section = '', explicitType?: Que
     const sorted = [...entries].sort((a, b) => a.label.localeCompare(b.label));
     if (entries.map(entry => entry.label).join() !== sorted.map(entry => entry.label).join()) notices.push({ code: 'OPTIONS_REORDERED', message: 'Đã xếp phương án theo nhãn A–D, giữ nguyên nội dung và đáp án theo nhãn.', requiresReview: false });
     if (/dung\s*[/–-]?\s*sai|tra loi ngan|tu luan|dien tu/.test(heading)) notices.push({ code: 'FOOTER_OVERRIDES_SECTION', message: 'Cụm phương án lựa chọn cuối câu được ưu tiên hơn tiêu đề phần.', requiresReview: false });
-    const isMultiple = explicitType === 'multiple' || /chon nhieu|nhieu dap an|nhieu y dung|nhieu lua chon/i.test(heading) || /(?:chọn|những|các)\s+(?:phát biểu|đáp án|mệnh đề|khẳng định|ý|câu)\s+(?:đúng|nào đúng)|chọn nhiều|nhiều hơn một đáp án|chọn tất cả/i.test(foldExamText(body[0] ?? ''));
+    const isMultiple = explicitType === 'multiple' || /chon nhieu|nhieu dap an|nhieu y dung|nhieu lua chon/i.test(heading) || /(?:chọn|những|các)\s+(?:phát biểu|đáp án|mệnh đề|khẳng định|ý|câu)\s+(?:đúng|nào đúng)|chọn nhiều|nhiều hơn một đáp án|chọn tất cả|gồm những|bao gồm những|liệt kê các|những ý nào|các phát biểu nào|ý nào sau đây đúng|có bao nhiêu phát biểu đúng|những đáp án đúng là|các mệnh đề đúng gồm/i.test(foldExamText(body[0] ?? ''));
     const kind = isMultiple ? 'multiple' : 'single';
     if (explicitType && !['single', 'multiple'].includes(explicitType)) notices.push({ code: 'TYPE_LAYOUT_CONFLICT', message: 'Dạng khai báo không khớp cụm A–D cuối câu; cần kiểm tra.', requiresReview: true });
     return { lines: [...body.slice(0, start), ...sorted.map(entry => entry.content), ...tail], kind, notices, choiceFooter: true };
@@ -106,7 +106,7 @@ export function bottomUpLayout(input: string[], section = '', explicitType?: Que
     }
     return { lines, kind: 'boolean', notices, choiceFooter: false };
   }
-  if (/dien tu|dien khuyet|dien cho trong/.test(heading) || !labels.length && (/_{2,}|\(\.{2,}\)|\(\u2026\)|\[\s*\.{2,}\s*\]|\[\s*_{2,}\s*\]|dien vao cho|dien tu|dien khuyet/i.test(foldExamText(body.join('\n'))))) return { lines, kind: 'fill', notices, choiceFooter: false };
-  if (/tra loi ngan|tu luan ngan/.test(heading) || !labels.length && /bao nhieu|gom may|co may|ten goi|thuat ngu|qua trinh nao|tinh\s|dem\s|gia tri\s*(?:cua)?/i.test(foldExamText(body[0] ?? ''))) return { lines, kind: 'short', notices, choiceFooter: false };
+  if (/dien tu|dien khuyet|dien cho trong|hoan thanh/.test(heading) || !labels.length && (/_{2,}|\(\.{2,}\)|\(\u2026\)|\[\s*\.{2,}\s*\]|\[\s*_{2,}\s*\]|dien vao cho|dien tu|dien khuyet|hoan thanh cau|bo sung|dien vao|\.{4,}|\{\s*blank\s*\}|\[\s*blank\s*\]/i.test(foldExamText(body.join('\n'))))) return { lines, kind: 'fill', notices, choiceFooter: false };
+  if (/tra loi ngan|tu luan ngan/.test(heading) || !labels.length && /bao nhieu|gom may|co may|ten goi|thuat ngu|qua trinh nao|tinh\s|dem\s|gia tri\s*(?:cua)?|ket qua la|dap so|dap an la|bang bao nhieu|so nao|la gi/i.test(foldExamText(body[0] ?? ''))) return { lines, kind: 'short', notices, choiceFooter: false };
   return { lines, notices, choiceFooter: false };
 }
