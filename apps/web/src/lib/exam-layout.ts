@@ -1,4 +1,5 @@
 import type { QuestionType } from '@studyforge/contracts';
+import { sanitizeExamText } from './text-sanitizer';
 
 export type LayoutNotice = { code: string; message: string; requiresReview: boolean };
 export const foldExamText = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').replaceAll('đ', 'd').replaceAll('Đ', 'D').toLowerCase();
@@ -6,7 +7,7 @@ const answer = /^(?:Đáp án(?: đúng)?|Dap an|Đáp số|Trả lời|Tra loi|
 
 /** Layout-only repair. Never changes numbers, units, formulas, answers or source numbering. */
 export function unglueExamText(value: string): { text: string; notices: LayoutNotice[] } {
-  let text = value.normalize('NFC').replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ');
+  let text = sanitizeExamText(value);
   const original = text;
   text = text.replace(/([^\s])(?=(?:Câu|Cau|Question|Bài)\s*\d+\s*[.:)]\s*)/gu, '$1\n');
   text = text.replace(/([^\s])(?=(?:PHẦN|PHAN|Phần)\s+[IVXABC\d]+(?:[.:)]|\s))/gu, '$1\n');

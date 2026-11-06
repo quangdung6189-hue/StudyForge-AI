@@ -6,6 +6,7 @@ import { documentHtmlToText } from './document-html';
 import { readDocxAnswerMarks, validateDocxArchive, type AnswerMarkEvidence } from './document-answer-marks';
 import { extractDocxMediaAndMath } from './document-media';
 import { unglueExamText } from '@/lib/exam-layout';
+import { sanitizeExamText } from '@/lib/text-sanitizer';
 
 export class ExtractorError extends Error { constructor(message: string) { super(message); this.name = 'ExtractorError'; } }
 const VisionSchema = z.strictObject({ text: z.string().max(60000), uncertain: z.boolean(), warnings: z.array(z.string().max(500)).max(20) });
@@ -67,12 +68,30 @@ export async function extractDocumentContent(buffer: Buffer, fileType: string, f
     try {
       await validateDocxArchive(buffer);
       const mediaResult = await extractDocxMediaAndMath(buffer);
-      mediaMap = mediaResult.mediaMap;
-      const result = await mammoth.convertToHtml({ buffer }, { externalFileAccess: false, convertImage: mammoth.images.imgElement(async () => ({ src: 'embedded-image' })) });
+      let docxImageCount = 0;
+      const docxMediaMap: Record<number, string> = {};
+      const result = await mammoth.convertToHtml(
+        { buffer },
+        {
+          externalFileAccess: false,
+          convertImage: mammoth.images.imgElement(async (image) => {
+            docxImageCount++;
+            try {
+              const base64 = await image.read('base64');
+              const dataUrl = `data:${image.contentType};base64,${base64}`;
+              docxMediaMap[docxImageCount] = dataUrl;
+              return { src: dataUrl };
+            } catch {
+              return { src: 'embedded-image' };
+            }
+          }),
+        }
+      );
       const parsed = documentHtmlToText(result.value);
+      mediaMap = { ...mediaResult.mediaMap, ...parsed.mediaMap, ...docxMediaMap };
       const formatted = await readDocxAnswerMarks(buffer, parsed.text);
       pages = [formatted.rawText]; answerMarks = formatted.evidence; warnings.push(...formatted.warnings);
-      if (parsed.hasImages || mediaResult.images.length > 0) warnings.push('DOCX có hình ảnh/sơ đồ; các hình ảnh đã được trích xuất để hiển thị trực tiếp.');
+      if (parsed.hasImages || Object.keys(mediaMap).length > 0) warnings.push('DOCX có hình ảnh/sơ đồ; các hình ảnh đã được trích xuất để hiển thị trực tiếp.');
       if (mediaResult.ommlLatexCount > 0) warnings.push(`Đã nhận diện ${mediaResult.ommlLatexCount} công thức toán học OpenXML Math và sẵn sàng chuẩn hóa.`);
       if (result.messages.length) warnings.push('Một số định dạng DOCX cần đối chiếu bản gốc (công thức, hình hoặc bố cục đặc biệt).');
     } catch { throw new ExtractorError('Không đọc được DOCX. Hãy lưu lại tệp đúng định dạng DOCX hoặc chuyển sang PDF.'); }
@@ -92,7 +111,7 @@ export async function extractDocumentContent(buffer: Buffer, fileType: string, f
     pages = text.split('\f');
   } else throw new ExtractorError('Định dạng tài liệu chưa được hỗ trợ.');
   // Preserve trailing/leading empty table cells represented by tabs, including the final row.
-  pages = pages.map(text => text.normalize('NFC').replace(/\r\n?/g, '\n').replace(/[\u200B\uFEFF]/g, '').replace(/^[ \n]+|[ \n]+$/g, ''));
+  pages = pages.map(text => sanitizeExamText(text).replace(/^[ \n]+|[ \n]+$/g, ''));
   const repaired = unglueExamText(pages.join('\f'));
   const rawText = repaired.text; warnings.push(...repaired.notices.map(notice => notice.message));
   if (!rawText.trim()) needsOcr = true;

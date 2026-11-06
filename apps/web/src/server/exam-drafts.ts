@@ -10,15 +10,16 @@ import { DalError } from './dal';
 export const ExamDraftInput = z.strictObject({
   id: z.uuid(), code: z.string().max(250000), title: z.string().trim().max(200),
   minutes: z.number().int().min(1).max(1440), revision: z.number().int().min(0), sourceDocumentId: z.uuid().nullable().default(null),
+  mediaMap: z.record(z.string(), z.string()).optional(),
 });
 export type ExamDraftValue = z.infer<typeof ExamDraftInput>;
-type Metadata = { editorDraft?: { title: string; minutes: number; sourceDocumentId: string | null; format: 'studyforge.exam.v1' } };
+type Metadata = { editorDraft?: { title: string; minutes: number; sourceDocumentId: string | null; format: 'studyforge.exam.v1'; mediaMap?: Record<string, string> } };
 
 export async function readExamDraft(ownerId: string, id: string) {
   const doc = await db.document.findFirst({ where: { id, ownerId, storageKey: `editor:${id}` }, include: { original: { select: { metadata: true } } } });
   const metadata = doc?.original?.metadata as Metadata | null;
   if (!doc || !metadata?.editorDraft) throw new DalError('NOT_FOUND', 'Không tìm thấy bản soạn đề của bạn.');
-  return { id: doc.id, code: doc.rawText ?? '', title: metadata.editorDraft.title, minutes: metadata.editorDraft.minutes, sourceDocumentId: metadata.editorDraft.sourceDocumentId, revision: doc.revision, savedAt: doc.updatedAt.toISOString() };
+  return { id: doc.id, code: doc.rawText ?? '', title: metadata.editorDraft.title, minutes: metadata.editorDraft.minutes, sourceDocumentId: metadata.editorDraft.sourceDocumentId, mediaMap: metadata.editorDraft.mediaMap || {}, revision: doc.revision, savedAt: doc.updatedAt.toISOString() };
 }
 
 export async function listExamDrafts(ownerId: string) {
@@ -30,7 +31,7 @@ export async function saveExamDraft(ownerId: string, raw: unknown) {
   const input = ExamDraftInput.parse(raw);
   const saved = await transaction(async tx => {
     if (input.sourceDocumentId && !await tx.document.findFirst({ where: { id: input.sourceDocumentId, ownerId }, select: { id: true } })) throw new DalError('NOT_FOUND', 'Không tìm thấy tài liệu nguồn của bạn.');
-    const metadata = { editorDraft: { title: input.title, minutes: input.minutes, sourceDocumentId: input.sourceDocumentId, format: 'studyforge.exam.v1' as const } };
+    const metadata = { editorDraft: { title: input.title, minutes: input.minutes, sourceDocumentId: input.sourceDocumentId, format: 'studyforge.exam.v1' as const, ...(input.mediaMap ? { mediaMap: input.mediaMap } : {}) } };
     const existing = await tx.document.findUnique({ where: { id: input.id }, select: { ownerId: true, revision: true, updatedAt: true, storageKey: true, rawText: true, original: { select: { metadata: true } } } });
     const data = { title: input.title || 'Bản soạn đề chưa đặt tên', rawText: input.code, size: Buffer.byteLength(input.code) };
     if (!existing) {

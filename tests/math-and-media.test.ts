@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { DOMParser } from '@xmldom/xmldom';
 import { ommlToLatex, formatOmmlAsLatex } from '../apps/web/src/lib/omml-to-latex';
 import { normalizeMathText, hasMathContent } from '../apps/web/src/lib/math-normalizer';
+import { sanitizeExamText, isMathStar } from '../apps/web/src/lib/text-sanitizer';
+
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MathText } from '../apps/web/src/components/common/MathText';
@@ -131,6 +133,7 @@ describe('Image Reference and Media Mapping', () => {
     expect(parsed.questions[0].hasImage).toBe(true);
     expect(parsed.questions[0].imageRefs[0].src).toBe(mediaMap[1]);
   });
+});
 
 describe('MathText Component Live Rendering', () => {
   it('renders complex math formulas into KaTeX HTML', () => {
@@ -191,4 +194,48 @@ describe('MathText Component Live Rendering', () => {
   });
 });
 
+describe('Text Sanitizer and Special Character Cleaning', () => {
+  it('cleans Word private-use area Wingdings and Symbol bullets', () => {
+    // 0xF0B7 is a bullet, 0xF0FC is a checkmark, 0xF0D8 is an arrow
+    const dirty = 'Tiêu đề\uF0B7 Ý 1 \uF0FC Đúng \uF0D8 Tiếp theo';
+    const cleaned = sanitizeExamText(dirty);
+    expect(cleaned).toContain('•');
+    expect(cleaned).toContain('✓');
+    expect(cleaned).toContain('→');
+    expect(cleaned).not.toContain('\uF0B7');
+  });
+
+  it('strips zero-width characters and soft hyphens', () => {
+    const dirty = 'Từ\u200Bkhóa\uFEFF tiếng\u00AD Việt';
+    const cleaned = sanitizeExamText(dirty);
+    expect(cleaned).toBe('Từkhóa tiếng Việt');
+  });
+
+  it('distinguishes math multiplication star from answer option star', () => {
+    expect(isMathStar('Tính 2 * 3 = 6', 7)).toBe(true);
+    expect(isMathStar('*A. Đáp án A', 0)).toBe(false);
+  });
 });
+
+describe('Option Images Isolation', () => {
+  it('correctly assigns position=option for images inside choices A-D', () => {
+    const code = `Câu 1: Quan sát các đồ thị sau:
+A. [Hình 1]
+B. [Hình 2]
+C. [Hình 3]
+D. [Hình 4]
+Đáp án: A`;
+    const parsed = parseExamCode(code, { 1: 'data:img1', 2: 'data:img2', 3: 'data:img3', 4: 'data:img4' });
+    expect(parsed.questions).toHaveLength(1);
+    const q = parsed.questions[0];
+
+    // All 4 image refs must have position === 'option'
+    expect(q.imageRefs).toHaveLength(4);
+    expect(q.imageRefs.every(ref => ref.position === 'option')).toBe(true);
+
+    // Stem should have NO stem images
+    const stemImages = q.imageRefs.filter(ref => ref.position === 'stem');
+    expect(stemImages).toHaveLength(0);
+  });
+});
+

@@ -51,5 +51,13 @@
 .exam-studio .exam-options>label.correct{border-color:var(--ux-mint);background:rgba(5,150,105,0.06)}
 .math-inline{display:inline-block;margin:0 2px;vertical-align:baseline}
 .math-block{text-align:center;margin:10px 0}
+.exam-section-divider{display:flex;flex-direction:column;gap:4px;padding:14px 18px;margin:20px 0 12px;background:var(--ux-surface);border:1px solid var(--ux-line-2);border-left:5px solid var(--ux-accent);border-radius:12px;box-shadow:0 4px 12px var(--ux-shadow)}
+.exam-section-divider h4{margin:0;font-size:16px;font-weight:800;color:var(--ux-ink);letter-spacing:-.02em}
+.exam-section-divider .exam-eyebrow{font-size:9px;font-weight:800;letter-spacing:.14em;color:var(--ux-accent)}
+.exam-image-placeholder-box{display:flex;align-items:center;justify-content:center;padding:10px 14px;background:var(--ux-surface);border:1px dashed var(--ux-line-2);border-radius:8px;font-size:12px;color:var(--ux-ink-3)}
+.exam-image-btn{padding:3px 9px;font-size:10px;font-weight:700;border-radius:6px;border:1px solid var(--ux-line-2);background:var(--ux-surface);color:var(--ux-accent);cursor:pointer;transition:all .15s}
+.exam-image-btn:hover{background:var(--ux-accent-soft);border-color:var(--ux-accent)}
+.exam-image-caption{font-size:11px;font-weight:650;color:var(--ux-ink-3)}
+
 
 @media(max-width:600px){.quiz-studio .exam-studio .exam-tool-group{gap:3px}.quiz-studio .exam-studio .exam-tool-group>button{padding:8px;font-size:11px}.quiz-studio .exam-studio .exam-outline nav small{display:inline;font-size:8px;max-width:30px;overflow:hidden;text-overflow:clip}.quiz-studio .exam-studio .exam-outline nav>div{max-width:30%;margin:0 2px}.quiz-studio .exam-studio .exam-outline nav button{gap:4px;padding:8px 5px}.quiz-studio .exam-studio .exam-outline nav button b{font-size:10px}}
