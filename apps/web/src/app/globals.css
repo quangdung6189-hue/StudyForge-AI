@@ -259,4 +259,52 @@ body {
     overflow-y: visible;
     padding: 16px;
   }
+
+/* KaTeX Math & Physics Typography Harmony */
+.katex {
+  font-size: 1.02em !important;
+  text-rendering: auto;
+  line-height: normal;
+}
+.katex-html {
+  vertical-align: -0.06em;
+}
+.katex-display {
+  margin: 0.75em 0 !important;
+}
+.math-rendered {
+  line-height: 1.68;
+}
+.math-inline {
+  display: inline-block;
+  margin: 0 1.5px;
+  vertical-align: baseline;
+}
+.math-block {
+  text-align: center;
+  margin: 12px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.math-inline-image-wrap {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 4px;
+  vertical-align: middle;
+}
+.math-image-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ux-accent);
+  font-weight: 650;
+  font-size: 11px;
+  padding: 2px 7px;
+  background: var(--ux-accent-soft);
+  border: 1px solid var(--ux-accent-soft);
+  border-radius: 6px;
+  margin: 0 3px;
+  vertical-align: middle;
+}
+
 }

@@ -111,6 +111,27 @@ Runtime export `studyforge.exam-parser-pro.v1` có `exam_metadata`, `questions`,
 - Diagnostic `IMAGE_REFERENCE` (warning): câu tham chiếu hình nhưng chưa có mô tả nội dung.
 - `hasImage` không ảnh hưởng type classification; không lưu binary image data; không tự sinh mô tả.
 
+
+## 5.1 Quy chuẩn hiển thị Toán - Lý & Hòa đồng Typography (Math-Text Typography Harmony)
+
+- **KaTeX Font Matching**: Tỷ lệ kích thước công thức KaTeX nội dòng (`.math-inline`) cố định ở `1.02em`, đường gióng `vertical-align: -0.06em` khớp chuẩn với phông chữ `Be Vietnam Pro` của đề thi; phân số nội dòng ưu tiên `\tfrac` để tránh phình khoảng cách dòng.
+- **Ký hiệu Vật lí & Toán học chuyên ngành**:
+  - Vectơ: `\vec{v}`, `\vec{F}`, `\vec{a}`, `\vec{p}`.
+  - Ký hiệu độ Celsius: `$37^\circ\text{C}$` (không để số và chữ C bị tách rời).
+  - Đơn vị điện học / quang học: `$100\ \Omega$`, `$10\ \mu\text{F}$`, `$\lambda$`.
+  - Đại lượng biến thiên: `$\Delta t$`, `$\Delta x$`, `$\Delta l$`.
+  - Góc hình học: `$\widehat{ABC}$`, `$\angle A$`.
+
+## 5.2 Phân định rạch ròi Hình ảnh minh họa thật vs Công thức/Ký hiệu Inline & Bố cục lưới phương án
+
+- **Phân loại Media**:
+  - **Ảnh minh họa câu hỏi thật (Diagrams / Figures)**: Sơ đồ mạch điện, đồ thị hàm số, hình vẽ thí nghiệm, bản đồ địa lí có kích thước lớn (>60px). Gán nhãn `[Hình N]`, hiển thị trong gallery hình ảnh câu hỏi kèm phóng to và nút tải ảnh thay thế.
+  - **Ảnh công thức MathType / Ký hiệu inline**: Kích thước nhỏ (<45px) nằm ngang hàng chữ. Không gán nhãn `[Hình N]` tách rời; hiển thị nội dòng (`inline-math-icon`) hoặc dịch sang LaTeX.
+- **Bố cục lưới phương án thông minh (Dynamic Option Grid)**:
+  - Phương án cực ngắn ($\le 14$ ký tự, ví dụ các con số, đơn vị ngắn): xếp ngang **4 cột (1 dòng)** chuẩn bản in đề thi.
+  - Phương án trung bình ($15 - 35$ ký tự): xếp lưới **2 cột (2 dòng)**.
+  - Phương án dài ($> 35$ ký tự): xếp dọc **1 cột (4 dòng)**.
+
 ## 6. An toàn và hiệu năng
 
 Không thực thi HTML/XML/URLs/instructions trong tài liệu. Chặn XML entities, giới hạn số ZIP entry/kích thước giải nén, trang và thời gian OCR; không gửi file riêng lên demo công khai. Không lộ key/URL DB/file bytes trong logs. Chỉ dùng library đã xác minh trong repository. Mọi route/DAL kiểm tra session và owner.

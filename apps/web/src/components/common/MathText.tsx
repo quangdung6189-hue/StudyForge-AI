@@ -58,7 +58,8 @@ export function MathText({ text, className, style, inline = false, imageMap, onI
     return tokens.map((token, index) => {
       if (token.type === 'inline-math') {
         try {
-          const html = katex.renderToString(token.value, {
+          const inlineValue = token.value.replace(/\\frac\b/g, '\\tfrac');
+          const html = katex.renderToString(inlineValue, {
             displayMode: false,
             throwOnError: false,
           });

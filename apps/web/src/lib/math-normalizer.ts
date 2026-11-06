@@ -28,6 +28,21 @@ export function normalizeMathText(text: string): string {
   // Standalone numbers with exponents: 10^(-3) -> 10^{-3}
   result = result.replace(/(\d+)\s*\^\s*\(([^\)]+)\)/g, '$1^{$2}');
   result = result.replace(/(\d+)\s*_\s*\(([^\)]+)\)/g, '$1_{$2}');
+  // Physics vectors: vec(v), vec(F), vec(a), vec(p)
+  result = result.replace(/\bvec\(([A-Za-z]+)\)/gu, '\\vec{$1}');
+
+  // Physics Delta: Δt, Δx, Δl, ΔT
+  result = result.replace(/(^|[\s,;:(])Δ([A-Za-z])\b/gu, '$1\\Delta $2');
+
+  // Degree Celsius: 37°C, 37 °C, 37 độ C -> $37^\circ\text{C}$
+  result = result.replace(/(\d+(?:[.,]\d+)?)\s*(?:°C|độ\s*C)\b/gu, (_, num) => `$${num}^\\circ\\text{C}$`);
+
+  // Ohm symbol: 100 Ω, 100 ôm, 100 ohm -> $100\ \Omega$
+  result = result.replace(/(\d+(?:[.,]\d+)?)\s*(?:Ω|ôm|ohm)\b/giu, (_, num) => `$${num}\\ \\Omega$`);
+
+  // Micro units: 10 μF, 2 μm, 5 μs -> $10\ \mu\text{F}$
+  result = result.replace(/(\d+(?:[.,]\d+)?)\s*μ([A-Za-z]+)\b/gu, (_, num, unit) => `$${num}\\ \\mu\\text{${unit}}$`);
+
 
   // If whole expression is an equation (e.g. "Q = L^{2}m" or "Q = Lm^{2}" or "E = mc^2")
   // Wrap into $ ... $ for proper KaTeX rendering
@@ -54,5 +69,5 @@ export function normalizeMathText(text: string): string {
 /** Check if string contains LaTeX math markers or potential math expressions */
 export function hasMathContent(text: string): boolean {
   if (!text) return false;
-  return /(\$|\\frac|\\sqrt|\\int|\\sum|\\vec|\\left|\b[A-Za-z]\s*=\s*[^=]+|\^\{|_\{|\^[0-9(]|_[0-9(])/u.test(text);
+  return /(\$|\\frac|\\tfrac|\\sqrt|\\int|\\sum|\\vec|\\Delta|\\Omega|\\left|\b[A-Za-z]\s*=\s*[^=]+|\^\{|_\{|\^[0-9(]|_[0-9(]|°C|độ\s*C|Ω|μ[A-Za-z])/u.test(text);
 }

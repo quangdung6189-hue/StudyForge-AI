@@ -663,9 +663,28 @@ export default function TakeQuizPage() {
           margin-bottom: 24px;
         }
         .opt-list {
-          display: flex;
-          flex-direction: column;
+          display: grid;
           gap: 12px;
+        }
+        .opt-list[data-columns="4"] {
+          grid-template-columns: repeat(4, 1fr);
+        }
+        .opt-list[data-columns="2"] {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .opt-list[data-columns="1"] {
+          grid-template-columns: 1fr;
+        }
+        @media (max-width: 768px) {
+          .opt-list[data-columns="4"] {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        @media (max-width: 480px) {
+          .opt-list[data-columns="4"],
+          .opt-list[data-columns="2"] {
+            grid-template-columns: 1fr;
+          }
         }
         .opt-btn {
           padding: 16px 20px;
@@ -790,13 +809,15 @@ export default function TakeQuizPage() {
               {currentQ.imageRefs.map((img: any, iIdx: number) => (
                 <div key={img.id || iIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                   {img.src ? (
-                    <img src={img.src} alt={img.placeholder} style={{ maxHeight: '180px', maxWidth: '320px', objectFit: 'contain', borderRadius: '8px', background: '#fff', border: '1px solid var(--ux-line)' }} />
+                    <>
+                      <img src={img.src} alt={img.placeholder} style={{ maxHeight: '180px', maxWidth: '320px', objectFit: 'contain', borderRadius: '8px', background: '#fff', border: '1px solid var(--ux-line)' }} />
+                      <span style={{ fontSize: '11px', fontWeight: 650, color: 'var(--ux-ink-3)' }}>{img.placeholder}</span>
+                    </>
                   ) : (
                     <div style={{ padding: '8px 14px', background: 'var(--ux-surface)', border: '1px dashed var(--ux-line)', borderRadius: '8px', fontSize: '12px', color: 'var(--ux-ink-3)' }}>
                       🖼️ {img.placeholder}
                     </div>
                   )}
-                  <span style={{ fontSize: '11px', fontWeight: 650, color: 'var(--ux-ink-3)' }}>{img.placeholder}</span>
                 </div>
               ))}
             </div>
@@ -830,40 +851,44 @@ export default function TakeQuizPage() {
                 }}
               />
             </div>
-          ) : (
-            <div className="opt-list">
-              {currentQ.options?.map((opt: any, oIdx: number) => {
-                const isSelected = selectedOptions.includes(opt.id);
-                const label = String.fromCharCode(65 + oIdx);
-                return (
-                  <button
-                    key={opt.id}
-                    className={`opt-btn ${isSelected ? 'selected' : ''}`}
-                    onClick={() => handleSelectOption(currentQ.id, opt.id, currentQ.type === 'multiple')}
-                  >
-                    <span
-                      style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '50%',
-                        background: isSelected ? 'var(--ux-accent)' : 'var(--ux-surface)',
-                        border: isSelected ? 'none' : '1px solid var(--ux-line)',
-                        color: isSelected ? 'white' : 'var(--ux-ink-2)',
-                        display: 'grid',
-                        placeItems: 'center',
-                        fontWeight: 800,
-                        fontSize: '13px',
-                        flexShrink: 0,
-                      }}
+          ) : (() => {
+            const maxOptionLen = Math.max(0, ...(currentQ.options || []).map((o: any) => (o.text || '').length));
+            const optCols = currentQ.type === 'boolean' ? 2 : maxOptionLen <= 14 && currentQ.options?.length === 4 ? 4 : maxOptionLen <= 35 && currentQ.options?.length >= 2 ? 2 : 1;
+            return (
+              <div className="opt-list" data-columns={optCols}>
+                {currentQ.options?.map((opt: any, oIdx: number) => {
+                  const isSelected = selectedOptions.includes(opt.id);
+                  const label = String.fromCharCode(65 + oIdx);
+                  return (
+                    <button
+                      key={opt.id}
+                      className={`opt-btn ${isSelected ? 'selected' : ''}`}
+                      onClick={() => handleSelectOption(currentQ.id, opt.id, currentQ.type === 'multiple')}
                     >
-                      {label}
-                    </span>
-                    <span><MathText text={opt.text} inline /></span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+                      <span
+                        style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          background: isSelected ? 'var(--ux-accent)' : 'var(--ux-surface)',
+                          border: isSelected ? 'none' : '1px solid var(--ux-line)',
+                          color: isSelected ? 'white' : 'var(--ux-ink-2)',
+                          display: 'grid',
+                          placeItems: 'center',
+                          fontWeight: 800,
+                          fontSize: '13px',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {label}
+                      </span>
+                      <span><MathText text={opt.text} inline /></span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '32px' }}>
             <button

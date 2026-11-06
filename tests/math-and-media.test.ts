@@ -109,6 +109,28 @@ describe('Math Normalizer', () => {
     expect(hasMathContent('\\frac{1}{2}')).toBe(true);
     expect(hasMathContent('Thủ đô của Việt Nam là Hà Nội')).toBe(false);
   });
+
+  it('normalizes physics vectors, Celsius degrees, Ohm and micro units', () => {
+    // Vector
+    const vecInput = 'Lực vec(F) tác dụng làm vật chuyển động';
+    expect(normalizeMathText(vecInput)).toContain('\\vec{F}');
+
+    // Degree Celsius
+    const tempInput = 'Nhiệt độ sôi là 100 độ C hoặc 100°C';
+    expect(normalizeMathText(tempInput)).toContain('100^\\circ\\text{C}');
+
+    // Ohm
+    const ohmInput = 'Điện trở R = 50 ôm';
+    expect(normalizeMathText(ohmInput)).toContain('50\\ \\Omega');
+
+    // Micro unit
+    const capInput = 'Tụ điện C = 10 μF';
+    expect(normalizeMathText(capInput)).toContain('10\\ \\mu\\text{F}');
+
+    // Delta
+    const deltaInput = 'Biến thiên nhiệt độ Δt = 15 K';
+    expect(normalizeMathText(deltaInput)).toContain('\\Delta t');
+  });
 });
 
 describe('Image Reference and Media Mapping', () => {
