@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { DOMParser } from '@xmldom/xmldom';
 import { ommlToLatex, formatOmmlAsLatex } from '../apps/web/src/lib/omml-to-latex';
 import { normalizeMathText, hasMathContent } from '../apps/web/src/lib/math-normalizer';
+import JSZip from 'jszip';
+import { preprocessDocxMathAndImages } from '../apps/web/src/server/docx-preprocessor';
+import { extractDocumentContent } from '../apps/web/src/server/extractor';
+
 import { sanitizeExamText, isMathStar } from '../apps/web/src/lib/text-sanitizer';
 
 import React from 'react';
@@ -38,6 +42,19 @@ describe('OMML to LaTeX Conversion', () => {
     const result = formatOmmlAsLatex(doc.documentElement);
     expect(result).toBe('$Q = {L}^{2}m$');
   });
+  it('converts nuclear isotope m:sPre to {}^{235}_{92}U', () => {
+    const xml = `<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
+      <m:sPre>
+        <m:sub><m:r><m:t>92</m:t></m:r></m:sub>
+        <m:sup><m:r><m:t>235</m:t></m:r></m:sup>
+        <m:e><m:r><m:t>U</m:t></m:r></m:e>
+      </m:sPre>
+    </m:oMath>`;
+    const doc = parser.parseFromString(xml, 'application/xml');
+    const result = formatOmmlAsLatex(doc.documentElement);
+    expect(result).toBe('${}^{235}_{92}{U}$');
+  });
+
 
   it('converts square root m:rad to \\sqrt{base}', () => {
     const xml = `<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
@@ -260,4 +277,52 @@ D. [Hình 4]
     expect(stemImages).toHaveLength(0);
   });
 });
+describe('DOCX Math Preprocessor & Nuclear Isotope Extraction', () => {
+  it('unwraps mc:AlternateContent, converts m:oMath to LaTeX, and strips fallback image', async () => {
+    const zip = new JSZip();
+    const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:v="urn:schemas-microsoft-com:vml">
+  <w:body>
+    <w:p>
+      <w:r><w:t>Hạt nhân </w:t></w:r>
+      <mc:AlternateContent>
+        <mc:Choice Requires="w14">
+          <m:oMath>
+            <m:sPre>
+              <m:sub><m:r><m:t>92</m:t></m:r></m:sub>
+              <m:sup><m:r><m:t>235</m:t></m:r></m:sup>
+              <m:e><m:r><m:t>U</m:t></m:r></m:e>
+            </m:sPre>
+          </m:oMath>
+        </mc:Choice>
+        <mc:Fallback>
+          <w:pict>
+            <v:shape id="_x0000_i1025" type="#_x0000_t75">
+              <v:imagedata r:id="rId6" o:title=""/>
+            </v:shape>
+          </w:pict>
+        </mc:Fallback>
+      </mc:AlternateContent>
+      <w:r><w:t> có</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>`;
+    zip.file('word/document.xml', docXml);
+    const rawBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+
+    const preprocessed = await preprocessDocxMathAndImages(rawBuffer);
+    expect(preprocessed.convertedEquationCount).toBe(1);
+
+    // Verify processed XML in zip
+    const processedZip = await JSZip.loadAsync(preprocessed.buffer);
+    const processedXml = await processedZip.file('word/document.xml')!.async('string');
+    expect(processedXml).toContain('{}^{235}_{92}{U}');
+    expect(processedXml).not.toContain('mc:Fallback');
+    expect(processedXml).not.toContain('v:imagedata');
+  });
+});
+
 

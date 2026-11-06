@@ -32,6 +32,18 @@ function getMimeType(filename: string): string {
   return MIME_MAP[ext] || 'application/octet-stream';
 }
 
+function isEquationFallback(element: Element): boolean {
+  let curr: Node | null = element;
+  while (curr) {
+    if (curr.nodeType === 1) {
+      const tag = ((curr as Element).tagName || '').toLowerCase();
+      if (tag.endsWith('object') || tag.endsWith('fallback')) return true;
+    }
+    curr = curr.parentNode;
+  }
+  return false;
+}
+
 /**
  * Extract images and math formulas directly from a DOCX buffer.
  */
@@ -59,7 +71,7 @@ export async function extractDocxMediaAndMath(buffer: Buffer): Promise<DocxMedia
     }
   }
 
-  // 2. Scan word/document.xml to preserve the exact sequence of images in document flow
+  // 2. Scan word/document.xml to preserve the exact sequence of REAL images in document flow
   const docEntry = zip.file('word/document.xml');
   let imageCounter = 0;
   let ommlLatexCount = 0;
@@ -79,6 +91,11 @@ export async function extractDocxMediaAndMath(buffer: Buffer): Promise<DocxMedia
     const allImageContainers = [...drawings, ...picts];
 
     for (const container of allImageContainers) {
+      // Skip images that are equation fallbacks (MathType OLE or mc:Fallback for OMML)
+      if (isEquationFallback(container)) {
+        continue;
+      }
+
       // Find blip r:embed or imagedata r:id
       let rId = '';
       const blips = Array.from(container.getElementsByTagName('a:blip'));
@@ -95,12 +112,17 @@ export async function extractDocxMediaAndMath(buffer: Buffer): Promise<DocxMedia
       }
 
       if (rId && relsMap.has(rId)) {
-        imageCounter++;
         const targetPath = relsMap.get(rId)!;
+        const mime = getMimeType(targetPath);
+        // Browsers cannot render WMF / EMF vector metafiles (usually equation previews); ignore them
+        if (mime === 'image/x-wmf' || mime === 'image/x-emf') {
+          continue;
+        }
+
+        imageCounter++;
         const normalizedPath = targetPath.startsWith('media/') ? `word/${targetPath}` : targetPath.startsWith('word/') ? targetPath : `word/media/${targetPath.split('/').pop()}`;
         const file = zip.file(normalizedPath) || zip.file(`word/${targetPath}`) || zip.file(targetPath);
         if (file) {
-          const mime = getMimeType(targetPath);
           const bytes = await file.async('uint8array');
           const base64 = Buffer.from(bytes).toString('base64');
           const dataUrl = `data:${mime};base64,${base64}`;
@@ -114,30 +136,6 @@ export async function extractDocxMediaAndMath(buffer: Buffer): Promise<DocxMedia
           images.push(extracted);
           mediaMap[imageCounter] = dataUrl;
         }
-      }
-    }
-  }
-
-  // 3. Fallback: if document order was not fully matched, collect all remaining files in word/media/
-  const mediaFiles = Object.keys(zip.files).filter(name => /^word\/media\//i.test(name));
-  for (const mediaPath of mediaFiles) {
-    const filename = mediaPath.split('/').pop() || '';
-    if (!images.some(img => img.filename.endsWith(filename))) {
-      imageCounter++;
-      const file = zip.file(mediaPath);
-      if (file) {
-        const mime = getMimeType(filename);
-        const bytes = await file.async('uint8array');
-        const base64 = Buffer.from(bytes).toString('base64');
-        const dataUrl = `data:${mime};base64,${base64}`;
-        const extracted: ExtractedMedia = {
-          index: imageCounter,
-          filename,
-          mimeType: mime,
-          dataUrl,
-        };
-        images.push(extracted);
-        mediaMap[imageCounter] = dataUrl;
       }
     }
   }

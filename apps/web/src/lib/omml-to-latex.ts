@@ -16,7 +16,8 @@ const SYMBOL_MAP: Record<string, string> = {
   'π': ' \\pi ', 'ρ': ' \\rho ', 'σ': ' \\sigma ', 'τ': ' \\tau ',
   'φ': ' \\varphi ', 'ω': ' \\omega ', 'Δ': ' \\Delta ', 'Ω': ' \\Omega ',
   'Φ': ' \\Phi ', 'Ψ': ' \\Psi ', 'Σ': ' \\Sigma ',
-  '∫': ' \\int ', '∑': ' \\sum ', '∏': ' \\prod ', '√': ' \\sqrt '
+  '∫': ' \\int ', '∑': ' \\sum ', '∏': ' \\prod ', '√': ' \\sqrt ',
+  '⇌': ' \\rightleftharpoons ', '⇄': ' \\rightleftarrows ', '↑': ' \\uparrow ', '↓': ' \\downarrow '
 };
 
 function cleanTagName(name: string): string {
@@ -90,7 +91,15 @@ export function ommlToLatex(node: Element): string {
       const base = eNode ? childElements(eNode).map(ommlToLatex).join('').trim() : '';
       const sub = subNode ? childElements(subNode).map(ommlToLatex).join('').trim() : '';
       const sup = supNode ? childElements(supNode).map(ommlToLatex).join('').trim() : '';
-      return `${base ? `{${base}}` : ''}_{${sub}}^{${sup}}`;
+      return `${base ? `{${base}}` : '{}^{' + sup + '}_{' + sub + '}'}${base ? `_{${sub}}^{${sup}}` : ''}`;
+    }
+    case 'spre': {
+      // Pre-sub-superscript (used heavily in nuclear physics: e.g. 235_92 U)
+      const eNode = findFirstChild(node, 'e'), subNode = findFirstChild(node, 'sub'), supNode = findFirstChild(node, 'sup');
+      const base = eNode ? childElements(eNode).map(ommlToLatex).join('').trim() : '';
+      const sub = subNode ? childElements(subNode).map(ommlToLatex).join('').trim() : '';
+      const sup = supNode ? childElements(supNode).map(ommlToLatex).join('').trim() : '';
+      return `{}^{${sup}}_{${sub}}{${base}}`;
     }
 
 

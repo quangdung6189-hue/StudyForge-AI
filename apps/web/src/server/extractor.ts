@@ -5,6 +5,7 @@ import { gatewayFromEnv } from '@studyforge/ai';
 import { documentHtmlToText } from './document-html';
 import { readDocxAnswerMarks, validateDocxArchive, type AnswerMarkEvidence } from './document-answer-marks';
 import { extractDocxMediaAndMath } from './document-media';
+import { preprocessDocxMathAndImages } from './docx-preprocessor';
 import { unglueExamText } from '@/lib/exam-layout';
 import { sanitizeExamText } from '@/lib/text-sanitizer';
 
@@ -67,11 +68,12 @@ export async function extractDocumentContent(buffer: Buffer, fileType: string, f
   } else if (lower.endsWith('.docx') || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
     try {
       await validateDocxArchive(buffer);
+      const preprocessed = await preprocessDocxMathAndImages(buffer);
       const mediaResult = await extractDocxMediaAndMath(buffer);
       let docxImageCount = 0;
       const docxMediaMap: Record<number, string> = {};
       const result = await mammoth.convertToHtml(
-        { buffer },
+        { buffer: preprocessed.buffer },
         {
           externalFileAccess: false,
           convertImage: mammoth.images.imgElement(async (image) => {

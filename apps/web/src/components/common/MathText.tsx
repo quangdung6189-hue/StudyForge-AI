@@ -96,7 +96,8 @@ export function MathText({ text, className, style, inline = false, imageMap, onI
 
       if (token.type === 'image') {
         const src = token.index && imageMap ? imageMap[token.index] : undefined;
-        if (src) {
+        const isSupportedImage = src && !src.includes('wmf') && !src.includes('emf') && !src.includes('embedded-image');
+        if (isSupportedImage) {
           return (
             <span key={index} className="math-inline-image-wrap" style={{ display: 'inline-flex', alignItems: 'center', margin: '0 4px', verticalAlign: 'middle' }}>
               <img
