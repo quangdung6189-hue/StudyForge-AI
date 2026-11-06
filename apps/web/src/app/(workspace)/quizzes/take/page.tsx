@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { MathText } from '@/components/common/MathText';
 
 export default function TakeQuizPage() {
   const searchParams = useSearchParams();
@@ -782,7 +783,24 @@ export default function TakeQuizPage() {
             </span>
           </div>
 
-          <div className="q-stem">{currentQ.stem}</div>
+          <div className="q-stem"><MathText text={currentQ.stem} /></div>
+
+          {currentQ.imageRefs && currentQ.imageRefs.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', margin: '14px 0', padding: '12px', background: 'var(--ux-surface-2)', borderRadius: '12px', border: '1px solid var(--ux-line-2)' }}>
+              {currentQ.imageRefs.map((img: any, iIdx: number) => (
+                <div key={img.id || iIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                  {img.src ? (
+                    <img src={img.src} alt={img.placeholder} style={{ maxHeight: '180px', maxWidth: '320px', objectFit: 'contain', borderRadius: '8px', background: '#fff', border: '1px solid var(--ux-line)' }} />
+                  ) : (
+                    <div style={{ padding: '8px 14px', background: 'var(--ux-surface)', border: '1px dashed var(--ux-line)', borderRadius: '8px', fontSize: '12px', color: 'var(--ux-ink-3)' }}>
+                      🖼️ {img.placeholder}
+                    </div>
+                  )}
+                  <span style={{ fontSize: '11px', fontWeight: 650, color: 'var(--ux-ink-3)' }}>{img.placeholder}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {(!currentQ.options || currentQ.options.length === 0 || currentQ.type === 'fill' || currentQ.type === 'short') ? (
             <div style={{ marginTop: '20px' }}>
@@ -840,7 +858,7 @@ export default function TakeQuizPage() {
                     >
                       {label}
                     </span>
-                    <span>{opt.text}</span>
+                    <span><MathText text={opt.text} inline /></span>
                   </button>
                 );
               })}

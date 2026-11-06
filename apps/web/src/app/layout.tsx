@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import 'katex/dist/katex.min.css';
 import './globals.css';
 import { cookies } from 'next/headers';
 import AnimateUIWrapper from '@/components/animate-ui/AnimateUIWrapper';

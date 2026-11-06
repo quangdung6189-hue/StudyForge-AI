@@ -4,6 +4,7 @@ import { chunkText } from '@studyforge/core';
 import { gatewayFromEnv } from '@studyforge/ai';
 import { documentHtmlToText } from './document-html';
 import { readDocxAnswerMarks, validateDocxArchive, type AnswerMarkEvidence } from './document-answer-marks';
+import { extractDocxMediaAndMath } from './document-media';
 import { unglueExamText } from '@/lib/exam-layout';
 
 export class ExtractorError extends Error { constructor(message: string) { super(message); this.name = 'ExtractorError'; } }
@@ -19,6 +20,7 @@ async function recognizePage(image: string, signal?: AbortSignal) {
 export async function extractDocumentContent(buffer: Buffer, fileType: string, fileName: string, options: Options = {}) {
   const lower = fileName.toLowerCase(), warnings: string[] = [];
   let answerMarks: AnswerMarkEvidence[] = [];
+  let mediaMap: Record<number, string> = {};
   let pages: string[] = [], method: 'native' | 'vision' | 'mixed' = 'native', needsOcr = false;
   if (lower.endsWith('.pdf') || fileType === 'application/pdf') {
     const { PDFParse } = await import('pdf-parse');
@@ -64,11 +66,14 @@ export async function extractDocumentContent(buffer: Buffer, fileType: string, f
   } else if (lower.endsWith('.docx') || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
     try {
       await validateDocxArchive(buffer);
+      const mediaResult = await extractDocxMediaAndMath(buffer);
+      mediaMap = mediaResult.mediaMap;
       const result = await mammoth.convertToHtml({ buffer }, { externalFileAccess: false, convertImage: mammoth.images.imgElement(async () => ({ src: 'embedded-image' })) });
       const parsed = documentHtmlToText(result.value);
       const formatted = await readDocxAnswerMarks(buffer, parsed.text);
       pages = [formatted.rawText]; answerMarks = formatted.evidence; warnings.push(...formatted.warnings);
-      if (parsed.hasImages) warnings.push('DOCX có hình ảnh/sơ đồ. Hãy đối chiếu bản gốc; nội dung hình chưa nằm trong phần chữ.');
+      if (parsed.hasImages || mediaResult.images.length > 0) warnings.push('DOCX có hình ảnh/sơ đồ; các hình ảnh đã được trích xuất để hiển thị trực tiếp.');
+      if (mediaResult.ommlLatexCount > 0) warnings.push(`Đã nhận diện ${mediaResult.ommlLatexCount} công thức toán học OpenXML Math và sẵn sàng chuẩn hóa.`);
       if (result.messages.length) warnings.push('Một số định dạng DOCX cần đối chiếu bản gốc (công thức, hình hoặc bố cục đặc biệt).');
     } catch { throw new ExtractorError('Không đọc được DOCX. Hãy lưu lại tệp đúng định dạng DOCX hoặc chuyển sang PDF.'); }
   } else if (/\.(png|jpe?g)$/i.test(lower) || /^image\/(png|jpeg)$/.test(fileType)) {
@@ -92,5 +97,5 @@ export async function extractDocumentContent(buffer: Buffer, fileType: string, f
   const rawText = repaired.text; warnings.push(...repaired.notices.map(notice => notice.message));
   if (!rawText.trim()) needsOcr = true;
   const chunks = chunkText(rawText, 1800, 250);
-  return { rawText, chunks, pages: pages.map((text, i) => ({ number: i + 1, characters: text.length })), method, needsOcr, warnings, answerMarks };
+  return { rawText, chunks, pages: pages.map((text, i) => ({ number: i + 1, characters: text.length })), method, needsOcr, warnings, answerMarks, mediaMap };
 }

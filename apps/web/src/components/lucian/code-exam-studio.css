@@ -39,4 +39,17 @@
 .quiz-studio .exam-studio .exam-help>textarea{width:100%;resize:vertical;font:12px/1.8 ui-monospace,Consolas,monospace;background:var(--ux-surface-2);padding:12px;margin:8px 0}
 .quiz-studio .exam-studio .exam-help>input[type=file]{width:100%;font-size:11px;margin-top:5px}
 .quiz-studio .exam-studio .exam-tool-group{flex-wrap:wrap}
+.exam-math-toggle{transition:all .15s ease}
+.exam-math-toggle.active{background:var(--ux-accent-soft)!important;color:var(--ux-accent)!important;border-color:var(--ux-accent)!important}
+.exam-stem-rendered{background:var(--ux-surface-2);border-radius:10px;padding:12px 16px;line-height:1.75;font-size:14px;color:var(--ux-ink);border:1px solid var(--ux-line-2);margin-bottom:10px}
+.exam-image-gallery{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0;padding:12px;background:var(--ux-surface-2);border-radius:12px;border:1px solid var(--ux-line-2)}
+.exam-image-card img{transition:transform .2s ease,box-shadow .2s ease}
+.exam-image-card img:hover{transform:scale(1.03);box-shadow:0 8px 20px var(--ux-shadow)}
+.exam-studio .exam-options{display:flex;flex-direction:column;gap:10px}
+.exam-studio .exam-options>label{border:1px solid var(--ux-line);background:var(--ux-surface);border-radius:10px;padding:10px 14px;transition:border-color .15s,background-color .15s}
+.exam-studio .exam-options>label:hover{background:var(--ux-surface-2);border-color:var(--ux-line-2)}
+.exam-studio .exam-options>label.correct{border-color:var(--ux-mint);background:rgba(5,150,105,0.06)}
+.math-inline{display:inline-block;margin:0 2px;vertical-align:baseline}
+.math-block{text-align:center;margin:10px 0}
+
 @media(max-width:600px){.quiz-studio .exam-studio .exam-tool-group{gap:3px}.quiz-studio .exam-studio .exam-tool-group>button{padding:8px;font-size:11px}.quiz-studio .exam-studio .exam-outline nav small{display:inline;font-size:8px;max-width:30px;overflow:hidden;text-overflow:clip}.quiz-studio .exam-studio .exam-outline nav>div{max-width:30%;margin:0 2px}.quiz-studio .exam-studio .exam-outline nav button{gap:4px;padding:8px 5px}.quiz-studio .exam-studio .exam-outline nav button b{font-size:10px}}

@@ -11,6 +11,7 @@ export type ImageRef = {
   placeholder: string;
   description: string;
   sourceIndex?: number;
+  src?: string;
 };
 export type ExamQuestion = {
   id: string; globalIndex: number; number: number; stem: string; group: string; type: QuestionType;
@@ -60,7 +61,12 @@ const imagePatterns = [
 ];
 
 /** Detect image references in text, returning all found placeholders with positions. */
-export function detectImageRefs(stem: string, options: { letter: string; text: string }[], explanation: string): { hasImage: boolean; imageRefs: ImageRef[] } {
+export function detectImageRefs(
+  stem: string,
+  options: { letter: string; text: string }[],
+  explanation: string,
+  mediaMap?: Record<number, string>
+): { hasImage: boolean; imageRefs: ImageRef[] } {
   const refs: ImageRef[] = [];
   let counter = 0;
   const scan = (text: string, position: ImageRef['position']) => {
@@ -72,11 +78,16 @@ export function detectImageRefs(stem: string, options: { letter: string; text: s
         if (occupied.some(([s, e]) => Math.max(start, s) < Math.min(end, e))) continue;
         occupied.push([start, end]);
         counter++;
+        const numMatch = match[0].match(/\d+/);
+        const sourceIndex = numMatch ? Number(numMatch[0]) : counter;
+        const src = mediaMap ? (mediaMap[sourceIndex] || mediaMap[counter]) : undefined;
         refs.push({
           id: `img-${counter}`,
           position,
           placeholder: match[0],
           description: '',
+          sourceIndex,
+          ...(src ? { src } : {}),
         });
       }
     }
@@ -87,7 +98,7 @@ export function detectImageRefs(stem: string, options: { letter: string; text: s
   return { hasImage: refs.length > 0, imageRefs: refs };
 }
 
-export function parseExamCode(code: string): { questions: ExamQuestion[]; groups: string[]; issues: ExamIssue[] } {
+export function parseExamCode(code: string, mediaMap?: Record<number, string>): { questions: ExamQuestion[]; groups: string[]; issues: ExamIssue[] } {
   const lines = unglueExamText(code).text.split('\n');
   const nextLines = nextNonemptyLines(lines);
   const questions: ExamQuestion[] = [], groups: string[] = [], issues: ExamIssue[] = [];
@@ -231,7 +242,7 @@ export function parseExamCode(code: string): { questions: ExamQuestion[]; groups
         answerMethod = 'marker';
       }
     }
-    const imageDetection = detectImageRefs(stem, options, explanation.trim());
+    const imageDetection = detectImageRefs(stem, options, explanation.trim(), mediaMap);
     if (imageDetection.hasImage && imageDetection.imageRefs.every(ref => !ref.description)) {
       add('IMAGE_REFERENCE', 'Câu hỏi có tham chiếu hình ảnh/sơ đồ/đồ thị nhưng chưa có mô tả nội dung hình; cần đối chiếu bản gốc.', 'warning');
     }
@@ -296,15 +307,34 @@ export function questionCode(q: ExamQuestion): string {
   const header = `Câu ${q.number}: [type:${q.classification === 'ESSAY' ? 'essay' : q.type}] [${Number(q.points.toFixed(4))}đ] ${q.stem}`;
   const lines = [header];
   if (q.type === 'boolean') {
+    if (q.statements.length) lines.push('');
     q.statements.forEach(statement => lines.push(`${statement.letter}) ${statement.text}`));
     const answers = q.statements.filter(statement => statement.verdict !== null).map(statement => `${statement.letter} - ${statement.verdict ? 'Đ' : 'S'}`);
-    if (answers.length) lines.push(`Đáp án: ${answers.join(', ')}`);
-  } else if (q.type === 'short' || q.type === 'fill') { if (q.acceptedAnswers.length) lines.push(`Đáp án: ${q.acceptedAnswers.join(' | ')}`); }
-  else { q.options.forEach(option => lines.push(`${option.letter}. ${option.text}`)); const selected = q.options.filter(option => q.correctOptionIds.includes(option.id)); if (selected.length) lines.push(`Đáp án: ${selected.map(option => option.letter).join(', ')}`); }
+    if (answers.length) {
+      lines.push('');
+      lines.push(`Đáp án: ${answers.join(', ')}`);
+    }
+  } else if (q.type === 'short' || q.type === 'fill') {
+    if (q.acceptedAnswers.length) {
+      lines.push('');
+      lines.push(`Đáp án: ${q.acceptedAnswers.join(' | ')}`);
+    }
+  } else {
+    if (q.options.length) lines.push('');
+    q.options.forEach(option => lines.push(`${option.letter}. ${option.text}`));
+    const selected = q.options.filter(option => q.correctOptionIds.includes(option.id));
+    if (selected.length) {
+      lines.push('');
+      lines.push(`Đáp án: ${selected.map(option => option.letter).join(', ')}`);
+    }
+  }
   // An ordinary visual edit must not turn an unparsed/contradictory fragment into a verified key.
   // Keep a blocking marker until the teacher explicitly verifies the changed question.
   if (q.issues.some(issue => issue.severity === 'error' && !['MISSING_ANSWER', 'INVALID_POINTS', 'ESSAY_REQUIRES_MANUAL_GRADING', 'UNSUPPORTED'].includes(issue.code)) && !q.stem.includes('[Cần xác minh]')) lines[0] += ' [Cần xác minh]';
-  if (q.explanation) lines.push(`Lời giải: ${q.explanation}`);
+  if (q.explanation) {
+    if (lines[lines.length - 1] !== '') lines.push('');
+    lines.push(`Lời giải: ${q.explanation}`);
+  }
   return lines.join('\n');
 }
 

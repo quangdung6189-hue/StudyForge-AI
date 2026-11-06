@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { DocumentDTO, FullQuestionDTO, QuestionType } from '@studyforge/contracts';
 import { CodeExamStudio } from './CodeExamStudio';
+import { MathText } from '@/components/common/MathText';
 import './quiz-builder.css';
 import './quiz-builder-app.css';
 
@@ -90,6 +91,7 @@ export function LucianQuizBuilder() {
   const [examDrafts, setExamDrafts] = useState<{ id: string; title: string; updatedAt: string }[]>([]);
   const [documentId, setDocumentId] = useState(initialId);
   const [docRawText, setDocRawText] = useState('');
+  const [mediaMap, setMediaMap] = useState<Record<number, string>>({});
   const [title, setTitle] = useState('');
   const [mode, setMode] = useState<'ai_analyze' | 'code_editor'>(searchParams.get('draftId') ? 'code_editor' : 'ai_analyze');
   const [types, setTypes] = useState<QuestionType[]>(['single', 'boolean', 'short']);
@@ -162,6 +164,7 @@ export function LucianQuizBuilder() {
     api<any>(`/api/documents/${documentId}`, undefined, abort.signal).then(data => {
       setDocRawText(data.rawText || '');
       setAnalysis(data.analysis || null);
+      if (data.extraction?.mediaMap) setMediaMap(data.extraction.mediaMap);
     }).catch(err => { if (!abort.signal.aborted) setError(err.message); }).finally(() => { if (!abort.signal.aborted) setAnalysisLoading(false); });
     return () => abort.abort();
   }, [documentId]);
@@ -351,6 +354,7 @@ export function LucianQuizBuilder() {
                 documentText={docRawText}
                 documentTitle={documents.find(d => d.id === documentId)?.title}
                 sourceDocumentId={documentId || undefined}
+                mediaMap={mediaMap}
                 title={title}
                 setTitle={setTitle}
                 minutes={minutes}
@@ -389,7 +393,7 @@ export function LucianQuizBuilder() {
           {saveNotice && <p role="status">{saveNotice}</p>}
           {questions.filter(q => filter === 'all' || q.type === filter).slice(reviewPage * 10, reviewPage * 10 + 10).map((q, i) => <article className="studio-question studio-review-card" key={q.id}>
             <div className="studio-question-top"><b>Câu {reviewPage * 10 + i + 1} · {label(q.type)}</b><span>{q.answerOrigin === 'document' ? q.explanation.includes('Lời giải trong tài liệu:') ? 'Đáp án và lời giải gốc' : 'Đáp án gốc · Lời giải do AI đề xuất' : q.answerOrigin === 'teacher' ? 'Đáp án biên soạn trực tiếp' : 'AI đề xuất · Cần kiểm tra'}</span></div>
-            <h3>{q.stem}</h3><div className="studio-options">{q.options.map((option, i) => <div className={q.correctOptionIds.includes(option.id) ? 'correct' : ''} key={option.id}><b>{q.type === 'boolean' ? '' : `${String.fromCharCode(65 + i)}. `}</b>{option.text}{q.correctOptionIds.includes(option.id) && <strong> ✓</strong>}</div>)}</div>
+            <h3><MathText text={q.stem} /></h3><div className="studio-options">{q.options.map((option, i) => <div className={q.correctOptionIds.includes(option.id) ? 'correct' : ''} key={option.id}><b>{q.type === 'boolean' ? '' : `${String.fromCharCode(65 + i)}. `}</b><MathText text={option.text} inline />{q.correctOptionIds.includes(option.id) && <strong> ✓</strong>}</div>)}</div>
             {q.acceptedAnswers.length > 0 && <div className="studio-text-answer"><b>Đáp án chấp nhận: </b>{q.acceptedAnswers.join(' / ')}</div>}
             <details className="studio-solution" open><summary>Lời giải chi tiết</summary><p>{q.explanation}</p>{q.sourceRefs.length > 0 && <><b>Căn cứ trong tài liệu</b>{q.sourceRefs.map((ref, i) => <blockquote key={`${ref.chunkId}-${i}`}>{ref.quote}</blockquote>)}</>}</details>
             <details className="studio-editor"><summary>Chỉnh câu hỏi, đáp án và lời giải</summary><fieldset disabled={busy} className="studio-fieldset"><label className="studio-label">Nội dung câu hỏi<textarea className="studio-input" value={q.stem} onChange={event => edit(q.id, { stem: event.target.value })}/></label>
