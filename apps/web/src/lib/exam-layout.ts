@@ -64,7 +64,20 @@ export function bottomUpLayout(input: string[], section = '', explicitType?: Que
     const isMultiple = explicitType === 'multiple' || /chon nhieu|nhieu dap an|nhieu y dung|nhieu lua chon/i.test(heading) || /(?:chọn|những|các)\s+(?:phát biểu|đáp án|mệnh đề|khẳng định|ý|câu)\s+(?:đúng|nào đúng)|chọn nhiều|nhiều hơn một đáp án|chọn tất cả|gồm những|bao gồm những|liệt kê các|những ý nào|các phát biểu nào|ý nào sau đây đúng|có bao nhiêu phát biểu đúng|những đáp án đúng là|các mệnh đề đúng gồm/i.test(foldExamText(body[0] ?? ''));
     const kind = isMultiple ? 'multiple' : 'single';
     if (explicitType && !['single', 'multiple'].includes(explicitType)) notices.push({ code: 'TYPE_LAYOUT_CONFLICT', message: 'Dạng khai báo không khớp cụm A–D cuối câu; cần kiểm tra.', requiresReview: true });
-    return { lines: [...body.slice(0, start), ...sorted.map(entry => entry.content), ...tail], kind, notices, choiceFooter: true };
+
+    // Clean trailing isolated diagram axis/point labels (e.g. "(1)", "T", "p", "0", "(2)") between question and options
+    const stemLines = body.slice(0, start);
+    let cleanedStem = stemLines;
+    const qMarkIdx = stemLines.findIndex(line => /\?\s*$/.test(line));
+    if (qMarkIdx >= 0 && qMarkIdx < stemLines.length - 1) {
+      const trailing = stemLines.slice(qMarkIdx + 1);
+      if (trailing.length <= 8 && trailing.every(l => /^(?:\([0-9ivxIVX]+\)|[a-zA-Z0-9()]{1,3})$/.test(l.trim()))) {
+        cleanedStem = stemLines.slice(0, qMarkIdx + 1);
+      }
+    }
+
+    return { lines: [...cleanedStem, ...sorted.map(entry => entry.content), ...tail], kind, notices, choiceFooter: true };
+
   }
   // Lost option labels: use a strict section + lead + four independent short lines.
   if (/trac nghiem.*(?:nhieu lua chon|khach quan)|multiple choice/.test(heading) && !labels.length && body.length >= 5) {

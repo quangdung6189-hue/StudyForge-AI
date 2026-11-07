@@ -120,6 +120,21 @@ describe('Math Normalizer', () => {
     expect(normalized).toContain('$Q = L^2 m$');
   });
 
+  it('never swallows prose after equation or leaks formula boundary across sentences', () => {
+    const input = 'Lấy g = 10 m/s^(2). Để lực từ do từ trường của Trái Đất tác dụng lên đoạn dây bằng 1% trọng lực';
+    const normalized = normalizeMathText(input);
+    expect(normalized).toContain('$g = 10 m/s^{2}$');
+    expect(normalized).toContain('. Để lực từ do từ trường của Trái Đất tác dụng');
+    expect(normalized).not.toContain('Đểlựctừ');
+  });
+
+  it('normalizes subscript comparison options V_(1) < V_(2)', () => {
+    const input = 'A. V_(1) < V_(2).';
+    const normalized = normalizeMathText(input);
+    expect(normalized).toContain('$V_1 < V_2$');
+  });
+
+
   it('detects math content correctly', () => {
     expect(hasMathContent('$x^2$')).toBe(true);
     expect(hasMathContent('Q = L^(2)m')).toBe(true);
@@ -277,6 +292,33 @@ D. [Hình 4]
     expect(stemImages).toHaveLength(0);
   });
 });
+
+describe('Diagram Axis Floating Text Cleaning', () => {
+  it('strips diagram axis floating labels between question mark and options A-D', () => {
+    const code = `Câu 13: Một khối khí lí tưởng biến đổi từ trạng thái (1) có thể tích V_(1) sang trạng thái (2) có thể tích V_(2). Đồ thị biểu diễn mối liên hệ giữa áp suất p và nhiệt độ tuyệt đối T được thể hiện trong hình vẽ bên. Biểu thức nào sau đây là đúng khi so sánh giá trị của V_(1) và V_(2)?
+(1)
+T
+p
+0
+(2)
+A. V_(1) < V_(2).
+B. V_(1) = V_(2).
+C. V_(1) = 2V_(2).
+D. V_(1) > V_(2).
+Đáp án: A`;
+    const parsed = parseExamCode(code);
+    expect(parsed.questions).toHaveLength(1);
+    const q = parsed.questions[0];
+    // Stem should NOT contain floating diagram labels (1), T, p, 0, (2)
+    expect(q.stem).not.toContain('\n(1)');
+    expect(q.stem).not.toContain('\nT\n');
+    expect(q.stem).not.toContain('\np\n');
+    expect(q.stem).not.toContain('\n0\n');
+    expect(q.stem).not.toContain('\n(2)');
+    expect(q.stem).toContain('so sánh giá trị của V_(1) và V_(2)?');
+  });
+});
+
 describe('DOCX Math Preprocessor & Nuclear Isotope Extraction', () => {
   it('unwraps mc:AlternateContent, converts m:oMath to LaTeX, and strips fallback image', async () => {
     const zip = new JSZip();

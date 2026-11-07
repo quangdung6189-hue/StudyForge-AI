@@ -1,15 +1,11 @@
 import JSZip from 'jszip';
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
 import { ommlToLatex } from '@/lib/omml-to-latex';
+import { decodeMtefFromOleBuffer } from '@/lib/mtef-decoder';
 
 /**
  * Preprocess DOCX to convert Word Equations (OMML), MathType equations, and mc:AlternateContent
  * into native Word text runs (<w:r><w:t>$LaTeX$</w:t></w:r>) before Mammoth runs.
- * This ensures:
- * 1. Equations are preserved as clean LaTeX ($...$) instead of being ignored.
- * 2. Fallback equation images (e.g. preview WMF/PNG) are removed so Mammoth does NOT
- *    turn them into fake diagrams like "[Hình 6]".
- * 3. Real diagrams and figures remain intact.
  */
 export async function preprocessDocxMathAndImages(buffer: Buffer): Promise<{
   buffer: Buffer;
@@ -18,6 +14,23 @@ export async function preprocessDocxMathAndImages(buffer: Buffer): Promise<{
   const zip = await JSZip.loadAsync(buffer);
   const docFile = zip.file('word/document.xml');
   if (!docFile) return { buffer, convertedEquationCount: 0 };
+
+  // Read relationships to map rId -> target media / ole object
+  const relsEntry = zip.file('word/_rels/document.xml.rels');
+  const relsMap = new Map<string, string>();
+  if (relsEntry) {
+    const relsXml = await relsEntry.async('string');
+    const parser = new DOMParser({ errorHandler: { warning() {}, error() {}, fatalError() {} } });
+    const relsDoc = parser.parseFromString(relsXml, 'application/xml');
+    const relNodes = Array.from(relsDoc.getElementsByTagName('Relationship'));
+    for (const rel of relNodes) {
+      const id = rel.getAttribute('Id') || '';
+      const target = rel.getAttribute('Target') || '';
+      if (id && target) {
+        relsMap.set(id, target.replace(/^word\//, '').replace(/^\.\.\//, ''));
+      }
+    }
+  }
 
   const xmlText = await docFile.async('string');
   const parser = new DOMParser({
@@ -47,31 +60,56 @@ export async function preprocessDocxMathAndImages(buffer: Buffer): Promise<{
     parent.removeChild(ac);
   }
 
-  // 2. Remove equation fallback shapes inside w:object (MathType OLE)
-  // so Mammoth does not emit an <img> for MathType equations
+  // 2. Decode MathType OLE objects (<w:object>) into native LaTeX text runs
+  // and discard the fallback preview shape/imagedata so Mammoth does not emit <img>
   const objects = Array.from(doc.getElementsByTagName('w:object'));
   for (const obj of objects) {
-    const isEquation = Array.from(obj.getElementsByTagName('o:OLEObject')).some(ole => {
+    const oleObjects = Array.from(obj.getElementsByTagName('o:OLEObject'));
+    const isEquation = oleObjects.some(ole => {
       const progId = ole.getAttribute('ProgID') || '';
       return /Equation/i.test(progId);
     });
 
     if (isEquation) {
-      // Find any v:shape / v:imagedata / w:drawing inside this equation object and remove it
-      const shapes = Array.from(obj.getElementsByTagName('v:shape'));
-      for (const shape of shapes) {
-        const title = shape.getAttribute('o:title') || '';
-        // If the shape has an equation title/text, insert a text run
-        if (title && !title.startsWith('Equation')) {
-          const run = doc.createElement('w:r');
-          const t = doc.createElement('w:t');
-          t.setAttribute('xml:space', 'preserve');
-          t.textContent = ` $${title}$ `;
-          run.appendChild(t);
-          obj.parentNode?.insertBefore(run, obj);
+      let latex: string | null = null;
+      for (const ole of oleObjects) {
+        const rId = ole.getAttribute('r:id') || '';
+        const targetPath = relsMap.get(rId);
+        if (targetPath) {
+          const oleFile = zip.file(`word/${targetPath}`) || zip.file(targetPath);
+          if (oleFile) {
+            const oleBuf = await oleFile.async('nodebuffer');
+            latex = decodeMtefFromOleBuffer(oleBuf);
+            if (latex) break;
+          }
         }
       }
-      // Remove the w:object to avoid Mammoth converting its inner imagedata
+
+      if (latex) {
+        convertedEquationCount++;
+        const run = doc.createElement('w:r');
+        const t = doc.createElement('w:t');
+        t.setAttribute('xml:space', 'preserve');
+        t.textContent = ` $${latex}$ `;
+        run.appendChild(t);
+        obj.parentNode?.insertBefore(run, obj);
+      } else {
+        const shapes = Array.from(obj.getElementsByTagName('v:shape'));
+        for (const shape of shapes) {
+          const title = shape.getAttribute('o:title') || '';
+          if (title && !title.startsWith('Equation')) {
+            const run = doc.createElement('w:r');
+            const t = doc.createElement('w:t');
+            t.setAttribute('xml:space', 'preserve');
+            t.textContent = ` $${title}$ `;
+            run.appendChild(t);
+            obj.parentNode?.insertBefore(run, obj);
+            convertedEquationCount++;
+          }
+        }
+      }
+
+      // Remove the w:object to avoid Mammoth converting its inner imagedata to [Hình N]
       obj.parentNode?.removeChild(obj);
     }
   }
