@@ -9,7 +9,7 @@ description: Build, review and regression-test Vietnamese multi-subject exam ext
 
 Chuẩn hóa đề Việt Nam thành dữ liệu có nguồn kiểm chứng. Đầu ra phân loại chính xác 4 nhóm trọng tâm: `MULTIPLE_CHOICE` (trắc nghiệm 1 đáp án), `MULTIPLE_SELECT` (trắc nghiệm chọn nhiều ý đúng), `TRUE_FALSE` (đúng – sai), `FILL_IN_BLANK` / `SHORT_ANSWER` (điền chỗ trống / trả lời ngắn), cùng nhóm `ESSAY` (tự luận).
 Hỗ trợ trích xuất toàn diện dấu vết đáp án (bôi màu highlight, tô nền shading, gạch chân, đổi màu chữ, in đậm, ký tự đánh dấu `*`, `✓`, `[x]`, bảng đáp án) và phân định rạch ròi giữa câu ĐÃ CÓ ĐÁP ÁN vs câu CHƯA CÓ ĐÁP ÁN.
-Không hứa chính xác tuyệt đối với OCR/file tùy ý. Skill là quy trình cho agent; website phải có parser backend thật, test và quyền sở hữu. Đọc `AGENTS.md` và `skills/exam-document-reader/SKILL.md` trước khi sửa.
+Không hứa chính xác tuyệt đối với OCR/file tùy ý. Skill là quy trình cho agent; website phải có parser backend thật, test và quyền sở hữu. Đọc `AGENTS.md`, `skills/exam-document-reader/SKILL.md` và `skills/exam-quiz-generator/SKILL.md` trước khi sửa.
 
 ## 1. Giữ nguồn trước khi sửa
 

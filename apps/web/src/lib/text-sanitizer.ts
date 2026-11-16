@@ -32,8 +32,8 @@ export function sanitizeExamText(text: string): string {
   // Strip zero-width spaces, soft hyphens, and byte-order-marks
   result = result.replace(/[\u200B\u200C\u200D\uFEFF\u00AD]/g, '');
 
-  // Strip raw ASCII control characters (keep \t, \n, \r)
-  result = result.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  // Strip raw ASCII control characters (keep \t, \n, \f, \r)
+  result = result.replace(/[\x00-\x08\x0B\x0E-\x1F\x7F]/g, '');
 
   // Convert Word Symbol / Wingdings characters in private use area
   result = result.replace(/[\uF000-\uF0FF]/g, (char) => {

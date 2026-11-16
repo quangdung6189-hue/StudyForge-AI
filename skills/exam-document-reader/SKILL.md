@@ -1,15 +1,50 @@
 ---
 name: exam-document-reader
-description: Develop and verify StudyForge exam import and structured editing for Vietnamese PDF, DOCX, TXT and scanned exams. Use when changing question segmentation, marked answer extraction, code/visual synchronization, answer provenance or exam import regression tests.
+description: Develop and verify StudyForge exam import, multi-format document reading, and structured editing for Vietnamese PDF, DOCX, TXT and scanned exams. Use when changing question segmentation, marked answer extraction, code/visual synchronization, answer provenance or exam import regression tests.
 ---
 
-# Exam document reader protocol
+# Exam Document Reader Protocol — Bộ Chuẩn Đọc Tài Liệu Đề Thi
 
-For bottom-up multi-subject classification, glued boundaries, ambiguous OCR recovery, 4-category classification, and answer provenance detection, also read `skills/exam-parser-pro/SKILL.md`. Its rules refine this protocol; neither permits invented answers, discarded essay content or silent OCR number changes.
+## Vai trò và phạm vi
 
-This skill guides development and verification. It does not replace the website's runtime parser, install an OCR service or grant access to private files.
+Hướng dẫn chi tiết toàn bộ quy trình đọc, bóc tách và chuẩn hóa tài liệu đề thi tiếng Việt đa định dạng (PDF, DOCX, TXT, tài liệu scan OCR, công thức LaTeX).
+Phối hợp đồng bộ với:
+- `skills/exam-parser-pro/SKILL.md`: Chuẩn phân loại 4 nhóm câu hỏi (Bottom-Up), sửa lỗi dính ranh giới và chuẩn hóa JSON.
+- `skills/exam-quiz-generator/SKILL.md`: Quy trình tạo bài kiểm tra, kiểm soát ma trận độ khó, trích dẫn `sourceRefs` và bảo mật đề thi.
 
-## 4 Phân loại câu hỏi cốt lõi (Core Question Categories)
+Quy tắc bất biến: **Tuyệt đối không tự bịa đáp án, không bỏ rơi phần tự luận, không tự ý sửa số thứ tự câu hỏi và không làm mất dấu tiếng Việt hay công thức toán học.**
+
+---
+
+## 1. Bóc Tách Đa Định Dạng Tài Liệu (Multi-Format Document Ingestion)
+
+### 1.1 DOCX (Microsoft Word)
+- Bóc tách văn bản qua Mammoth HTML kết hợp phân tích trực tiếp file XML cấu trúc (`word/document.xml`, `word/styles.xml`).
+- **Bảo toàn bằng chứng định dạng đáp án**:
+  - **Highlight / Shading**: Nhận diện thẻ `<w:highlight>` (yellow, green, cyan...) hoặc `<w:shd w:fill="HEX">` trên run hoặc paragraph. Nếu nhãn phương án hoặc toàn bộ phương án có màu highlight nhất quán không mâu thuẫn -> `confidence: 'clear'`, `answerMethod: 'highlight'`.
+  - **Underline**: `<w:u>` gạch chân nhãn (`A.`) hoặc toàn bộ phương án (>80% ký tự) -> `confidence: 'clear'`, `answerMethod: 'underline'`.
+  - **Contrasting Color**: `<w:color>` khác màu nền tài liệu một cách nhất quán (>80% ký tự phương án) -> `confidence: 'clear'`, `answerMethod: 'color'`.
+  - **Bold**: In đậm đặc trưng trên nhãn hoặc phương án.
+  - Xung đột nhiều kiểu đánh dấu trong cùng câu -> hạ mức về `confidence: 'verify'` (`[Cần xác minh]`).
+- **Hình ảnh trong DOCX**:
+  - Khi gặp thẻ `<img>` trong HTML từ Mammoth: chèn placeholder `[Hình N]` hoặc `[Hình N: alt text]` vào đúng vị trí nội dòng trong text; track `imageCount`.
+
+### 1.2 PDF (Portable Document Format)
+- Ưu tiên bóc tách native text theo luồng ký tự thực tế.
+- **Bảo toàn phân trang (`\f` Form Feed)**:
+  - Form feed `\f` (`\x0C`) là ký tự chuẩn phân tách giữa các trang tài liệu.
+  - Trong quá trình khử nhiễu/làm sạch văn bản (`sanitizeExamText`), **BẮT BUỘC giữ nguyên `\f` (`\x0C`)**, không được xóa nhầm cùng các mã điều khiển ASCII khác.
+  - Phân trang đúng giúp gán chính xác thuộc tính `pageNumber` cho từng câu hỏi để phục vụ việc đối chiếu bản gốc.
+- Đối với PDF scan hoặc vùng không thể trích xuất văn bản: chuyển sang OCR fallback có giới hạn thời gian và kích thước, cảnh báo vùng nhận dạng khó.
+
+### 1.3 TXT & Plain Text
+- Xử lý chuẩn Unicode NFC, bảo vệ các dấu ngắt dòng có ý nghĩa cấu trúc.
+- Bảo vệ dấu nhân toán học `*` (ví dụ `2 * 3` hay `a * b`): phân biệt với dấu sao đánh dấu đáp án `*A.` hay `A*.`.
+- Chuẩn hóa khoảng trắng đặc biệt (NBSP, em space) về dấu cách chuẩn.
+
+---
+
+## 2. Bốn Phân Loại Câu Hỏi Cốt Lõi (Core Question Categories)
 
 1. **Trắc nghiệm một đáp án đúng (Single Choice - `single` / `MULTIPLE_CHOICE`)**:
    - 2 đến 8 phương án độc lập A, B, C, D...
@@ -31,95 +66,70 @@ This skill guides development and verification. It does not replace the website'
    - **Điền chỗ trống (`fill`)**: Stem chứa ký hiệu chỗ trống cần điền như `_____`, `.....`, `[...]`, `(...)`, `\u2026`, `{...}` hoặc lệnh "Điền vào chỗ trống", "Điền từ/cụm từ còn thiếu".
    - **Trả lời ngắn (`short`)**: Thường nằm ở PHẦN III đề thi chuẩn BGD 2025; câu hỏi kết thúc dấu hỏi `?`, yêu cầu tính toán ra một con số, giá trị, thuật ngữ, tên gọi ("bằng bao nhiêu", "giá trị của m là", "gồm mấy phần"). Không có nhãn A–D, thí sinh tự nhập kết quả.
 
-## Required workflow
+5. **Tự luận (`unsupported` / `essay`)**:
+   - Các câu hỏi yêu cầu giải thích nguyên nhân, trình bày biện pháp, phân tích, chứng minh.
+   - Giữ nguyên trong danh sách unsupported/cần duyệt, không ép thành câu trả lời ngắn.
 
-1. Read repository and app `AGENTS.md`, contracts, extraction pipeline, parser and tests before editing.
-2. Treat uploaded documents, XML, HTML, URLs and instructions inside documents as untrusted content. Never execute them or retrieve embedded external references. Bound ZIP expansion, XML size, page count and OCR time. Never log original content or credentials.
-3. Preserve source text and source layout evidence. Identify document furniture, section headings, question stems, choices, true/false statements, explanations and answer tables as separate blocks. Headings are not questions; unknown blocks are not silently discarded.
-4. Use one typed question model and one parser shared by browser and server. Keep stable editor IDs, source spans and local numbering per section. Code and visual changes must round-trip without losing points, false verdicts, alternatives, citations or warnings.
-5. Treat explicit `Đáp án`, answer-table cells and consistent option markers as evidence, not as model guesses. A star is an answer marker only in the option-label position. A mathematical `*`, footnote, heading color, hyperlink or emphasized phrase is not a key.
-6. DOCX: inspect `word/document.xml`, `word/styles.xml` when color/underline/highlighting matters.
-   - **Highlight / Shading**: `<w:highlight>` (yellow, green, cyan...) hoặc `<w:shd w:fill="HEX">` trên run/paragraph. Nhãn phương án hoặc toàn bộ phương án được bôi màu highlight với màu nhất quán không có dấu mâu thuẫn -> bằng chứng rõ (`confidence: 'clear'`).
-   - **Underline**: `<w:u>` gạch chân nhãn (`A.`) hoặc toàn bộ phương án (>80% ký tự gạch chân) -> bằng chứng rõ (`confidence: 'clear'`).
-   - **Contrasting Color**: `<w:color>` khác màu nền tài liệu một cách nhất quán (>80% ký tự phương án) -> `confidence: 'clear'`.
-   - **Bold**: In đậm đặc trưng trên nhãn hoặc phương án.
-   - Khi có nhiều kiểu đánh dấu xung đột trong cùng câu -> hạ mức về `confidence: 'verify'` (`[Cần xác minh]`).
-7. PDF: plain text does not contain color. Inspect visual evidence only where renderer/operator/annotation support is verified; otherwise request review. OCR output must not invent an absent key, lost formula, figure or worked solution.
-8. **Nhận diện trạng thái có đáp án vs không có đáp án (Answer Presence Protocol)**:
-   - **Có đáp án (`hasAnswer = true`)**: Có ít nhất một bằng chứng hợp lệ (highlight, underline, color, bold, ký tự `*A`, `✓`, `[x]`, dòng `Đáp án: ...`, hoặc bảng đáp án cuối bài). Trích xuất đáp án và lưu rõ `answerMethod`.
-   - **Không có đáp án (`hasAnswer = false`)**: Khi câu hỏi hoàn toàn không có bất kỳ dấu hiệu đánh dấu nào:
-     * Giữ nguyên `hasAnswer = false`, `correct_answer = null`, `answer_source = null`.
-     * Đưa vào diagnostics/issues cảnh báo `MISSING_ANSWER` ("Câu hỏi chưa có đáp án").
-     * Đặt `needs_review = true`.
-     * **Tuyệt đối không tự đoán mò, không mặc định chọn A, không gán False cho các ý đúng/sai**.
-9. True/false: retain parent stem and each statement. Unmarked is unknown, not false. Each verdict must be explicit or independently confirmed. Preserve displayed parent counts separately from graded item counts.
-10. Short answers: preserve exact answer strings; use `|` for alternatives. Do not split fractions, units or prose on `/`. Do not convert long essays, matching or ordering tasks into auto-graded short answers without explicit teacher action.
-11. Persist drafts even when incomplete. Publication must require strict schemas, validated source refs and actual teacher review. Keep `answerOrigin: document | teacher | ai_suggested`. AI suggestions are never relabeled original answers.
-12. Enforce authenticated ownership in every DAL/route. Protect draft saves with revisions; preserve immutable source snapshots for saved quizzes. Never send answer keys, explanations or evidence in active student exam payloads.
-13. Test on isolated DBs and real browser/backend flows before commit. Never migrate/reset/seed production for a parser/UI change.
+---
 
-## 5. Câu hỏi có hình ảnh mô phỏng (Image-Based Questions)
+## 3. Nhận Diện Trạng Thái Có Đáp Án vs Chưa Có Đáp Án
 
-### Nhận diện hình ảnh
+- **Có đáp án (`hasAnswer = true`)**:
+  - Khi có ít nhất một bằng chứng hợp lệ: highlight, underline, font color, bold, ký tự `*A`, `✓`, `[x]`, dòng `Đáp án: ...`, hoặc bảng đáp án.
+  - Gán `correct_answer`, `hasAnswer = true`, `answerOrigin: 'document'`.
+- **Không có đáp án (`hasAnswer = false`)**:
+  - Khi câu hỏi hoàn toàn không có dấu hiệu đánh dấu nào:
+    * Giữ nguyên `hasAnswer = false`, `correct_answer = null`, `answer_source = null`.
+    * Đưa cảnh báo `MISSING_ANSWER` ("Câu hỏi chưa có đáp án").
+    * Đặt `needs_review = true`.
+    * **Tuyệt đối không tự đoán mò, không mặc định chọn A, không gán False cho các ý đúng/sai**.
 
-1. **Placeholder patterns**: Parser nhận diện các dấu hiệu hình ảnh trong stem, options hoặc explanation:
-   - `[Hình ...]`, `[Sơ đồ ...]`, `[Biểu đồ ...]`, `[Đồ thị ...]`, `[Bảng ...]`
-   - `(Hình N)`, `Hình X.Y`, `Figure X`, `Diagram`
-   - `[không đọc rõ]`, `[hình ảnh]`, `embedded-image`
-   - `[Ảnh ...]`, `[Minh họa ...]`
+---
 
-2. **DOCX extraction**: Khi gặp `<img>` trong HTML từ Mammoth, thay vì bỏ qua:
-   - Insert placeholder `[Hình N]` hoặc `[Hình N: alt text]` vào đúng vị trí trong text
-   - Track `imageCount` cho toàn bộ document
+## 4. Khớp Bảng Đáp Án Theo Phạm Vi Phần (Section-Scoped Answer Table Mapping)
 
-3. **OCR/Vision**: Prompt đã được nâng cấp để:
-   - Mô tả hình ảnh: `[Hình: đồ thị hàm số bậc hai có đỉnh tại (2,3)]`
-   - Mô tả sơ đồ: `[Hình: sơ đồ mạch điện nối tiếp gồm R1 và R2]`
-   - Hình phức tạp: `[Hình: cần đối chiếu bản gốc]` + cảnh báo
+Khi đề thi có cấu trúc nhiều phần và số thứ tự câu hỏi lặp lại theo từng phần (ví dụ Phần I có Câu 1, Phần II có Câu 1, Phần III có Câu 1):
+1. **Kiểm tra tính duy nhất của số câu (`isNumberUnique`)**:
+   - Nếu số câu là duy nhất trong toàn bài (ví dụ đề thi đánh số liên tục từ Câu 1 đến Câu 50 không lặp): bảng đáp án chung cuối bài (`answerTables.get('')`) có thể áp dụng an toàn.
+   - Nếu số câu bị lặp lại giữa các phần (ví dụ `numberCounts.get('1') > 1`):
+     * Bảng đáp án chỉ được áp dụng trong đúng phạm vi `block.section` của phần đó.
+     * Cấm dùng bảng đáp án chung hoặc bảng đáp án của phần khác để gán cho câu hỏi trùng số, tránh nhận nhầm câu hỏi giữa các phần.
+2. **Cảnh báo mâu thuẫn**:
+   - Nếu dấu tại phương án và dòng/bảng đáp án mâu thuẫn -> hủy đáp án tự động, đưa vào `warnings: ['Dấu tại phương án và dòng/bảng đáp án mâu thuẫn; cần xác minh.']`.
 
-### Dữ liệu đầu ra
+---
 
-- `hasImage: boolean` — Câu hỏi có chứa/phụ thuộc hình ảnh hay không
-- `imageRefs: ImageRef[]` — Danh sách hình ảnh liên quan, mỗi ref gồm:
-  - `id`: Định danh hình (ví dụ: `img-1`)
-  - `position`: Vị trí (`stem` | `option` | `explanation`)
-  - `placeholder`: Text gốc (ví dụ: `[Hình 1]`, `Hình 2.3`)
-  - `description`: Mô tả nội dung (rỗng nếu chưa có từ OCR)
-- Diagnostic `IMAGE_REFERENCE` (warning): Khi câu hỏi có tham chiếu hình nhưng chưa có mô tả
+## 5. Câu Hỏi Có Hình Ảnh Mô Phỏng (Image-Based Questions)
 
-### Quy tắc
+- **Nhận diện placeholder**: `[Hình ...]`, `[Sơ đồ ...]`, `[Biểu đồ ...]`, `[Đồ thị ...]`, `(Hình N)`, `Figure X`.
+- **Dữ liệu đầu ra**:
+  - `hasImage: boolean`: Xác định câu hỏi có phụ thuộc hình ảnh.
+  - `imageRefs: ImageRef[]`: Danh sách hình ảnh gồm `{ id, position, placeholder, description }`.
+- **Chẩn đoán cảnh báo**: Thêm `IMAGE_REFERENCE` khi câu hỏi tham chiếu hình nhưng chưa có mô tả nội dung.
+- `hasImage` không làm thay đổi phân loại dạng câu hỏi (câu trắc nghiệm có hình vẫn là `single`/`multiple`).
 
-- Parser chỉ detect pattern, không tự sinh mô tả — mô tả chỉ đến từ OCR output hoặc alt text DOCX
-- `hasImage` không ảnh hưởng đến type classification — câu MC có hình vẫn là MC
-- Hình ảnh không thay đổi answer provenance
-- Không lưu binary image data trong parser output — chỉ metadata/placeholder
-- Câu có hình mà thiếu mô tả vẫn parse bình thường, chỉ thêm warning
+---
 
-## Mandatory regression cases
+## 6. Quy Chuẩn Toán - Lý & Bố Cục Lưới Phương Án
 
-- Mixed MCQ/true-false/short; numbering resets per section.
-- Uppercase choice C./D. not confused with Roman numeral section headings.
-- `*B.` / label underline / contrasting font color; math star and colored headings rejected.
-- Whole-option underline, highlight and shading recognition without falling into uncertain status when unambiguous.
-- Conflicting explicit key and marked choice; no silent precedence or default A.
-- All-false true/false; one missing verdict; preserved grouping and total points.
-- Answer tables after HẾT, inline list answer tables (`1. A  2. B  3. C  4. D`), short-answer alternatives and wrapped options.
-- XML with entities or oversized entries; no external resource access.
-- Normalize, visual edit, undo, save, reload and prepare preserve content and warnings.
-- Draft owner swapping, stale revision, lost response, two quizzes from one source.
-- Actual save/publish/take workflow with strict student payload allowlist.
-- Browser 375px/desktop, both themes, keyboard and reduced motion.
-- Image-based questions: `[Hình 1]` in stem → `hasImage = true`; DOCX `<img>` → placeholder inserted; OCR with diagrams → structured description.
-- Multiple-select enhanced detection: stem signals `gồm những`, `bao gồm những`, `liệt kê các`, `những ý nào`, `ý nào sau đây đúng`.
-- Fill-in-blank enhanced detection: `{blank}`, `[blank]`, `....` (4+ dots), `hoàn thành câu`, `bổ sung`.
-- Short-answer enhanced detection: `kết quả là`, `đáp số`, `bằng bao nhiêu`, `số nào`, `là gì`.
+1. **Hòa đồng KaTeX & Typography**:
+   - KaTeX inline: kích thước `1.02em`, `vertical-align: -0.06em` khớp phông chữ `Be Vietnam Pro`.
+   - Phân số inline ưu tiên `\tfrac`.
+   - Chuẩn hóa ký hiệu: `\vec{v}`, `^\circ\text{C}`, `\Omega`, `\Delta t`, `\angle A`.
+2. **Bố cục lưới phương án (Dynamic Option Grid)**:
+   - Ngắn ($\le 14$ ký tự): 4 cột (1 dòng).
+   - Trung bình ($15 - 35$ ký tự): 2 cột (2 dòng).
+   - Dài ($> 35$ ký tự): 1 cột (4 dòng).
 
-## Existing implementation entry points
+---
 
-- `apps/web/src/lib/exam-code.ts`: shared parser, serialization, points and diagnostics.
-- `apps/web/src/server/document-answer-marks.ts`: bounded DOCX formatting evidence.
-- `apps/web/src/server/extractor.ts`: native parsing and bounded OCR fallback.
-- `apps/web/src/server/exam-drafts.ts`: owner-scoped versioned drafts and source snapshots.
-- `tests/exam-code.test.ts`, `tests/document-answer-marks.test.ts`, `tests/exam-drafts.test.ts`.
+## 7. Danh Mục Điểm Triển Khai & Kiểm Thử
 
-Use absolute workspace paths when invoking commands. Report tested behavior and remaining limits accurately; do not claim universal file recognition or full Azota format compatibility.
+- `apps/web/src/lib/text-sanitizer.ts`: Khử nhiễu văn bản, bảo toàn `\f` (`\x0C`), bảo vệ dấu nhân toán học `*`.
+- `apps/web/src/lib/exam-layout.ts`: Tách ranh giới dính dòng, xếp phương án A–D, nhận diện dạng câu hỏi bottom-up.
+- `apps/web/src/server/question-sections.ts`: Phân tích tài liệu, phân đoạn câu hỏi, xử lý phạm vi bảng đáp án section-scoped, phát hiện hình ảnh.
+- `apps/web/src/server/docx-preprocessor.ts` & `apps/web/src/server/document-answer-marks.ts`: Trích xuất highlight/underline/color từ OOXML DOCX.
+- `apps/web/src/server/extractor.ts`: Bộ bóc tách đa định dạng (PDF, DOCX, TXT, OCR).
+- `tests/document-analysis.test.ts`: Kiểm thử bóc tách cấu trúc hỗn hợp, phân trang `\f`.
+- `tests/document-answer-marks.test.ts`: Kiểm thử bóc tách dấu vết đáp án OOXML DOCX.
+- `tests/exam-question-recognition.test.ts`: Kiểm thử nhận diện câu hỏi, bảng đáp án inline và bôi màu.

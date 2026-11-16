@@ -87,6 +87,8 @@ export function analyzeDocument(text: string) {
     }
   }
   finish();
+  const numberCounts = new Map<string, number>();
+  for (const block of blocks) numberCounts.set(block.number, (numberCounts.get(block.number) ?? 0) + 1);
   const questions: SourceQuestion[] = [], unsupported: UnclassifiedQuestion[] = [];
   for (const [index, block] of blocks.entries()) {
     const fullText = compactLayout(block.lines.join('\n'));
@@ -144,7 +146,8 @@ export function analyzeDocument(text: string) {
     const options = rawOptions.map(option => option.split(/\n\s*\*\s+/)[0].replace(/\[\s*Đáp án\s*\*?\s*\]|[✓✔√☑]|\[[xX✓✔√]\]/giu, '').replace(/\s*\*$/g, '').trim());
     const stem = `Câu ${block.number}. ${linearized.slice(0, choiceMarkers[0]?.index ?? linearized.length).trim()}`;
     let documentAnswer: SourceQuestion['documentAnswer'];
-    const tableAnswer = type === 'single' || type === 'multiple' ? (answerTables.get(block.section)?.get(block.number) ?? answerTables.get('')?.get(block.number)) : undefined;
+    const isNumberUnique = (numberCounts.get(block.number) ?? 0) <= 1;
+    const tableAnswer = type === 'single' || type === 'multiple' ? (answerTables.get(block.section)?.get(block.number) ?? (isNumberUnique ? answerTables.get('')?.get(block.number) : undefined)) : undefined;
     const answer = answerLine?.[1].trim() ?? tableAnswer?.answer;
     if (marked.length && (type === 'multiple' || marked.length === 1)) documentAnswer = { indices: marked, acceptedAnswers: [], quote: rawOptions[marked[0]].split(/\n\s*\*\s+/)[0].trim() };
     else if (answer && (type === 'single' || type === 'multiple') && /^[A-F](?:\s*[,;]\s*[A-F])*[.]?$/i.test(answer)) {
@@ -167,8 +170,6 @@ export function analyzeDocument(text: string) {
     const imageDetection = detectImageRefs(stem, finalOptions.map((text, i) => ({ letter: String.fromCharCode(65 + i), text })), '');
     questions.push({ ...base, key: String(index + 1), type, stem, options: finalOptions, ...(documentAnswer ? { documentAnswer } : {}), ...(localWarnings.length ? { warnings: localWarnings } : {}), ...(imageDetection.hasImage ? { hasImage: true, imageRefs: imageDetection.imageRefs } : {}) });
   }
-  const numberCounts = new Map<string, number>();
-  for (const block of blocks) numberCounts.set(block.number, (numberCounts.get(block.number) ?? 0) + 1);
   for (const q of [...questions.filter(question => question.type === 'short' || question.type === 'fill'), ...unsupported]) {
     const unique = numberCounts.get(q.number ?? '') === 1;
     const matches = matchingWrittenAnswers(written, q.number ?? '', q.section ?? '', unique).filter(item => item.text.trim());

@@ -31,8 +31,8 @@ export function runtimeDatabaseUrl(value: string): string {
     url.searchParams.set('pgbouncer', 'true');
   }
 
-  const connectionLimit = process.env.DB_CONNECTION_LIMIT ?? '30';
-  const defaults = { connect_timeout: '15', pool_timeout: '20', connection_limit: connectionLimit };
+  const connectionLimit = process.env.DB_CONNECTION_LIMIT ?? '5';
+  const defaults = { connect_timeout: '15', pool_timeout: '15', connection_limit: connectionLimit };
   for (const [key, setting] of Object.entries(defaults)) if (!url.searchParams.has(key)) url.searchParams.set(key, setting);
   return url.toString();
 }
