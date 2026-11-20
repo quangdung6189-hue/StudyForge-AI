@@ -1,7 +1,7 @@
 ﻿import { NextResponse } from 'next/server';
 import { isTransientDatabaseError } from '@studyforge/db';
 import { requireUser } from '@/server/auth';
-import { listUserQuizzes } from '@/server/dal';
+import { listUserQuizzes } from '@/server/data-access';
 import { saveQuiz, QuizSaveSchema } from '@/server/quiz-save';
 
 export async function GET() {

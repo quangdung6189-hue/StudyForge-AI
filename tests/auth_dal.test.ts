@@ -23,7 +23,7 @@ import {
   saveAttemptAnswers,
   submitQuizAttempt,
   updateOwnedQuizQuestions,
-} from '../apps/web/src/server/dal';
+} from '../apps/web/src/server/data-access';
 
 describe('Auth & DAL Integration Tests', () => {
   let teacherId: string;

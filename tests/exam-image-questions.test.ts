@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseExamCode, detectImageRefs } from '../apps/web/src/lib/exam-code';
+import { parseExamCode, detectImageRefs } from '../apps/web/src/lib/code-exam-parser';
 import { bottomUpLayout } from '../apps/web/src/lib/exam-layout';
 import { parseExamPro } from '../apps/web/src/server/exam-parser-pro';
 import { analyzeDocument } from '../apps/web/src/server/question-sections';

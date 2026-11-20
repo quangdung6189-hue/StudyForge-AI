@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseExamCode, normalizeExamCode } from '../apps/web/src/lib/exam-code';
+import { parseExamCode, normalizeExamCode } from '../apps/web/src/lib/code-exam-parser';
 import { analyzeDocument } from '../apps/web/src/server/question-sections';
 import { parseExamPro } from '../apps/web/src/server/exam-parser-pro';
 import { splitQuestionContent } from '../apps/web/src/lib/exam-answer-blocks';

@@ -6,7 +6,7 @@ import React, { useEffect, useId, useMemo, useRef, useState, Fragment } from 're
 import { motion, useReducedMotion } from 'motion/react';
 import { transition } from '@animate-ui/react/utils/motion';
 import type { FullQuestionDTO, QuestionType } from '@studyforge/contracts';
-import { allocateExamPoints, EXAM_SAMPLE, normalizeExamCode, parseExamCode, questionCode, readExamImport, QUESTION_LABELS, replaceExamQuestion, type ExamQuestion } from '@/lib/exam-code';
+import { allocateExamPoints, EXAM_SAMPLE, normalizeExamCode, parseExamCode, questionCode, readExamImport, QUESTION_LABELS, replaceExamQuestion, type ExamQuestion } from '@/lib/code-exam-parser';
 import { examReviewSummary, examValidationMessage, isManualQuestion, questionReview, verifyQuestionEvidence } from '@/lib/exam-review';
 import { ExamAnswerComposer } from './ExamAnswerComposer';
 import { ExamValidationSummary } from './ExamValidationSummary';
@@ -14,7 +14,7 @@ import './code-exam-studio.css';
 import './exam-review.css';
 import { MathText } from '@/components/common/MathText';
 import { hasMathContent } from '@/lib/math-normalizer';
-export { parseExamCode, isSectionHeader, normalizeLine } from '@/lib/exam-code';
+export { parseExamCode, isSectionHeader, normalizeLine } from '@/lib/code-exam-parser';
 
 type Saved = { id: string; code: string; title: string; minutes: number; revision: number; sourceDocumentId: string | null; savedAt: string };
 interface Props {

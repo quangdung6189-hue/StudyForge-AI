@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/server/auth';
-import { getOwnedDocument, updateOwnedDocument, deleteOwnedDocument } from '@/server/dal';
+import { getOwnedDocument, updateOwnedDocument, deleteOwnedDocument } from '@/server/data-access';
 import { analyzeDocument } from '@/server/question-sections';
 import { readExtractionMetadata } from '@/server/document-files';
 import { DocumentPatchSchema } from '@studyforge/contracts';

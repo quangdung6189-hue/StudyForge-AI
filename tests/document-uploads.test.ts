@@ -21,9 +21,9 @@ import { PUT as part, DELETE as cancel } from '../apps/web/src/app/api/documents
 import { POST as complete } from '../apps/web/src/app/api/documents/uploads/[id]/complete/route';
 import { POST as legacy } from '../apps/web/src/app/api/documents/upload/route';
 import { GET as original } from '../apps/web/src/app/api/documents/[id]/file/route';
-import { getOwnedDocument } from '../apps/web/src/server/dal';
+import { getOwnedDocument } from '../apps/web/src/server/data-access';
 import { readOriginalDocument, readExtractionMetadata, saveExtractionMetadata } from '../apps/web/src/server/document-files';
-import { DOCUMENT_PART_BYTES, DOCUMENT_MAX_BYTES, uploadResponseError } from '../apps/web/src/lib/document-upload';
+import { DOCUMENT_PART_BYTES, DOCUMENT_MAX_BYTES, uploadResponseError } from '../apps/web/src/lib/upload-client';
 
 let owner: string, intruder: string;
 const context = (id: string) => ({ params: Promise.resolve({ id }) });

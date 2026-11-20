@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { parseExamCode, normalizeExamCode } from '../apps/web/src/lib/exam-code';
+import { parseExamCode, normalizeExamCode } from '../apps/web/src/lib/code-exam-parser';
 import { unglueExamText } from '../apps/web/src/lib/exam-layout';
 import { analyzeDocument } from '../apps/web/src/server/question-sections';
 import { parseExamPro, ExamParserProSchema } from '../apps/web/src/server/exam-parser-pro';
 import { documentHtmlToText } from '../apps/web/src/server/document-html';
-import { extractDocumentContent } from '../apps/web/src/server/extractor';
+import { extractDocumentContent } from '../apps/web/src/server/document-extractor';
 import JSZip from 'jszip';
 
 describe('Exam-Parser-Pro bottom-up classification and conservative repairs', () => {

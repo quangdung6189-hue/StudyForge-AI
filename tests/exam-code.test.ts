@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allocateExamPoints, EXAM_SAMPLE, normalizeExamCode, parseExamCode, readExamImport, replaceExamQuestion } from '../apps/web/src/lib/exam-code';
+import { allocateExamPoints, EXAM_SAMPLE, normalizeExamCode, parseExamCode, readExamImport, replaceExamQuestion } from '../apps/web/src/lib/code-exam-parser';
 
 describe('Shared evidence-based exam parser', () => {
   it('recognizes three formats without title questions or guessed answers', () => {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/server/auth';
-import { startQuizAttempt } from '@/server/dal';
+import { startQuizAttempt } from '@/server/data-access';
 import { AttemptStartSchema } from '@studyforge/contracts';
 
 export async function POST(req: Request) {

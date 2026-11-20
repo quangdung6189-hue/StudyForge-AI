@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { db } from '../packages/db/src/index';
-import { startQuizAttempt, saveAttemptAnswers, submitQuizAttempt } from '../apps/web/src/server/dal';
+import { startQuizAttempt, saveAttemptAnswers, submitQuizAttempt } from '../apps/web/src/server/data-access';
 
 async function run() {
   console.log('=== BẮT ĐẦU KIỂM TRA CHỊU TẢI 100 NGƯỜI LÀM BÀI ĐỒNG THỜI ===');

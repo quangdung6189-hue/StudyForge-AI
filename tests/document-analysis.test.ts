@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeDocument } from '../apps/web/src/server/question-sections';
 import { documentHtmlToText } from '../apps/web/src/server/document-html';
-import { extractDocumentContent } from '../apps/web/src/server/extractor';
+import { extractDocumentContent } from '../apps/web/src/server/document-extractor';
 
 describe('Faithful mixed-format document reading', () => {
   it('recognizes Roman headings, uppercase true/false, inline answer marks, wrapped verdicts, and excludes references', () => {

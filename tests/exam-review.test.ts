@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeExamCode, parseExamCode, replaceExamQuestion } from '../apps/web/src/lib/exam-code';
+import { normalizeExamCode, parseExamCode, replaceExamQuestion } from '../apps/web/src/lib/code-exam-parser';
 import { examReviewSummary, questionReview, verifyQuestionEvidence } from '../apps/web/src/lib/exam-review';
 
 const essay = 'PHẦN II. TỰ LUẬN\nCâu 4: Trình bày nhược điểm của thế hệ máy tính đầu tiên.\nTrả lời:\n- Máy tính rất lớn.\n- Máy tính đắt tiền.\n- Tiêu thụ nhiều điện.';

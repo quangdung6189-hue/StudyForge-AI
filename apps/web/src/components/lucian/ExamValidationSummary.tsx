@@ -1,6 +1,6 @@
 // Lucian UX/UI Prompt #244 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#244
 'use client';
-import type { ExamQuestion } from '@/lib/exam-code';
+import type { ExamQuestion } from '@/lib/code-exam-parser';
 import { questionReview } from '@/lib/exam-review';
 
 export function ExamValidationSummary({ questions, open, onJump, onClose }: {

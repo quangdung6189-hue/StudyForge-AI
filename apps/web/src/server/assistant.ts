@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getOwnedDocument } from './dal';
+import { getOwnedDocument } from './data-access';
 import { AssistantImageSchema } from './assistant-images';
 
 export const AssistantInput = z.strictObject({

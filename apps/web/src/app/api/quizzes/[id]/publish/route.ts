@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/server/auth';
-import { publishOwnedQuiz } from '@/server/dal';
+import { publishOwnedQuiz } from '@/server/data-access';
 import { QuizPublishSchema } from '@studyforge/contracts';
 import { isTransientDatabaseError } from '@studyforge/db';
 

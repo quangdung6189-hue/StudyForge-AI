@@ -1,6 +1,6 @@
 import { db, transaction } from '@studyforge/db';
 import { chunkText } from '@studyforge/core';
-import { DalError } from './dal';
+import { DalError } from './data-access';
 
 type Reading = {
   rawText: string; warnings: string[]; method: string; needsOcr: boolean;

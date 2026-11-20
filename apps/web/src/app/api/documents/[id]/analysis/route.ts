@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/server/auth';
-import { getOwnedDocument } from '@/server/dal';
+import { getOwnedDocument } from '@/server/data-access';
 import { analyzeDocument } from '@/server/question-sections';
 
 export async function GET(_req: Request, context: { params: Promise<{ id: string }> }) {

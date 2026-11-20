@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 const fixture = vi.hoisted(() => ({ requireUser: vi.fn(), getOwnedDocument: vi.fn(), generate: vi.fn() }));
 vi.mock('@/server/auth', () => ({ requireUser: fixture.requireUser }));
-vi.mock('@/server/dal', () => ({ getOwnedDocument: fixture.getOwnedDocument }));
+vi.mock('@/server/data-access', () => ({ getOwnedDocument: fixture.getOwnedDocument }));
 vi.mock('@/server/generator', () => ({ generateQuizQuestions: fixture.generate }));
 import { POST } from '../apps/web/src/app/api/quizzes/generate/route';
 import { AIGatewayError } from '@studyforge/ai';

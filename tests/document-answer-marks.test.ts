@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
 import { readDocxAnswerMarks, validateDocxArchive } from '../apps/web/src/server/document-answer-marks';
-import { parseExamCode } from '../apps/web/src/lib/exam-code';
-import { extractDocumentContent } from '../apps/web/src/server/extractor';
+import { parseExamCode } from '../apps/web/src/lib/code-exam-parser';
+import { extractDocumentContent } from '../apps/web/src/server/document-extractor';
 async function fixture(paragraphs: string[]) {
   const zip = new JSZip(); zip.file('word/document.xml', `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${paragraphs.map(p => `<w:p>${p}</w:p>`).join('')}</w:body></w:document>`);
   return zip.generateAsync({ type: 'nodebuffer' });

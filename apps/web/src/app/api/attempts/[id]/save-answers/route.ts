@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/server/auth';
-import { saveAttemptAnswers } from '@/server/dal';
+import { saveAttemptAnswers } from '@/server/data-access';
 
 export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
   try {

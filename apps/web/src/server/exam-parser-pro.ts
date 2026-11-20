@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { parseExamCode } from '@/lib/exam-code';
+import { parseExamCode } from '@/lib/code-exam-parser';
 import { foldExamText, unglueExamText } from '@/lib/exam-layout';
 
 export const ExamParserProSchema = z.object({

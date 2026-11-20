@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readWithDocling } from '../apps/web/src/server/docling';
-import { parseExamCode } from '../apps/web/src/lib/exam-code';
+import { parseExamCode } from '../apps/web/src/lib/code-exam-parser';
 afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();});
 describe('Optional private Docling adapter',()=>{
  it('sends the current typed file-source API contract with inline output, without fetching user URLs',async()=>{

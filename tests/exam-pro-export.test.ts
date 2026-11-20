@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const fixture = vi.hoisted(() => ({ user: vi.fn(), document: vi.fn() }));
 vi.mock('@/server/auth', () => ({ requireUser: fixture.user }));
-vi.mock('@/server/dal', () => ({ getOwnedDocument: fixture.document }));
+vi.mock('@/server/data-access', () => ({ getOwnedDocument: fixture.document }));
 import { GET } from '../apps/web/src/app/api/documents/[id]/export/route';
 const context = { params: Promise.resolve({ id: 'private-document' }) };
 beforeEach(() => {

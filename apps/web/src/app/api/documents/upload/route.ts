@@ -1,5 +1,5 @@
 import { requireUser } from '@/server/auth';
-import { DOCUMENT_MAX_FILES, DOCUMENT_PART_BYTES } from '@/lib/document-upload';
+import { DOCUMENT_MAX_FILES, DOCUMENT_PART_BYTES } from '@/lib/upload-client';
 import { startDocumentUpload, appendDocumentPart, completeDocumentUpload, cancelDocumentUpload } from '@/server/document-uploads';
 import { UploadError, uploadErrorResponse } from '@/server/upload-errors';
 

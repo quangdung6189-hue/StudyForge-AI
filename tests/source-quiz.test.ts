@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { sourceQuiz } from '../apps/web/src/server/source-quiz';
+import { sourceQuiz } from '../apps/web/src/server/quiz-from-exam';
 const text = 'I. Trắc nghiệm\nCâu 1. Hai cộng hai bằng mấy?\nA. 3\nB. 4 [Đáp án]\nCâu 2. Chưa có đáp án.\nA. Một\nB. Hai\nII. Đúng sai\nCâu 1. Với 2 + 2 = 4:\na) Kết quả bằng bốn. ĐÚNG\nb) Kết quả bằng năm. SAI\nIII. Trả lời ngắn\nCâu 1. Tính 2 + 2.\nĐáp án: 4';
 describe('Deterministic original-answer creation', () => {
   it('keeps real keys for three formats, excludes unknown keys, and never invents a source explanation', () => {

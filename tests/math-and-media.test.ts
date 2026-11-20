@@ -4,7 +4,7 @@ import { ommlToLatex, formatOmmlAsLatex } from '../apps/web/src/lib/omml-to-late
 import { normalizeMathText, hasMathContent } from '../apps/web/src/lib/math-normalizer';
 import JSZip from 'jszip';
 import { preprocessDocxMathAndImages } from '../apps/web/src/server/docx-preprocessor';
-import { extractDocumentContent } from '../apps/web/src/server/extractor';
+import { extractDocumentContent } from '../apps/web/src/server/document-extractor';
 
 import { sanitizeExamText, isMathStar } from '../apps/web/src/lib/text-sanitizer';
 
@@ -12,7 +12,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MathText } from '../apps/web/src/components/common/MathText';
 
-import { detectImageRefs, parseExamCode } from '../apps/web/src/lib/exam-code';
+import { detectImageRefs, parseExamCode } from '../apps/web/src/lib/code-exam-parser';
 
 describe('OMML to LaTeX Conversion', () => {
   const parser = new DOMParser();

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/server/auth';
-import { listUserDocuments } from '@/server/dal';
+import { listUserDocuments } from '@/server/data-access';
 import { PaginationSchema } from '@studyforge/contracts';
 import { isTransientDatabaseError } from '@studyforge/db';
 

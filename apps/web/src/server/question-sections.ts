@@ -2,7 +2,7 @@ import type { QuestionType } from '@studyforge/contracts';
 import { bottomUpLayout, unglueExamText } from '@/lib/exam-layout';
 import { conflictingWrittenAnswers, isGlobalAnswerHeading, isWrittenAnswerHeading, matchingWrittenAnswers, nextNonemptyLines, readAnswerMarker, sameWrittenAnswers, splitQuestionContent, textAnswerParts, writtenAnswerSections, writtenAnswerValues } from '@/lib/exam-answer-blocks';
 
-import { detectImageRefs } from '@/lib/exam-code';
+import { detectImageRefs } from '@/lib/code-exam-parser';
 
 export type SourceQuestion = {
   key: string; type: QuestionType; stem: string; options: string[]; sourceText: string;

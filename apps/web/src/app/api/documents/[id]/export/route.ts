@@ -1,5 +1,5 @@
 import { requireUser } from '@/server/auth';
-import { getOwnedDocument } from '@/server/dal';
+import { getOwnedDocument } from '@/server/data-access';
 import { analyzeDocument } from '@/server/question-sections';
 import { parseExamPro } from '@/server/exam-parser-pro';
 const cell = (value: unknown) => { let text = String(value ?? ''); if (/^[\s]*[=+\-@\t\r]/.test(text)) text = `'${text}`; return `"${text.replace(/"/g, '""')}"`; };

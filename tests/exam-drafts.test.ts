@@ -14,8 +14,8 @@ import { saveExamDraft, readExamDraft, prepareExamQuestions, listExamDrafts } fr
 import { POST as save } from '../apps/web/src/app/api/exam-drafts/route';
 import { GET as get } from '../apps/web/src/app/api/exam-drafts/[id]/route';
 import { saveQuiz } from '../apps/web/src/server/quiz-save';
-import { publishOwnedQuiz, startQuizAttempt, updateOwnedDocument, listUserDocuments } from '../apps/web/src/server/dal';
-import { EXAM_SAMPLE } from '../apps/web/src/lib/exam-code';
+import { publishOwnedQuiz, startQuizAttempt, updateOwnedDocument, listUserDocuments } from '../apps/web/src/server/data-access';
+import { EXAM_SAMPLE } from '../apps/web/src/lib/code-exam-parser';
 import { QuestionListSchema } from '@studyforge/contracts';
 let owner: string, intruder: string;
 const draft = (code = EXAM_SAMPLE) => ({ id: randomUUID(), code, title: 'Đề kiểm tra', minutes: 15, revision: 0, sourceDocumentId: null });

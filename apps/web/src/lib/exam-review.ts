@@ -1,4 +1,4 @@
-import type { ExamQuestion } from './exam-code';
+import type { ExamQuestion } from './code-exam-parser';
 
 export const isManualQuestion = (q: ExamQuestion) => q.classification === 'ESSAY' || q.issues.some(issue => ['ESSAY_REQUIRES_MANUAL_GRADING', 'UNSUPPORTED'].includes(issue.code));
 export type ExamReviewStatus = 'missing' | 'verify' | 'manual' | 'invalid' | 'ready';

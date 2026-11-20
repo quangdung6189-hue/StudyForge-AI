@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db, transaction } from '@studyforge/db';
 import { QuizCreateSchema, QuestionListSchema } from '@studyforge/contracts';
 import { assertCitations } from '@studyforge/core';
-import { DalError } from './dal';
+import { DalError } from './data-access';
 
 export const QuizSaveSchema = QuizCreateSchema.extend({ durationMinutes: z.number().int().min(1).max(1440).default(30), requestId: z.string().uuid().optional() });
 const fingerprint = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');

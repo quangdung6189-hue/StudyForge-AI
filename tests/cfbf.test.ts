@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { db } from '../packages/db/src';
-import { extractDocumentContent } from '../apps/web/src/server/extractor';
+import { extractDocumentContent } from '../apps/web/src/server/document-extractor';
 
 const documentId = 'd07b57a5-1a0b-4326-8b4e-c87d0c7015ae';
 

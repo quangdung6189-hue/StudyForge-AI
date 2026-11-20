@@ -5,7 +5,7 @@ const fixture = vi.hoisted(() => ({
   deleteOwnedDocument: vi.fn(),
 }));
 vi.mock('@/server/auth', () => ({ requireUser: fixture.requireUser }));
-vi.mock('@/server/dal', () => ({
+vi.mock('@/server/data-access', () => ({
   listUserDocuments: fixture.listUserDocuments,
   deleteOwnedDocument: fixture.deleteOwnedDocument,
   getOwnedDocument: vi.fn(),

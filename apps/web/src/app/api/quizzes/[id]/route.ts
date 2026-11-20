@@ -1,7 +1,7 @@
 ﻿import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireUser } from '@/server/auth';
-import { getOwnedQuiz, updateOwnedQuizQuestions, updateOwnedQuizSettings } from '@/server/dal';
+import { getOwnedQuiz, updateOwnedQuizQuestions, updateOwnedQuizSettings } from '@/server/data-access';
 import { QuestionListSchema } from '@studyforge/contracts';
 const QuizUpdateSchema = z.object({
   questions: QuestionListSchema.optional(),

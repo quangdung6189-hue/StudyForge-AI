@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { db, transaction } from '@studyforge/db';
 import { z } from 'zod';
-import { DOCUMENT_MAX_BYTES, DOCUMENT_PART_BYTES, documentFileType } from '@/lib/document-upload';
-import { extractDocumentContent } from './extractor';
+import { DOCUMENT_MAX_BYTES, DOCUMENT_PART_BYTES, documentFileType } from '@/lib/upload-client';
+import { extractDocumentContent } from './document-extractor';
 import { analyzeDocument } from './question-sections';
 import { UploadError } from './upload-errors';
 

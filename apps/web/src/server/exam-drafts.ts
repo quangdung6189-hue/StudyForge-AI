@@ -3,9 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { db, transaction } from '@studyforge/db';
 import { chunkText } from '@studyforge/core';
 import { QuestionListSchema, type FullQuestionDTO } from '@studyforge/contracts';
-import { examId, parseExamCode, questionCode } from '@/lib/exam-code';
+import { examId, parseExamCode, questionCode } from '@/lib/code-exam-parser';
 import { examValidationMessage, isManualQuestion } from '@/lib/exam-review';
-import { DalError } from './dal';
+import { DalError } from './data-access';
 
 export const ExamDraftInput = z.strictObject({
   id: z.uuid(), code: z.string().max(250000), title: z.string().trim().max(200),

@@ -11,8 +11,8 @@ const fixture = vi.hoisted(() => {
 });
 vi.mock('@/server/auth', () => ({ requireUser: fixture.user }));
 vi.mock('@/server/docling', () => ({ readWithDocling: fixture.docling }));
-vi.mock('@/server/extractor', async importOriginal => {
-  const actual = await importOriginal<typeof import('../apps/web/src/server/extractor')>();
+vi.mock('@/server/document-extractor', async importOriginal => {
+  const actual = await importOriginal<typeof import('../apps/web/src/server/document-extractor')>();
   return { ...actual, extractDocumentContent: async (...args: Parameters<typeof actual.extractDocumentContent>) => { await fixture.onRead(); return actual.extractDocumentContent(...args); } };
 });
 import { db } from '@studyforge/db';
@@ -81,7 +81,7 @@ describe('Reread stores written answers separately and commits one consistent re
     const saved = await (await detail(new Request('http://localhost'), context(doc.id))).json();
     expect(saved.analysis.questions[0].documentAnswer.acceptedAnswers).toEqual(['1/2', '0,5']);
     expect(saved.analysis.unsupported[0].documentAnswer.acceptedAnswers).toEqual(['Dùng toán tử | để ghép điều kiện.\nBước hai: đối chiếu dữ liệu.']);
-    const { sourceQuiz } = await import('../apps/web/src/server/source-quiz');
+    const { sourceQuiz } = await import('../apps/web/src/server/quiz-from-exam');
     const { studentQuestions } = await import('@studyforge/core');
     const questions = sourceQuiz({ rawText: saved.rawText, chunks: saved.chunks, documentTitle: saved.title, types: ['short'], questionCount: 1 });
     expect(questions[0].answerOrigin).toBe('document'); expect(questions[0].reviewed).toBe(false);
@@ -100,7 +100,7 @@ describe('Reread stores written answers separately and commits one consistent re
     const saved = await (await detail(new Request('http://localhost'), context(doc.id))).json();
     expect(saved.analysis.questions[0].documentAnswer).toBeUndefined();
     expect(saved.analysis.questions[0].warnings.length).toBeGreaterThan(0);
-    const { sourceQuiz } = await import('../apps/web/src/server/source-quiz');
+    const { sourceQuiz } = await import('../apps/web/src/server/quiz-from-exam');
     expect(() => sourceQuiz({ rawText: saved.rawText, chunks: saved.chunks, documentTitle: saved.title, types: ['short'], questionCount: 1 })).toThrow('đáp án gốc xác thực');
     const exported = await (await exportDocument(new Request('http://localhost/export?format=exam-pro'), context(doc.id))).json();
     expect(exported.questions[0].correct_answer).toBeNull();

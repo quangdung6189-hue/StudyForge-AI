@@ -1,5 +1,5 @@
 import { requireUser } from '@/server/auth';
-import { listUserDocuments, listUserQuizzes } from '@/server/dal';
+import { listUserDocuments, listUserQuizzes } from '@/server/data-access';
 import { LucianDashboard } from '@/components/lucian/LucianDashboard';
 
 export const dynamic = 'force-dynamic';

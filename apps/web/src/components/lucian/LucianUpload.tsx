@@ -4,7 +4,7 @@
 // Ported to React / Next.js with real StudyForge AI document processing
 
 import React, { useState, useRef, useEffect } from 'react';
-import { DOCUMENT_MAX_BYTES, DOCUMENT_MAX_FILES, documentFileType, uploadResponseError } from '@/lib/document-upload';
+import { DOCUMENT_MAX_BYTES, DOCUMENT_MAX_FILES, documentFileType, uploadResponseError } from '@/lib/upload-client';
 
 export type UploadedDoc = {
   id: string;

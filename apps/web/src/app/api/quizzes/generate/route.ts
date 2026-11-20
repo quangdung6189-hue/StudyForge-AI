@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { QuizGenerateSchema } from '@studyforge/contracts';
 import { AIGatewayError } from '@studyforge/ai';
 import { requireUser } from '@/server/auth';
-import { getOwnedDocument } from '@/server/dal';
+import { getOwnedDocument } from '@/server/data-access';
 import { generateQuizQuestions } from '@/server/generator';
 
 export const maxDuration = 300;

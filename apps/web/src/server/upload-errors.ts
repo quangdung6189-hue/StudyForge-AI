@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { isTransientDatabaseError } from '@studyforge/db';
-import { ExtractorError } from './extractor';
+import { ExtractorError } from './document-extractor';
 
 export class UploadError extends Error {
   constructor(public readonly code: string, message: string, public readonly status = 400) { super(message); }

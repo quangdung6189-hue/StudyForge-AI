@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const fixture=vi.hoisted(()=>({requireUser:vi.fn(),attempt:vi.fn(),bucket:vi.fn(),getOwnedDocument:vi.fn(),stream:vi.fn()}));
 vi.mock('@/server/auth',()=>({requireUser:fixture.requireUser}));
 vi.mock('@studyforge/db',()=>({db:{attempt:{findFirst:fixture.attempt},rateLimitBucket:{upsert:fixture.bucket}}}));
-vi.mock('@/server/dal',()=>({getOwnedDocument:fixture.getOwnedDocument}));
+vi.mock('@/server/data-access',()=>({getOwnedDocument:fixture.getOwnedDocument}));
 vi.mock('@studyforge/ai',async importOriginal=>({...await importOriginal<typeof import('@studyforge/ai')>(),gatewayFromEnv:()=>({streamText:fixture.stream})}));
 import { POST } from '../apps/web/src/app/api/assistant/route';
 import { AssistantInput, assistantContext } from '../apps/web/src/server/assistant';

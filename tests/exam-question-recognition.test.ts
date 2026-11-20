@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
-import { parseExamCode } from '../apps/web/src/lib/exam-code';
+import { parseExamCode } from '../apps/web/src/lib/code-exam-parser';
 import { readDocxAnswerMarks } from '../apps/web/src/server/document-answer-marks';
 import { parseExamPro, ExamParserProSchema } from '../apps/web/src/server/exam-parser-pro';
 import { analyzeDocument } from '../apps/web/src/server/question-sections';

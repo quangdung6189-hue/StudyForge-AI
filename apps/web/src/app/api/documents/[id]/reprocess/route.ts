@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { db } from '@studyforge/db';
 import { requireUser } from '@/server/auth';
 import { readOriginalDocument } from '@/server/document-files';
-import { extractDocumentContent } from '@/server/extractor';
+import { extractDocumentContent } from '@/server/document-extractor';
 import { readWithDocling } from '@/server/docling';
 import { applyDocumentReread, releaseDocumentReread } from '@/server/document-reread';
 export const maxDuration = 300;

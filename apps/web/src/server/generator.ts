@@ -5,7 +5,7 @@ import { assertCitations } from '@studyforge/core';
 import { DifficultySchema, QuestionTypeSchema, QuestionListSchema, SourceRefSchema, type FullQuestionDTO, type QuestionType } from '@studyforge/contracts';
 import { detectSourceQuestions, selectSourceQuestions, type SourceQuestion } from './question-sections';
 import { cachedGeneration, freshQuestionIdentities, generationCacheKey } from './generation-cache';
-import { sourceQuiz } from './source-quiz';
+import { sourceQuiz } from './quiz-from-exam';
 
 const AIQuestionSchema = z.strictObject({
   slot: z.number().int().min(0).max(99), type: QuestionTypeSchema,
