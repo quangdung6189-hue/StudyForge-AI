@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { LucianThemeSwitch } from '../lucian/LucianThemeSwitch';
+import { AppIcon } from './AppIcon';
 
 export function AppHeader({ title }: { title?: string }) {
   const pathname = usePathname();
@@ -19,23 +20,11 @@ export function AppHeader({ title }: { title?: string }) {
 
   return (
     <header className="app-header ux">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span
-          style={{
-            color: 'var(--ux-ink)',
-            fontSize: '15px',
-            fontWeight: 750,
-            letterSpacing: '-0.015em',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            maxWidth: '50vw',
-            display: 'inline-block',
-            transition: 'color .2s ease',
-          }}
-        >
-          {title || currentTitle}
-        </span>
+      <div className="app-header-context">
+        <span className="app-header-mark" aria-hidden="true"><AppIcon name="forge" /></span>
+        <span className="app-header-kicker">Không gian học tập</span>
+        <span className="app-header-separator" aria-hidden="true" />
+        <span className="app-header-title">{title || currentTitle}</span>
       </div>
       <LucianThemeSwitch />
     </header>

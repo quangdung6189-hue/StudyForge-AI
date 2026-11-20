@@ -5,18 +5,19 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { AppIcon, type AppIconName } from './AppIcon';
 
 interface AppSidebarProps {
   user?: { name: string; email: string; role: string } | null;
 }
 
-const ICONS: Record<string, string> = {
-  '/dashboard': '<path d="M4 11l8-6.5 8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/>',
-  '/documents': '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
-  '/quizzes/create': '<rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
-  '/quizzes': '<path d="M5 5.5h14a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1h-7l-4.5 3.5V17H5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1z"/>',
-  '/quizzes/take': '<path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2h-5.5"/><polyline points="14 2 14 8 20 8"/><path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l1-3.95 5.42-5.44Z"/>',
-  '/study': '<path d="M5 19.5V13M5 9V4.5M12 19.5V11M12 7V4.5M19 19.5V15M19 11V4.5M3 13h4M10 7h4M17 15h4"/>',
+const ICONS: Record<string, AppIconName> = {
+  '/dashboard': 'dashboard',
+  '/documents': 'documents',
+  '/quizzes/create': 'create',
+  '/quizzes': 'quizzes',
+  '/quizzes/take': 'take',
+  '/study': 'study',
 };
 
 export function AppSidebar({ user }: AppSidebarProps) {
@@ -44,10 +45,10 @@ export function AppSidebar({ user }: AppSidebarProps) {
     router.refresh();
   };
 
-  const activeIndex = navItems.findIndex((i) => i.href === active);
+  const activeIndex = Math.max(0, navItems.findIndex((item) => item.href === active || (item.href !== '/quizzes' && active.startsWith(`${item.href}/`))));
 
   return (
-    <aside className="ux u040" data-wide={isWide}>
+    <aside className="ux u040" data-wide={isWide} style={{ '--active-index': activeIndex } as React.CSSProperties}>
       <style>{`
         .u040{--rw:72px;position:sticky;top:0;height:100vh;height:100dvh;flex:0 0 auto;display:flex;background:var(--ux-sidebar);border-right:1px solid var(--ux-line);transition:width .35s var(--ux-spring),background-color .2s ease,border-color .2s ease;z-index:30}
         .u040[data-wide="true"]{--rw:220px}
@@ -58,14 +59,15 @@ export function AppSidebar({ user }: AppSidebarProps) {
         .u040[data-wide="true"] .u040-top{justify-content:space-between;padding:0 2px 0 4px}
         
         .u040-brand{display:flex;align-items:center;gap:12px;text-decoration:none;min-width:0;cursor:pointer}
-        .u040-logo{width:38px;height:38px;flex:none;border-radius:12px;background:var(--ux-grad);color:#fff;font-weight:800;font-size:17px;display:grid;place-items:center;box-shadow:0 4px 12px rgba(99,102,241,0.25);transition:transform .2s ease}
-        .u040-brand:hover .u040-logo{transform:scale(1.05)}
+        .u040-logo{width:38px;height:38px;flex:none;border-radius:12px;background:var(--ux-grad);color:var(--ux-accent-ink);display:grid;place-items:center;box-shadow:0 8px 22px -10px color-mix(in srgb,var(--ux-accent) 65%,transparent);transition:transform var(--ux-motion-fast) var(--ux-ease),box-shadow var(--ux-motion-fast) ease}
+        .u040-logo svg{width:24px;height:24px}
+        @media(hover:hover) and (pointer:fine){.u040-brand:hover .u040-logo{transform:translateY(-2px);box-shadow:0 12px 24px -10px color-mix(in srgb,var(--ux-accent) 78%,transparent)}}
         
         .u040-name{font-size:15px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ux-ink);display:none;opacity:0;transition:opacity .2s,color .2s ease}
         .u040[data-wide="true"] .u040-name{display:block;opacity:1}
         
         /* Header Collapse Button (Only shown when expanded) */
-        .u040-tog-header{width:30px;height:30px;border-radius:8px;border:1px solid var(--ux-line-2);background:var(--ux-surface-2);color:var(--ux-ink-3);display:none;place-items:center;cursor:pointer;flex:none;transition:all .2s ease}
+        .u040-tog-header{width:32px;height:32px;border-radius:9px;border:1px solid var(--ux-line-2);background:var(--ux-surface-2);color:var(--ux-ink-3);display:none;place-items:center;cursor:pointer;flex:none;transition:color var(--ux-motion-fast) ease,background-color var(--ux-motion-fast) ease,border-color var(--ux-motion-fast) ease,transform var(--ux-motion-fast) var(--ux-ease)}
         .u040[data-wide="true"] .u040-tog-header{display:grid}
         .u040-tog-header:hover{color:var(--ux-ink);background:var(--ux-surface-3);border-color:var(--ux-line)}
         
@@ -80,7 +82,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
         .u040-it:hover{opacity:1;color:var(--ux-ink);background:var(--ux-surface-2)}
         .u040-it[aria-current="page"]{opacity:1;color:var(--ux-accent-text);font-weight:700}
         
-        .u040-it svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+        .u040-it svg{width:21px;height:21px;flex:none;transition:color var(--ux-motion-fast) ease,transform var(--ux-motion-base) var(--ux-spring)}
+        .u040-it .icon-part{transform-box:fill-box;transform-origin:center;transition:transform var(--ux-motion-base) var(--ux-spring),opacity var(--ux-motion-fast) ease}
+        .u040-it[aria-current="page"] .icon-b{transform:translateY(-1px)}
+        .u040-it[aria-current="page"] .icon-c{transform:translateX(1px)}
+        @media(hover:hover) and (pointer:fine){.u040-it:hover svg{transform:translateY(-1px)}.u040-logout:hover .icon-b{transform:translateX(2px)}}
         .u040-it[aria-current="page"] svg{stroke:var(--ux-accent-text)}
         
         .u040-it span{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--rw) - 48px);display:none;opacity:0;transform:translateX(-6px);transition:opacity .2s,transform .25s var(--ux-ease)}
@@ -90,7 +96,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         .u040-bottom{margin-top:auto;display:flex;flex-direction:column;gap:8px}
         
         /* Expand/Collapse Toggle Button */
-        .u040-footer-tog{width:100%;height:40px;border:1px solid var(--ux-line-2);border-radius:11px;background:var(--ux-surface-2);color:var(--ux-ink-2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s ease;gap:10px}
+        .u040-footer-tog{width:100%;height:42px;border:1px solid var(--ux-line-2);border-radius:11px;background:var(--ux-surface-2);color:var(--ux-ink-2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color var(--ux-motion-fast) ease,background-color var(--ux-motion-fast) ease,border-color var(--ux-motion-fast) ease,transform var(--ux-motion-fast) var(--ux-ease);gap:10px}
         .u040[data-wide="true"] .u040-footer-tog{justify-content:flex-start;padding:0 14px}
         .u040-footer-tog:hover{background:var(--ux-surface-3);color:var(--ux-accent);border-color:var(--ux-accent)}
         .u040-footer-tog span{font-size:13px;font-weight:600;white-space:nowrap;display:none}
@@ -100,7 +106,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         .u040-me{display:flex;align-items:center;justify-content:center;gap:10px;padding:6px;border-radius:12px;background:var(--ux-surface-2);border:1px solid var(--ux-line);transition:background-color .2s ease,border-color .2s ease}
         .u040[data-wide="true"] .u040-me{justify-content:flex-start;padding:8px}
         
-        .u040-av{width:34px;height:34px;border-radius:50%;background:var(--ux-grad);color:#fff;font-weight:800;font-size:13.5px;display:grid;place-items:center;flex:none}
+        .u040-av{width:34px;height:34px;border-radius:11px;background:var(--ux-accent-soft);color:var(--ux-accent-text);border:1px solid color-mix(in srgb,var(--ux-accent) 24%,transparent);font-weight:800;font-size:13.5px;display:grid;place-items:center;flex:none}
         .u040-me-info{min-width:0;flex:1;display:none}
         .u040[data-wide="true"] .u040-me-info{display:block}
         
@@ -110,6 +116,21 @@ export function AppSidebar({ user }: AppSidebarProps) {
         .u040-logout{background:none;border:0;color:var(--ux-ink-3);cursor:pointer;display:none;place-items:center;width:32px;height:32px;border-radius:8px;transition:color .2s,background-color .2s;flex:none}
         .u040[data-wide="true"] .u040-logout{display:grid}
         .u040-logout:hover{color:var(--ux-danger);background:color-mix(in srgb,var(--ux-danger) 12%,transparent)}
+        .u040 button:active,.u040 a:active{transform:scale(.97)}
+        @media(max-width:768px){
+          .u040{--mobile-tab:calc(100vw / 6);position:fixed;inset:auto 0 0;height:calc(76px + env(safe-area-inset-bottom));width:100%;border:0;background:transparent;z-index:60;display:block;padding-bottom:env(safe-area-inset-bottom)}
+          .u040-rail{position:relative;width:100%;height:76px;padding:0 4px;overflow:visible;background:color-mix(in srgb,var(--ux-sidebar) 94%,transparent);border-top:1px solid var(--ux-line);box-shadow:0 -18px 44px -34px var(--ux-shadow-strong);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+          .u040-rail::before{content:"";position:absolute;top:-19px;left:calc(var(--mobile-tab) * var(--active-index) + var(--mobile-tab) / 2 - 25px);width:50px;height:50px;border-radius:17px;background:var(--ux-accent);box-shadow:0 12px 26px -12px color-mix(in srgb,var(--ux-accent) 75%,transparent);transition:left var(--ux-motion-panel) var(--ux-spring);pointer-events:none}
+          .u040-rail>div:first-child{width:100%;height:100%}.u040-top,.u040-bottom{display:none!important}
+          .u040-nav{height:100%;display:flex;flex-direction:row;gap:0;width:100%;align-items:stretch}
+          .u040-nav>li:not(.u040-hl){flex:1;min-width:0}.u040-hl{display:none}
+          .u040-it,.u040[data-wide="true"] .u040-it{height:100%;padding:0;display:flex;flex-direction:column;justify-content:center;gap:3px;border-radius:14px;background:none!important;overflow:visible}
+          .u040-it svg{width:22px;height:22px;transform:translateY(0);transition:transform var(--ux-motion-panel) var(--ux-spring),color var(--ux-motion-fast) ease}
+          .u040-it span,.u040[data-wide="true"] .u040-it span{display:block;max-width:calc(var(--mobile-tab) - 6px);font-size:9.5px;line-height:1.1;text-align:center;opacity:0;transform:translateY(4px);transition:opacity var(--ux-motion-fast) ease,transform var(--ux-motion-base) var(--ux-spring);transition-delay:0ms;text-overflow:ellipsis}
+          .u040-it[aria-current="page"]{color:var(--ux-accent-ink)}
+          .u040-it[aria-current="page"] svg{transform:translateY(-20px);color:var(--ux-accent-ink)}
+          .u040-it[aria-current="page"] span{opacity:1;transform:translateY(-4px);color:var(--ux-ink)}
+        }
       `}</style>
 
       <nav className="u040-rail" aria-label="Main menu">
@@ -123,7 +144,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 if (!isWide) setIsWide(true);
               }}
             >
-              <span className="u040-logo" aria-hidden="true">SF</span>
+              <span className="u040-logo" aria-hidden="true"><AppIcon name="forge" /></span>
               <span className="u040-name">StudyForge AI</span>
             </Link>
 
@@ -166,7 +187,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                       setActive(item.href);
                     }}
                   >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ICONS[item.href] || '' }} />
+                    <AppIcon name={ICONS[item.href]} />
                     <span>{item.label}</span>
                   </Link>
                 </li>
@@ -220,11 +241,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 aria-label="Đăng xuất"
                 title="Đăng xuất"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+                <AppIcon name="logout" width="18" height="18" />
               </button>
             </div>
           )}

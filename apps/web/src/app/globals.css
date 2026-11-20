@@ -4,130 +4,133 @@
    Tối ưu hóa màu sắc cho giao diện học tập & thi cử:
    - Tăng độ tương phản (WCAG AAA/AA) cho câu hỏi, công thức toán và văn bản dài
    - Giảm chói mắt (anti-glare), dịu nhẹ khi đọc lâu trên cả Light Mode & Dark Mode
-   - Hệ màu Accent Indigo/Sky/Mint hiện đại, bắt mắt, tràn đầy năng lượng tri thức */
+  - Hệ màu Graphite/Teal/Amber: rõ, dịu mắt, tránh gradient tím kiểu AI */
 :root {
   color-scheme: light;
-  --ux-page: #F8FAFC;
+  --ux-page: #F5F7F6;
   --ux-surface: #FFFFFF;
-  --ux-surface-2: #F1F5F9;
-  --ux-surface-3: #E2E8F0;
+  --ux-surface-2: #EDF2F0;
+  --ux-surface-3: #DDE7E3;
   --ux-sidebar: #FFFFFF;
   --ux-header: rgba(255, 255, 255, 0.92);
-  --ux-ink: #0F172A;
-  --ux-ink-2: #334155;
-  --ux-ink-3: #64748B;
+  --ux-ink: #10201D;
+  --ux-ink-2: #344944;
+  --ux-ink-3: #667A74;
   --ux-line: rgba(15, 23, 42, 0.08);
   --ux-line-2: rgba(15, 23, 42, 0.15);
-  --ux-accent: #6366F1;
-  --ux-accent-hover: #4F46E5;
-  --ux-accent-2: #0EA5E9;
-  --ux-accent-soft: rgba(99, 102, 241, 0.10);
-  --ux-accent-text: #4338CA;
-  --ux-accent-bar: #6366F1;
+  --ux-accent: #0F766E;
+  --ux-accent-hover: #115E59;
+  --ux-accent-2: #087F8C;
+  --ux-accent-soft: rgba(15, 118, 110, 0.11);
+  --ux-accent-text: #0F625C;
+  --ux-accent-bar: #0F766E;
   --ux-accent-ink: #FFFFFF;
-  --ux-mint: #10B981;
-  --ux-warn: #F59E0B;
-  --ux-danger: #EF4444;
+  --ux-mint: #14866D;
+  --ux-warn: #D97706;
+  --ux-danger: #DC4C4C;
   --ux-glass: rgba(255, 255, 255, 0.82);
   --ux-glass-line: rgba(255, 255, 255, 0.95);
-  --ux-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(99, 102, 241, 0.04);
-  --ux-shadow-strong: 0 20px 40px -12px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.06);
-  --ux-grad: linear-gradient(135deg, #6366F1 0%, #0EA5E9 52%, #10B981 100%);
+  --ux-shadow: 0 4px 20px -2px rgba(16, 32, 29, 0.06), 0 2px 6px -1px rgba(15, 118, 110, 0.04);
+  --ux-shadow-strong: 0 20px 40px -12px rgba(16, 32, 29, 0.18), 0 1px 3px rgba(16, 32, 29, 0.08);
+  --ux-grad: linear-gradient(145deg, #0F766E 0%, #087F8C 100%);
   --ux-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ux-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
   --ux-radius: 14px;
+  --ux-motion-fast: 160ms;
+  --ux-motion-base: 260ms;
+  --ux-motion-panel: 420ms;
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --ux-page: #F8FAFC;
+  --ux-page: #F5F7F6;
   --ux-surface: #FFFFFF;
-  --ux-surface-2: #F1F5F9;
-  --ux-surface-3: #E2E8F0;
+  --ux-surface-2: #EDF2F0;
+  --ux-surface-3: #DDE7E3;
   --ux-sidebar: #FFFFFF;
   --ux-header: rgba(255, 255, 255, 0.92);
-  --ux-ink: #0F172A;
-  --ux-ink-2: #334155;
-  --ux-ink-3: #64748B;
+  --ux-ink: #10201D;
+  --ux-ink-2: #344944;
+  --ux-ink-3: #667A74;
   --ux-line: rgba(15, 23, 42, 0.08);
   --ux-line-2: rgba(15, 23, 42, 0.15);
-  --ux-accent: #6366F1;
-  --ux-accent-hover: #4F46E5;
-  --ux-accent-2: #0EA5E9;
-  --ux-accent-soft: rgba(99, 102, 241, 0.10);
-  --ux-accent-text: #4338CA;
-  --ux-accent-bar: #6366F1;
+  --ux-accent: #0F766E;
+  --ux-accent-hover: #115E59;
+  --ux-accent-2: #087F8C;
+  --ux-accent-soft: rgba(15, 118, 110, 0.11);
+  --ux-accent-text: #0F625C;
+  --ux-accent-bar: #0F766E;
   --ux-accent-ink: #FFFFFF;
-  --ux-mint: #10B981;
-  --ux-warn: #F59E0B;
-  --ux-danger: #EF4444;
+  --ux-mint: #14866D;
+  --ux-warn: #D97706;
+  --ux-danger: #DC4C4C;
   --ux-glass: rgba(255, 255, 255, 0.82);
   --ux-glass-line: rgba(255, 255, 255, 0.95);
-  --ux-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(99, 102, 241, 0.04);
-  --ux-shadow-strong: 0 20px 40px -12px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.06);
-  --ux-grad: linear-gradient(135deg, #6366F1 0%, #0EA5E9 52%, #10B981 100%);
+  --ux-shadow: 0 4px 20px -2px rgba(16, 32, 29, 0.06), 0 2px 6px -1px rgba(15, 118, 110, 0.04);
+  --ux-shadow-strong: 0 20px 40px -12px rgba(16, 32, 29, 0.18), 0 1px 3px rgba(16, 32, 29, 0.08);
+  --ux-grad: linear-gradient(145deg, #0F766E 0%, #087F8C 100%);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --ux-page: #0B0F19;
-    --ux-sidebar: #0F172A;
-    --ux-header: rgba(15, 23, 42, 0.88);
-    --ux-surface: #1E293B;
-    --ux-surface-2: #141D2E;
-    --ux-surface-3: #27354E;
-    --ux-ink: #F8FAFC;
-    --ux-ink-2: #CBD5E1;
-    --ux-ink-3: #94A3B8;
+    --ux-page: #081411;
+    --ux-sidebar: #0C1916;
+    --ux-header: rgba(12, 25, 22, 0.88);
+    --ux-surface: #12231F;
+    --ux-surface-2: #0E1D1A;
+    --ux-surface-3: #1C332D;
+    --ux-ink: #EDF8F4;
+    --ux-ink-2: #BAD0C8;
+    --ux-ink-3: #89A39A;
     --ux-line: rgba(255, 255, 255, 0.09);
     --ux-line-2: rgba(255, 255, 255, 0.16);
-    --ux-accent: #818CF8;
-    --ux-accent-hover: #A5B4FC;
-    --ux-accent-2: #38BDF8;
-    --ux-accent-soft: rgba(129, 140, 248, 0.16);
-    --ux-accent-text: #A5B4FC;
-    --ux-accent-bar: #818CF8;
-    --ux-accent-ink: #0B0F19;
-    --ux-mint: #34D399;
+    --ux-accent: #5EEAD4;
+    --ux-accent-hover: #99F6E4;
+    --ux-accent-2: #67E8F9;
+    --ux-accent-soft: rgba(94, 234, 212, 0.13);
+    --ux-accent-text: #75E6D3;
+    --ux-accent-bar: #5EEAD4;
+    --ux-accent-ink: #062C28;
+    --ux-mint: #55D6A9;
     --ux-warn: #FBBF24;
-    --ux-danger: #F87171;
-    --ux-glass: rgba(20, 29, 47, 0.86);
+    --ux-danger: #FB7185;
+    --ux-glass: rgba(12, 25, 22, 0.86);
     --ux-glass-line: rgba(255, 255, 255, 0.10);
     --ux-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
     --ux-shadow-strong: 0 24px 48px -12px rgba(0, 0, 0, 0.65);
-    --ux-grad: linear-gradient(135deg, #818CF8 0%, #38BDF8 52%, #34D399 100%);
+    --ux-grad: linear-gradient(145deg, #0F766E 0%, #0E9F9A 100%);
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ux-page: #0B0F19;
-  --ux-sidebar: #0F172A;
-  --ux-header: rgba(15, 23, 42, 0.88);
-  --ux-surface: #1E293B;
-  --ux-surface-2: #141D2E;
-  --ux-surface-3: #27354E;
-  --ux-ink: #F8FAFC;
-  --ux-ink-2: #CBD5E1;
-  --ux-ink-3: #94A3B8;
+  --ux-page: #081411;
+  --ux-sidebar: #0C1916;
+  --ux-header: rgba(12, 25, 22, 0.88);
+  --ux-surface: #12231F;
+  --ux-surface-2: #0E1D1A;
+  --ux-surface-3: #1C332D;
+  --ux-ink: #EDF8F4;
+  --ux-ink-2: #BAD0C8;
+  --ux-ink-3: #89A39A;
   --ux-line: rgba(255, 255, 255, 0.09);
   --ux-line-2: rgba(255, 255, 255, 0.16);
-  --ux-accent: #818CF8;
-  --ux-accent-hover: #A5B4FC;
-  --ux-accent-2: #38BDF8;
-  --ux-accent-soft: rgba(129, 140, 248, 0.16);
-  --ux-accent-text: #A5B4FC;
-  --ux-accent-bar: #818CF8;
-  --ux-accent-ink: #0B0F19;
-  --ux-mint: #34D399;
+  --ux-accent: #5EEAD4;
+  --ux-accent-hover: #99F6E4;
+  --ux-accent-2: #67E8F9;
+  --ux-accent-soft: rgba(94, 234, 212, 0.13);
+  --ux-accent-text: #75E6D3;
+  --ux-accent-bar: #5EEAD4;
+  --ux-accent-ink: #062C28;
+  --ux-mint: #55D6A9;
   --ux-warn: #FBBF24;
-  --ux-danger: #F87171;
-  --ux-glass: rgba(20, 29, 47, 0.86);
+  --ux-danger: #FB7185;
+  --ux-glass: rgba(12, 25, 22, 0.86);
   --ux-glass-line: rgba(255, 255, 255, 0.10);
   --ux-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
   --ux-shadow-strong: 0 24px 48px -12px rgba(0, 0, 0, 0.65);
-  --ux-grad: linear-gradient(135deg, #818CF8 0%, #38BDF8 52%, #34D399 100%);
+  --ux-grad: linear-gradient(145deg, #0F766E 0%, #0E9F9A 100%);
 }
 
 * {
@@ -233,6 +236,13 @@ body {
   transition: background-color .2s ease, border-color .2s ease;
 }
 
+.app-header-context{display:flex;align-items:center;gap:10px;min-width:0}
+.app-header-mark{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--ux-accent-soft);color:var(--ux-accent-text);border:1px solid color-mix(in srgb,var(--ux-accent) 18%,transparent)}
+.app-header-mark svg{width:18px;height:18px}
+.app-header-kicker{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ux-ink-3);white-space:nowrap}
+.app-header-separator{width:1px;height:18px;background:var(--ux-line-2)}
+.app-header-title{max-width:50vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ux-ink);font-size:15px;font-weight:750;letter-spacing:-.015em;transition:color var(--ux-motion-fast) ease}
+
 .app-content {
   flex: 1;
   height: calc(100vh - 64px);
@@ -261,10 +271,11 @@ body {
     top: 0;
     z-index: 20;
   }
+  .app-header{height:58px;flex-basis:58px;padding:0 16px}.app-header-mark,.app-header-kicker,.app-header-separator{display:none}.app-header-title{max-width:70vw}
   .app-content {
     height: auto;
     overflow-y: visible;
-    padding: 16px;
+    padding: 16px 16px calc(96px + env(safe-area-inset-bottom));
   }
 
 /* KaTeX Math & Physics Typography Harmony */
