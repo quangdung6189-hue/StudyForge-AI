@@ -1,4 +1,5 @@
-// Lucian UX/UI Prompt #215 · UI/UX Pro Max Optimized
+// Lucian UX/UI Prompt #215 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#215
+// Ported to React / Next.js with Lucian #086 (Streaming AI Answer) and #224 (Traceable Sources)
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -273,7 +274,7 @@ export function LucianAssistant() {
 
   return (
     <div
-      className={`ux studyforge-assistant${process.env.NODE_ENV === 'development' ? ' assistant-dev' : ''}${
+      className={`ux u215 studyforge-assistant${busy ? ' is-gen' : ''}${
         open ? ' is-open' : ''
       }`}
       onKeyDown={event => {
@@ -320,238 +321,188 @@ export function LucianAssistant() {
           }
         }}
       >
-        {/* Header */}
+        {/* Lucian #215 Header with Avatar Stack */}
         <header className="u215-wh">
           <div className="assistant-drag-handle" aria-hidden="true" />
-          <div className="u215-avatar" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" />
-              <rect x="4" y="8" width="16" height="12" rx="4" />
-              <circle cx="9" cy="14" r="1.5" fill="currentColor" />
-              <circle cx="15" cy="14" r="1.5" fill="currentColor" />
-              <path d="M9 18h6" />
-            </svg>
-            <span className="u215-avatar-pulse" />
+          <div className="u215-wh-top">
+            <div className="u215-fs" aria-hidden="true">
+              <i style={{ background: '#818CF8' }}>AI</i>
+              <i style={{ background: '#38BDF8' }}>SF</i>
+              <i style={{ background: '#34D399' }}>✨</i>
+            </div>
+            <div className="u215-wh-actions">
+              <button
+                type="button"
+                className="u215-wh-btn"
+                disabled={busy || preparing || (!messages.length && !attached.length)}
+                onPointerDown={event => event.stopPropagation()}
+                onClick={() => {
+                  setMessages([]);
+                  setAttached([]);
+                  setError('');
+                  field.current?.focus();
+                }}
+                title="Làm mới cuộc trò chuyện"
+              >
+                Làm mới
+              </button>
+            </div>
           </div>
-          <div className="u215-info">
-            <b>Trợ lý StudyForge AI</b>
-            <small>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-              Google Gemini · Sẵn sàng
-            </small>
-          </div>
-          <div className="u215-header-actions">
-            <button
-              type="button"
-              className="assistant-clear"
-              disabled={busy || preparing || (!messages.length && !attached.length)}
-              onPointerDown={event => event.stopPropagation()}
-              onClick={() => {
-                setMessages([]);
-                setAttached([]);
-                setError('');
-                field.current?.focus();
-              }}
-              title="Xóa ngữ cảnh hội thoại hiện tại"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-                <path d="M21 3v5h-5" />
-                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-                <path d="M3 21v-5h5" />
-              </svg>
-              Làm mới
-            </button>
-            <button
-              type="button"
-              className="assistant-close-btn"
-              onClick={close}
-              aria-label="Đóng trợ lý"
-              title="Đóng (Esc)"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
-          </div>
+          <b>Trợ lý StudyForge AI</b>
+          <small>Google Gemini 2.5 · Luôn sẵn sàng hỗ trợ</small>
         </header>
 
-        {/* Context toolbar */}
-        <div className="assistant-context">
-          <div className="assistant-select-row">
-            <span className="assistant-select-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
-                <path d="M6 6h10" />
-                <path d="M6 10h10" />
-              </svg>
-            </span>
-            <select
-              aria-label="Tài liệu tham khảo cho trợ lý"
-              value={documentId}
-              disabled={busy}
-              onChange={event => setDocumentId(event.target.value)}
-            >
-              <option value="">Hướng dẫn chung & Toàn bộ tài liệu</option>
-              {documents.map(doc => (
-                <option key={doc.id} value={doc.id}>
-                  📄 {doc.title}
-                </option>
-              ))}
-            </select>
-          </div>
-          <label className="assistant-lookup-pill">
+        {/* Context Filters */}
+        <div className="u215-ctx">
+          <select
+            aria-label="Tài liệu cho trợ lý"
+            value={documentId}
+            disabled={busy}
+            onChange={event => setDocumentId(event.target.value)}
+          >
+            <option value="">Hướng dẫn chung & Kiến thức mở rộng</option>
+            {documents.map(doc => (
+              <option key={doc.id} value={doc.id}>
+                📄 {doc.title}
+              </option>
+            ))}
+          </select>
+          <label className="u215-lookup">
             <input
               type="checkbox"
               checked={lookup}
               disabled={busy}
               onChange={event => setLookup(event.target.checked)}
             />
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-            Tra cứu Wikipedia kèm nguồn
+            Tra cứu Wikipedia kèm nguồn dẫn
           </label>
         </div>
 
-        {/* Conversation list */}
+        {/* Messages Feed */}
         <div className="u215-ms" ref={list} role="log" aria-label="Lịch sử trò chuyện" aria-live="off" tabIndex={0}>
           {!messages.length && (
-            <div className="assistant-welcome">
-              <div className="assistant-welcome-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
-                </svg>
+            <div className="u215-msg-row">
+              <span className="u086-av" aria-hidden="true" />
+              <div className="u215-b bt">
+                Xin chào! Bạn có thể hỏi cách đọc tài liệu, tạo và duyệt đề thi, nhờ giải thích kiến thức hoặc viết mã mẫu câu hỏi.
               </div>
-              <h3>Xin chào! Tôi có thể giúp gì cho bạn?</h3>
-              <p>
-                Hỏi đáp kiến thức, hướng dẫn tạo và duyệt đề, giải thích công thức toán hoặc phân tích tài liệu học tập của bạn.
-              </p>
             </div>
           )}
 
           {messages.map(message =>
             message.content || message.warnings?.length ? (
-              <article
+              <div
                 key={message.id}
-                className={`u215-b ${message.role === 'user' ? 'me' : 'bt'}`}
-                aria-label={message.role === 'user' ? 'Bạn' : 'Trợ lý'}
+                className={`u215-msg-row ${message.role === 'user' ? 'me' : ''}`}
               >
-                {message.images && message.images.length > 0 && (
-                  <div className="assistant-message-images">
-                    {message.images.map((image, index) => (
-                      <img key={index} src={image.dataUrl} alt={image.name} />
-                    ))}
-                  </div>
+                {message.role === 'assistant' && (
+                  <span className="u086-av" aria-hidden="true" />
                 )}
-                <Content text={message.content} />
-                {message.warnings?.map(warning => (
-                  <small className="assistant-warning" key={warning}>
-                    ⚠️ {warning}
-                  </small>
-                ))}
-                {message.sources?.length ? (
-                  <details className="assistant-sources">
-                    <summary>📚 Nguồn tham khảo ({message.sources.length})</summary>
-                    {message.sources.map(source => (
-                      <div key={source.id}>
-                        <b>
-                          [{source.id}]{' '}
-                          {source.url ? (
-                            <a href={source.url} target="_blank" rel="noreferrer">
-                              {source.title} ↗
-                            </a>
-                          ) : (
-                            source.title
-                          )}
-                        </b>
-                        <p>{source.quote}</p>
-                      </div>
-                    ))}
-                  </details>
-                ) : null}
-                {message.role === 'assistant' && message.content && (
-                  <button
-                    className="assistant-copy"
-                    type="button"
-                    onClick={() => handleCopy(message.id, message.content)}
-                  >
-                    {copiedId === message.id ? (
-                      <>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        Đã sao chép!
-                      </>
-                    ) : (
-                      <>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                        </svg>
-                        Sao chép
-                      </>
-                    )}
-                  </button>
-                )}
-              </article>
+                <article
+                  className={`u215-b ${message.role === 'user' ? 'me' : 'bt'}`}
+                  aria-label={message.role === 'user' ? 'Bạn' : 'Trợ lý'}
+                >
+                  {message.images && message.images.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                      {message.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={image.dataUrl}
+                          alt={image.name}
+                          style={{ maxWidth: 160, maxHeight: 120, borderRadius: 8, objectFit: 'contain' }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <Content text={message.content} />
+                  {busy && message.role === 'assistant' && !message.content && (
+                    <span className="u086-caret" aria-hidden="true" />
+                  )}
+                  {message.warnings?.map(warning => (
+                    <small key={warning} style={{ display: 'block', marginTop: 6, color: 'var(--ux-warn)' }}>
+                      ⚠️ {warning}
+                    </small>
+                  ))}
+                  {message.sources?.length ? (
+                    <details className="u224-sources">
+                      <summary>Nguồn tham khảo ({message.sources.length})</summary>
+                      {message.sources.map(source => (
+                        <div key={source.id}>
+                          <b>
+                            [{source.id}]{' '}
+                            {source.url ? (
+                              <a href={source.url} target="_blank" rel="noreferrer">
+                                {source.title} ↗
+                              </a>
+                            ) : (
+                              source.title
+                            )}
+                          </b>
+                          <p style={{ margin: '4px 0 0', fontWeight: 400 }}>{source.quote}</p>
+                        </div>
+                      ))}
+                    </details>
+                  ) : null}
+                  {message.role === 'assistant' && message.content && (
+                    <button
+                      className="u215-copy-btn"
+                      type="button"
+                      onClick={() => handleCopy(message.id, message.content)}
+                    >
+                      {copiedId === message.id ? '✓ Đã chép' : 'Sao chép'}
+                    </button>
+                  )}
+                </article>
+              </div>
             ) : null
           )}
 
           {busy && (
-            <div className="u215-ty" aria-label="Đang trả lời">
-              <i />
-              <i />
-              <i />
+            <div className="u215-msg-row">
+              <span className="u086-av" aria-hidden="true" />
+              <div className="u215-ty" aria-label="Đang suy nghĩ">
+                <i />
+                <i />
+                <i />
+              </div>
             </div>
           )}
         </div>
 
-        {/* Suggested Quick Questions when conversation is empty */}
+        {/* Lucian #215 Quick Questions */}
         {!messages.length && (
-          <div className="u215-qs">
-            {[
-              { text: 'Hướng dẫn tạo đề thi từ file', icon: '📝' },
-              { text: 'Cách lưu và duyệt câu hỏi', icon: '✅' },
-              { text: 'Ví dụ code tạo câu hỏi chuẩn', icon: '💻' },
-              { text: 'Giải thích công thức toán trong đề', icon: '📐' },
-            ].map(q => (
+          <div className="u215-qs" role="group" aria-label="Câu hỏi gợi ý">
+            {['Hướng dẫn tạo đề', 'Cách lưu và duyệt đề', 'Ví dụ code tạo câu hỏi'].map(q => (
               <button
                 type="button"
                 className="u215-qk"
-                key={q.text}
+                key={q}
                 disabled={busy}
-                onClick={() => void send(q.text)}
+                onClick={() => void send(q)}
               >
-                <span>{q.icon}</span>
-                <span>{q.text}</span>
+                {q}
               </button>
             ))}
           </div>
         )}
 
-        {/* Status & Error */}
-        <div className="assistant-status" role="status" aria-live="polite">
+        {/* Status / Error */}
+        <div className="u215-status" role="status" aria-live="polite">
           {busy
             ? status || 'Đang soạn câu trả lời…'
             : messages.length
-            ? '💡 Trợ lý AI hỗ trợ giải đáp học tập. Hãy kiểm chứng nội dung quan trọng.'
-            : '🔒 Hội thoại được bảo vệ trong phiên hiện tại.'}
+            ? 'AI có thể nhầm lẫn. Hãy kiểm chứng nội dung quan trọng.'
+            : 'Không tự lưu hội thoại khi tải lại trang.'}
         </div>
         {error && (
-          <div className="assistant-error" role="alert">
-            ⚠️ {error}
+          <div className="u215-error" role="alert">
+            {error}
           </div>
         )}
 
-        {/* Image Attachment Preview */}
+        {/* Attachments */}
         {(attached.length > 0 || preparing) && (
-          <div className="assistant-attachments" aria-label="Ảnh đính kèm">
+          <div className="u215-attachments" aria-label="Ảnh đính kèm">
             {attached.map((image, index) => (
               <div key={index}>
                 <img src={image.dataUrl} alt={image.name} />
@@ -565,11 +516,11 @@ export function LucianAssistant() {
                 </button>
               </div>
             ))}
-            {preparing && <span role="status">Đang nén ảnh…</span>}
+            {preparing && <span style={{ fontSize: 11, color: 'var(--ux-ink-3)' }}>Đang chuẩn bị ảnh…</span>}
           </div>
         )}
 
-        {/* Bottom Input Composer */}
+        {/* Lucian #086 Composer Input Bar */}
         <form className="u215-ip" onSubmit={submit}>
           <input
             ref={imageInput}
@@ -577,7 +528,7 @@ export function LucianAssistant() {
             accept="image/png,image/jpeg,image/webp"
             multiple
             hidden
-            aria-label="Chọn ảnh đính kèm"
+            aria-label="Chọn ảnh"
             onChange={event => {
               const files = Array.from(event.target.files ?? []);
               event.target.value = '';
@@ -586,21 +537,22 @@ export function LucianAssistant() {
           />
           <button
             type="button"
-            className="assistant-attach"
+            className="u215-attach-btn"
             disabled={busy || preparing || attached.length >= 3}
             aria-label="Đính kèm ảnh"
-            title="Đính kèm ảnh hoặc Ctrl+V dán ảnh"
+            title="Đính kèm ảnh (tối đa 3 ảnh) hoặc dán Ctrl+V"
             onClick={() => imageInput.current?.click()}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </button>
           <textarea
             ref={field}
             aria-label="Tin nhắn cho trợ lý"
-            placeholder="Hỏi trợ lý hoặc dán ảnh vào đây..."
-            rows={2}
+            placeholder="Hỏi hoặc dán ảnh vào đây…"
+            rows={1}
             maxLength={4000}
             value={input}
             onChange={event => setInput(event.target.value)}
@@ -621,25 +573,22 @@ export function LucianAssistant() {
           {busy ? (
             <button
               type="button"
-              className="assistant-stop-btn"
+              className="u086-ctl is-stop"
               onClick={() => control.current?.abort()}
-              title="Dừng sinh câu trả lời"
+              title="Dừng câu trả lời"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="4" y="4" width="16" height="16" rx="2" />
-              </svg>
+              <i aria-hidden="true" />
               Dừng
             </button>
           ) : (
             <button
               type="submit"
-              className="assistant-send-btn"
+              className="u086-ctl"
               disabled={preparing || (!input.trim() && !attached.length)}
               title="Gửi câu hỏi"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              <svg viewBox="0 0 14 14" aria-hidden="true">
+                <path d="M7 11.5V2.5M3 6.5l4-4 4 4" />
               </svg>
               Gửi
             </button>
@@ -647,22 +596,21 @@ export function LucianAssistant() {
         </form>
       </motion.section>
 
-      {/* Floating launcher button */}
+      {/* Lucian #215 Signature Rotating Launcher Button */}
       <button
         type="button"
         className="u215-ln"
         ref={launcher}
         aria-controls="studyforge-assistant"
-        aria-label={open ? 'Đóng trợ lý AI' : 'Mở trợ lý AI'}
+        aria-label={open ? 'Đóng trợ lý' : 'Mở trợ lý'}
         aria-expanded={open}
         onClick={() => (open ? close() : setOpen(true))}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" />
-          <rect x="4" y="8" width="16" height="12" rx="4" />
-          <circle cx="9" cy="14" r="1.5" fill="currentColor" />
-          <circle cx="15" cy="14" r="1.5" fill="currentColor" />
-          <path d="M9 18h6" />
+        <svg className="c" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 5.5h16v10.5H10l-5 3.5V16H4z" fill="currentColor" />
+        </svg>
+        <svg className="x" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
         </svg>
       </button>
     </div>
