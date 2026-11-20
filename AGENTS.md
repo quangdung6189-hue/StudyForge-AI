@@ -8,8 +8,8 @@ StudyForge AI transforms PDFs, DOCX, TXT, and scanned study materials into struc
 ### 1. Gemini (Coordinator, UX/UI Designer & Frontend Integrator)
 - **Role**: Lead Coordinator, UX/UI Designer, Frontend Integrator.
 - **Responsibilities**:
-  - User journeys and wireframes following `lucian-uxui` skill.
-  - Port Lucian elements using exact tokens (`--ux-*`) and CSS scoped rules.
+  - User journeys and wireframes following `lucian-uxui` and `ui-ux-pro-max` skills.
+  - Port Lucian elements using exact tokens (`--ux-*`) and CSS scoped rules optimized with `ui-ux-pro-max` (WCAG AAA contrast, eye-care palettes).
   - Implement Next.js app shell, views, forms, client validations, accessible keyboard & mobile layouts (375px+).
   - Connect client with real backend API contracts (no mock backends).
   - Terminal orchestration: dispatch tasks to Codex CLI via `team/prompts/` and read reports from `team/reports/`.

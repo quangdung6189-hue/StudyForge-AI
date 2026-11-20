@@ -1,6 +1,6 @@
-/* StudyForge landing base — dark-first, scoped .sf-landing */
-.sf-landing{--sf-bg:#070a12;--sf-ink:#f4f6fb;--sf-ink-2:#b8c0d4;--sf-ink-3:#7d87a1;--sf-line:rgba(255,255,255,.09);--sf-line-2:rgba(255,255,255,.16);--sf-card:rgba(17,23,38,.72);position:relative;min-height:100vh;background:var(--sf-bg);color:var(--sf-ink);overflow:clip;font-family:'Be Vietnam Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
-.sf-scroll-progress{position:fixed;inset:0 0 auto 0;height:3px;z-index:100;background:linear-gradient(90deg,#818cf8,#38bdf8 50%,#34d399);transform-origin:0 50%;pointer-events:none}
+/* StudyForge landing base — dark-first, scoped .sf-landing · UI/UX Pro Max Optimized */
+.sf-landing{--sf-bg:#0B0F19;--sf-ink:#F8FAFC;--sf-ink-2:#CBD5E1;--sf-ink-3:#94A3B8;--sf-line:rgba(255,255,255,.09);--sf-line-2:rgba(255,255,255,.16);--sf-card:rgba(30,41,59,.78);position:relative;min-height:100vh;background:var(--sf-bg);color:var(--sf-ink);overflow:clip;font-family:'Be Vietnam Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.sf-scroll-progress{position:fixed;inset:0 0 auto 0;height:3px;z-index:100;background:linear-gradient(90deg,#818CF8,#38BDF8 50%,#34D399);transform-origin:0 50%;pointer-events:none}
 .sf-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .sf-bg-grid{position:absolute;inset:-40px;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(72% 58% at 50% 30%,black 30%,transparent 75%);-webkit-mask-image:radial-gradient(72% 58% at 50% 30%,black 30%,transparent 75%);animation:sf-grid-pan 22s linear infinite}
 .sf-bg-glow{position:absolute;left:50%;top:-220px;width:900px;height:520px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(129,140,248,.32),rgba(56,189,248,.14) 55%,transparent 75%);filter:blur(10px)}

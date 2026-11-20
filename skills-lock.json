@@ -12,6 +12,12 @@
       "sourceType": "github",
       "skillPath": "skills/lucian-uxui/SKILL.md",
       "computedHash": "c3c0e33be68a95b66ad44f0c36da3bef9ae012207f3fb8d14d58c94f6b95a711"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": "skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "5905a2b470ca86077daf03f3c13361b949a702ae9f98399515abc55882cb9aa3"
     }
   }
 }
