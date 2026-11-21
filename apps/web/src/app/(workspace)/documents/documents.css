@@ -116,7 +116,7 @@
 .documents-studio .documents-image-viewer{background:#0b0f19;border-radius:0 0 16px 16px;min-height:600px;max-height:820px;overflow:auto;display:flex;align-items:center;justify-content:center;padding:24px}
 .documents-studio .documents-image-viewer img{max-width:100%;height:auto;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.5);transition:transform .2s ease}
 .documents-studio .docx-viewer-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:480px;gap:14px;color:var(--ux-ink-2);font-size:13.5px;font-weight:600}
-.documents-studio .docx-spinner{width:36px;height:36px;border:3px solid rgba(99,102,241,0.2);border-top-color:#6366f1;border-radius:50%;animation:docx-spin .8s linear infinite}
+.documents-studio .docx-spinner{width:36px;height:36px;border:3px solid color-mix(in srgb, var(--ux-accent) 22%, transparent);border-top-color:var(--ux-accent);border-radius:50%;animation:docx-spin .8s linear infinite}
 @keyframes docx-spin{to{transform:rotate(360deg)}}
 .documents-studio .docx-viewer-error{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:440px;padding:32px;text-align:center}
 @media(prefers-reduced-motion:reduce){.documents-studio .documents-file,.documents-studio .documents-stat,.documents-studio .documents-primary,.documents-studio .documents-toolbtn{transition:none;transform:none!important}}

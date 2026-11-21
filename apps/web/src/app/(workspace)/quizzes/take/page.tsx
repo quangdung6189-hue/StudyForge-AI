@@ -232,11 +232,11 @@ export default function TakeQuizPage() {
             height: 560px;
             max-width: 92vw;
             max-height: 92vh;
-            background: radial-gradient(ellipse 65% 55% at 50% 50%, rgba(99, 102, 241, 0.12) 0%, rgba(56, 189, 248, 0.05) 45%, transparent 75%);
+            background: radial-gradient(ellipse 65% 55% at 50% 50%, var(--ux-accent-soft) 0%, transparent 70%);
             pointer-events: none;
             z-index: 0;
             filter: blur(24px);
-            opacity: var(--ux-glow-opacity, 0.8);
+            opacity: var(--ux-glow-opacity, 0.6);
           }
           .join-card {
             position: relative;
@@ -309,28 +309,27 @@ export default function TakeQuizPage() {
             width: 100%;
             height: 50px;
             border-radius: 12px;
-            background: #4F46E5; /* bg-indigo-600 */
-            color: #FFFFFF;
+            background: var(--ux-accent);
+            color: var(--ux-accent-ink, #FFFFFF);
             border: none;
             font-size: 15px;
-            font-weight: 600; /* font-semibold */
+            font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.25), 0 4px 6px -4px rgba(99, 102, 241, 0.25);
+            box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--ux-accent) 30%, transparent), 0 4px 6px -4px color-mix(in srgb, var(--ux-accent) 25%, transparent);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s ease, box-shadow 0.2s ease;
           }
           .join-btn:hover {
-            background: #6366F1; /* bg-indigo-500 */
-            box-shadow: 0 14px 20px -3px rgba(99, 102, 241, 0.35);
+            background: var(--ux-accent-hover);
+            box-shadow: 0 14px 20px -3px color-mix(in srgb, var(--ux-accent) 40%, transparent);
             transform: translateY(-1px);
           }
           .join-btn:active {
-            background: #4338CA;
-            transform: translateY(1px);
-            box-shadow: 0 6px 10px -2px rgba(99, 102, 241, 0.25);
+            transform: var(--ux-press);
+            box-shadow: 0 6px 10px -2px color-mix(in srgb, var(--ux-accent) 30%, transparent);
           }
           .join-error {
             display: flex;
@@ -533,7 +532,7 @@ export default function TakeQuizPage() {
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '14px',
-                boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.25)',
+                boxShadow: '0 10px 15px -3px color-mix(in srgb, var(--ux-accent) 25%, transparent)',
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -936,7 +935,7 @@ export default function TakeQuizPage() {
                   fontWeight: 600,
                   fontSize: '14px',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
+                  boxShadow: '0 4px 12px color-mix(in srgb, var(--ux-accent) 25%, transparent)',
                 }}
               >
                 <span>Câu tiếp theo</span>

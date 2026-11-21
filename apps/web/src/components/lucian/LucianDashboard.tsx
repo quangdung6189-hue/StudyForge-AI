@@ -1,8 +1,10 @@
 // Lucian UX/UI Prompt · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/
-// Dashboard home: welcome card, stat cards, document & quiz lists with empty states (port of #088 empty state)
+// Study Command Center Dashboard with Lucian #178 Bulk Selection Dock
 'use client';
 
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { AppIcon } from '../layout/AppIcon';
 
 export type DashboardDoc = {
   id: string;
@@ -29,15 +31,40 @@ interface LucianDashboardProps {
 
 export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
   const readyDocs = docs.filter((d) => d.status === 'ready');
+  const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
+
+  const toggleSelectDoc = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedDocs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedDocs(new Set());
+  };
+
   return (
-    <div className="ux" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+    <div className="ux ld-container">
       <style>{`
+        .ld-container {
+          display: flex;
+          flex-direction: column;
+          gap: 28px;
+          position: relative;
+        }
+
+        /* Study Command Center Welcome Card */
         .ld-welcome {
-          padding: 32px;
-          border-radius: 24px;
-          background: linear-gradient(135deg, var(--ux-surface), color-mix(in srgb, var(--ux-accent) 6%, var(--ux-surface)));
+          padding: 28px 32px;
+          border-radius: 20px;
+          background: var(--ux-surface);
           border: 1px solid var(--ux-line);
-          box-shadow: 0 10px 30px var(--ux-shadow);
+          box-shadow: var(--ux-shadow);
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -46,159 +73,422 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           position: relative;
           overflow: hidden;
         }
-        .ld-welcome::after {
+        .ld-welcome::before {
           content: "";
           position: absolute;
-          right: -40px;
-          top: -40px;
-          width: 220px;
-          height: 220px;
-          background: radial-gradient(circle, color-mix(in srgb, var(--ux-accent) 15%, transparent) 0%, transparent 70%);
-          pointer-events: none;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background: var(--ux-accent);
         }
-        .ld-welcome-text { flex: 1; min-width: 220px; position: relative; z-index: 1; }
+
+        .ld-status-rail {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          background: var(--ux-surface-2);
+          border: 1px solid var(--ux-line-2);
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--ux-ink-2);
+          margin-bottom: 8px;
+        }
+        .ld-status-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: var(--ux-mint);
+          box-shadow: 0 0 6px var(--ux-mint);
+        }
+
+        .ld-welcome-text {
+          flex: 1;
+          min-width: 240px;
+        }
         .ld-welcome h2 {
-          font-size: 26px;
-          font-weight: 800;
-          letter-spacing: -0.02em;
+          font-size: 24px;
+          font-weight: 850;
+          letter-spacing: -0.025em;
           color: var(--ux-ink);
           margin: 0 0 6px;
         }
         .ld-welcome p {
-          font-size: 14px;
+          font-size: 13.5px;
           color: var(--ux-ink-2);
           margin: 0;
+          line-height: 1.5;
         }
-        .ld-welcome-actions { display: flex; gap: 10px; flex-shrink: 0; position: relative; z-index: 1; }
+
+        .ld-welcome-actions {
+          display: flex;
+          gap: 10px;
+          flex-shrink: 0;
+        }
         .ld-btn {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 11px 20px;
-          border-radius: 14px;
-          border: 1px solid var(--ux-line);
+          padding: 10px 18px;
+          border-radius: 12px;
+          border: 1px solid var(--ux-line-2);
           background: var(--ux-surface);
           color: var(--ux-ink);
-          font-size: 14px;
+          font-size: 13.5px;
           font-weight: 700;
           cursor: pointer;
           text-decoration: none;
-          transition: all .2s var(--ux-ease);
+          transition: transform var(--ux-motion-fast) var(--ux-ease), background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .ld-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px var(--ux-shadow);
+          transform: translateY(-1px);
+          box-shadow: var(--ux-shadow);
           border-color: var(--ux-accent);
           color: var(--ux-accent);
+        }
+        .ld-btn:active {
+          transform: var(--ux-press);
         }
         .ld-btn.primary {
           background: var(--ux-accent);
-          color: #ffffff;
+          color: var(--ux-accent-ink);
           border-color: var(--ux-accent);
-          box-shadow: 0 4px 16px color-mix(in srgb, var(--ux-accent) 35%, transparent);
+          box-shadow: 0 4px 14px -3px color-mix(in srgb, var(--ux-accent) 45%, transparent);
         }
         .ld-btn.primary:hover {
-          color: #ffffff;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px color-mix(in srgb, var(--ux-accent) 45%, transparent);
-          filter: brightness(1.05);
+          color: var(--ux-accent-ink);
+          background: var(--ux-accent-hover);
+          box-shadow: 0 6px 18px -3px color-mix(in srgb, var(--ux-accent) 55%, transparent);
         }
 
-        .ld-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+        /* Stat Cards with Left Focus Rail & Icons */
+        .ld-stats {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+        }
         .ld-stat {
-          padding: 20px;
+          padding: 18px 20px;
+          border-radius: 16px;
+          background: var(--ux-surface);
+          border: 1px solid var(--ux-line);
+          border-left: 3.5px solid var(--ux-accent);
+          box-shadow: var(--ux-shadow);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          transition: transform var(--ux-motion-fast) var(--ux-ease), box-shadow 0.2s ease;
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .ld-stat:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--ux-shadow-strong);
+          }
+        }
+        .ld-stat-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 11px;
+          background: var(--ux-accent-soft);
+          color: var(--ux-accent-text);
+          display: grid;
+          place-items: center;
+          flex: none;
+        }
+        .ld-stat-icon svg {
+          width: 20px;
+          height: 20px;
+        }
+        .ld-stat-val {
+          font-size: 28px;
+          font-weight: 850;
+          color: var(--ux-ink);
+          letter-spacing: -0.03em;
+          font-variant-numeric: tabular-nums;
+          line-height: 1.1;
+        }
+        .ld-stat-lbl {
+          font-size: 12.5px;
+          font-weight: 600;
+          color: var(--ux-ink-3);
+          margin-top: 3px;
+        }
+
+        /* Two-Column Section Grid */
+        .ld-sections {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+        }
+        @media (max-width: 900px) {
+          .ld-sections {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .ld-section {
+          padding: 22px;
           border-radius: 18px;
           background: var(--ux-surface);
           border: 1px solid var(--ux-line);
-          box-shadow: 0 4px 14px var(--ux-shadow);
+          box-shadow: var(--ux-shadow);
         }
-        .ld-stat-val {
-          font-size: 32px;
-          font-weight: 900;
-          color: var(--ux-accent);
-          letter-spacing: -0.02em;
+        .ld-section-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 14px;
         }
-        .ld-stat-lbl { font-size: 13px; font-weight: 600; color: var(--ux-ink-3); margin-top: 4px; }
+        .ld-section-title {
+          font-size: 16px;
+          font-weight: 800;
+          letter-spacing: -0.015em;
+          color: var(--ux-ink);
+        }
+        .ld-section-link {
+          font-size: 12.5px;
+          font-weight: 700;
+          color: var(--ux-accent-text);
+          text-decoration: none;
+          transition: color 0.2s ease;
+        }
+        .ld-section-link:hover {
+          color: var(--ux-accent-hover);
+        }
 
-        .ld-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        @media (max-width: 900px) { .ld-sections { grid-template-columns: 1fr; } }
-
-        .ld-section { padding: 24px; border-radius: 20px; background: var(--ux-surface); border: 1px solid var(--ux-line); box-shadow: 0 4px 16px var(--ux-shadow); }
-        .ld-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-        .ld-section-title { font-size: 17px; font-weight: 800; color: var(--ux-ink); }
-        .ld-section-link { font-size: 13px; font-weight: 700; color: var(--ux-accent); text-decoration: none; }
-
-        .ld-list { display: flex; flex-direction: column; gap: 10px; }
+        .ld-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
         .ld-row {
-          padding: 12px 16px;
-          border-radius: 14px;
+          position: relative;
+          padding: 11px 14px;
+          border-radius: 12px;
           background: var(--ux-surface-2);
+          border: 1px solid transparent;
           display: flex;
           align-items: center;
           justify-content: space-between;
           text-decoration: none;
           color: var(--ux-ink);
-          transition: background-color .2s var(--ux-ease);
+          transition: background-color 0.2s ease, border-color 0.2s ease, transform var(--ux-motion-fast) var(--ux-ease);
         }
-        .ld-row:hover { background: color-mix(in srgb, var(--ux-accent) 8%, var(--ux-surface-2)); }
-        .ld-row-info { min-width: 0; }
-        .ld-row-name { font-size: 14px; font-weight: 700; color: var(--ux-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ld-row-sub { font-size: 12px; color: var(--ux-ink-3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ld-row:hover {
+          background: color-mix(in srgb, var(--ux-accent) 6%, var(--ux-surface-2));
+          border-color: color-mix(in srgb, var(--ux-accent) 18%, transparent);
+        }
+        .ld-row[data-selected="true"] {
+          background: color-mix(in srgb, var(--ux-accent) 12%, var(--ux-surface-2));
+          border-color: var(--ux-accent);
+        }
+
+        .ld-select-box {
+          width: 20px;
+          height: 20px;
+          border-radius: 6px;
+          border: 1.5px solid var(--ux-line-2);
+          background: var(--ux-surface);
+          color: var(--ux-accent);
+          display: grid;
+          place-items: center;
+          margin-right: 12px;
+          flex: none;
+          cursor: pointer;
+          transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .ld-row[data-selected="true"] .ld-select-box {
+          border-color: var(--ux-accent);
+          background: var(--ux-accent);
+          color: var(--ux-accent-ink);
+        }
+
+        .ld-row-info {
+          min-width: 0;
+          flex: 1;
+        }
+        .ld-row-name {
+          font-size: 13.5px;
+          font-weight: 700;
+          color: var(--ux-ink);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .ld-row-sub {
+          font-size: 11.5px;
+          color: var(--ux-ink-3);
+          margin-top: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
         .ld-badge {
-          padding: 4px 10px;
+          padding: 3px 8px;
           border-radius: 999px;
           font-size: 11px;
           font-weight: 800;
           background: var(--ux-surface-3);
           color: var(--ux-ink-2);
+          flex: none;
         }
-        .ld-badge.ok { background: color-mix(in srgb, var(--ux-mint) 12%, transparent); color: var(--ux-mint); }
-        .ld-badge.draft { background: color-mix(in srgb, var(--ux-warn) 12%, transparent); color: var(--ux-warn); }
+        .ld-badge.ok {
+          background: color-mix(in srgb, var(--ux-mint) 14%, transparent);
+          color: var(--ux-mint);
+        }
+        .ld-badge.draft {
+          background: color-mix(in srgb, var(--ux-warn) 14%, transparent);
+          color: var(--ux-warn);
+        }
 
         .ld-empty {
-          padding: 40px 24px;
+          padding: 36px 20px;
           text-align: center;
           color: var(--ux-ink-3);
-          border-radius: 20px;
+          font-size: 13px;
+          border-radius: 14px;
           background: var(--ux-surface-2);
-          border: 1px solid var(--ux-line);
+          border: 1px dashed var(--ux-line-2);
         }
-        .ld-empty b { color: var(--ux-ink); }
+        .ld-empty b {
+          color: var(--ux-ink);
+        }
+
+        /* ========================================================
+           Lucian #178 Bulk Selection Dock
+           ======================================================== */
+        .u178-dock {
+          position: fixed;
+          bottom: 24px;
+          left: 50%;
+          transform: translateX(-50%) translateY(0);
+          z-index: 85;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 16px;
+          border-radius: 16px;
+          background: var(--ux-ink);
+          color: var(--ux-page);
+          box-shadow: 0 16px 36px -10px var(--ux-shadow-strong), 0 0 0 1px var(--ux-line);
+          font-size: 13px;
+          font-weight: 700;
+          transition: transform 0.35s var(--ux-ease-spring), opacity 0.25s ease;
+        }
+        .u178-dock[hidden] {
+          display: none !important;
+        }
+        .u178-count {
+          font-variant-numeric: tabular-nums;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .u178-count span {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--ux-accent);
+        }
+        .u178-btn {
+          border: 0;
+          border-radius: 8px;
+          padding: 6px 12px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          background: var(--ux-page);
+          color: var(--ux-ink);
+          transition: transform var(--ux-motion-fast) ease, opacity 0.2s ease;
+        }
+        .u178-btn:hover {
+          opacity: 0.92;
+        }
+        .u178-btn:active {
+          transform: scale(0.96);
+        }
+        .u178-clear {
+          border: 0;
+          background: none;
+          color: color-mix(in srgb, var(--ux-page) 75%, transparent);
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 4px 6px;
+        }
+        .u178-clear:hover {
+          color: var(--ux-page);
+        }
+
+        @media (max-width: 768px) {
+          .u178-dock {
+            bottom: calc(78px + env(safe-area-inset-bottom));
+            width: calc(100vw - 32px);
+            justify-content: space-between;
+          }
+        }
       `}</style>
 
+      {/* Study Command Center Welcome Card */}
       <div className="ld-welcome">
         <div className="ld-welcome-text">
-          <h2>Chào mừng quay lại</h2>
-          <p>Tổng quan tài liệu và ngân hàng đề thi của bạn. Hãy bắt đầu bằng việc tải tài liệu hoặc tạo đề mới.</p>
+          <div className="ld-status-rail">
+            <span className="ld-status-dot" aria-hidden="true" />
+            <span>Hệ thống hoạt động bình thường · Sẵn sàng tạo đề</span>
+          </div>
+          <h2>Bảng điều khiển học tập</h2>
+          <p>Quản lý tài liệu và ngân hàng đề thi thông minh của bạn. Tải tài liệu bài học để AI trích xuất câu hỏi ngay lập tức.</p>
         </div>
         <div className="ld-welcome-actions">
           <Link href="/documents" className="ld-btn primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <AppIcon name="documents" width="16" height="16" />
             Tải tài liệu
           </Link>
           <Link href="/quizzes/create" className="ld-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            <AppIcon name="create" width="16" height="16" />
             Tạo đề AI
           </Link>
         </div>
       </div>
 
+      {/* Stat Cards */}
       <div className="ld-stats">
         <div className="ld-stat">
-          <div className="ld-stat-val">{docs.length}</div>
-          <div className="ld-stat-lbl">Tài liệu đã tải</div>
+          <div>
+            <div className="ld-stat-val">{docs.length}</div>
+            <div className="ld-stat-lbl">Tài liệu đã tải</div>
+          </div>
+          <div className="ld-stat-icon" aria-hidden="true">
+            <AppIcon name="documents" />
+          </div>
         </div>
+
         <div className="ld-stat">
-          <div className="ld-stat-val">{quizzes.length}</div>
-          <div className="ld-stat-lbl">Đề thi trong ngân hàng</div>
+          <div>
+            <div className="ld-stat-val">{quizzes.length}</div>
+            <div className="ld-stat-lbl">Đề thi trong ngân hàng</div>
+          </div>
+          <div className="ld-stat-icon" aria-hidden="true">
+            <AppIcon name="quizzes" />
+          </div>
         </div>
+
         <div className="ld-stat">
-          <div className="ld-stat-val">{readyDocs.length}</div>
-          <div className="ld-stat-lbl">Sẵn sàng làm bài</div>
+          <div>
+            <div className="ld-stat-val">{readyDocs.length}</div>
+            <div className="ld-stat-lbl">Tài liệu sẵn sàng</div>
+          </div>
+          <div className="ld-stat-icon" aria-hidden="true">
+            <AppIcon name="check" />
+          </div>
         </div>
       </div>
 
+      {/* Content Lists */}
       <div className="ld-sections">
+        {/* Documents Section */}
         <div className="ld-section">
           <div className="ld-section-head">
             <div className="ld-section-title">Tài liệu gần đây</div>
@@ -210,24 +500,41 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
                 Chưa có tài liệu nào. Nhấn <b>Tải tài liệu</b> để bắt đầu.
               </div>
             ) : (
-              docs.map((doc) => (
-                <Link key={doc.id} href={`/documents?id=${doc.id}`} className="ld-row">
-                  <div className="ld-row-info">
-                    <div className="ld-row-name">{doc.title}</div>
-                    <div className="ld-row-sub">
-                      {new Date(doc.createdAt).toLocaleDateString('vi-VN')}
-                      {doc.fileType ? ` · ${doc.fileType.toUpperCase()}` : ''}
+              docs.slice(0, 5).map((doc) => {
+                const isSelected = selectedDocs.has(doc.id);
+                return (
+                  <Link
+                    key={doc.id}
+                    href={`/documents?id=${doc.id}`}
+                    className="ld-row"
+                    data-selected={isSelected}
+                  >
+                    <button
+                      type="button"
+                      className="ld-select-box"
+                      aria-label={isSelected ? `Bỏ chọn ${doc.title}` : `Chọn ${doc.title}`}
+                      onClick={(e) => toggleSelectDoc(doc.id, e)}
+                    >
+                      {isSelected ? '✓' : ''}
+                    </button>
+                    <div className="ld-row-info">
+                      <div className="ld-row-name">{doc.title}</div>
+                      <div className="ld-row-sub">
+                        {new Date(doc.createdAt).toLocaleDateString('vi-VN')}
+                        {doc.fileType ? ` · ${doc.fileType.toUpperCase()}` : ''}
+                      </div>
                     </div>
-                  </div>
-                  <span className={`ld-badge ${doc.status === 'ready' ? 'ok' : 'draft'}`}>
-                    {doc.status === 'ready' ? 'Sẵn sàng' : 'Đang xử lý'}
-                  </span>
-                </Link>
-              ))
+                    <span className={`ld-badge ${doc.status === 'ready' ? 'ok' : 'draft'}`}>
+                      {doc.status === 'ready' ? 'Sẵn sàng' : 'Đang xử lý'}
+                    </span>
+                  </Link>
+                );
+              })
             )}
           </div>
         </div>
 
+        {/* Quizzes Section */}
         <div className="ld-section">
           <div className="ld-section-head">
             <div className="ld-section-title">Đề thi & Ngân hàng</div>
@@ -239,7 +546,7 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
                 Chưa có đề thi nào. Hãy vào <b>Tạo đề AI</b> để sinh câu hỏi.
               </div>
             ) : (
-              quizzes.map((quiz) => (
+              quizzes.slice(0, 5).map((quiz) => (
                 <Link key={quiz.id} href={`/quizzes?id=${quiz.id}`} className="ld-row">
                   <div className="ld-row-info">
                     <div className="ld-row-name">{quiz.title}</div>
@@ -257,6 +564,24 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           </div>
         </div>
       </div>
+
+      {/* Lucian #178 Bulk Selection Dock */}
+      {selectedDocs.size > 0 && (
+        <div className="u178-dock" role="status" aria-live="polite">
+          <div className="u178-count">
+            <span aria-hidden="true" />
+            {selectedDocs.size} tài liệu đã chọn
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Link href={`/quizzes/create?docIds=${Array.from(selectedDocs).join(',')}`} className="u178-btn">
+              Tạo đề từ mục chọn ↗
+            </Link>
+            <button type="button" className="u178-clear" onClick={clearSelection}>
+              Bỏ chọn
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

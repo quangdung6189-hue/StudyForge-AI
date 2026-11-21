@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import type { AssistantSource } from '@/server/assistant';
 import './assistant.css';
 import { prepareChatImage, type ChatImage } from './assistant-image';
-import { motion, useReducedMotion } from 'motion/react';
+import { motion, useDragControls, useReducedMotion } from 'motion/react';
 
 type Message = {
   id: string;
@@ -46,6 +46,7 @@ export function LucianAssistant() {
   const [preparing, setPreparing] = useState(false);
 
   const reducedMotion = useReducedMotion();
+  const dragControls = useDragControls();
   const imageInput = useRef<HTMLInputElement>(null);
   const preparingImages = useRef(false);
   const control = useRef<AbortController | null>(null);
@@ -300,6 +301,8 @@ export function LucianAssistant() {
         aria-hidden={!open}
         inert={!open}
         drag={!reducedMotion && open ? 'y' : false}
+        dragControls={dragControls}
+        dragListener={false}
         dragConstraints={{ top: 0, bottom: 420 }}
         dragElastic={{ top: 0.08, bottom: 0.22 }}
         dragMomentum={false}
@@ -309,7 +312,7 @@ export function LucianAssistant() {
         }}
         onDragEnd={(_, info) => {
           document.documentElement.style.removeProperty('--assistant-drag-progress');
-          if (info.offset.y > 110 || info.velocity.y > 700) close();
+          if (info.offset.y > 110 || info.velocity.y > 650) close();
         }}
         onDragOver={event => {
           if (event.dataTransfer.types.includes('Files')) event.preventDefault();
@@ -321,14 +324,21 @@ export function LucianAssistant() {
           }
         }}
       >
-        {/* Lucian #215 Header with Avatar Stack */}
-        <header className="u215-wh">
+        {/* Lucian #215 Header with Avatar Stack & Gesture Drag Zone */}
+        <header
+          className="u215-wh"
+          onPointerDown={event => {
+            // Only start drag if clicking outside buttons/selects
+            if ((event.target as HTMLElement).closest('button, select, input')) return;
+            dragControls.start(event);
+          }}
+        >
           <div className="assistant-drag-handle" aria-hidden="true" />
           <div className="u215-wh-top">
             <div className="u215-fs" aria-hidden="true">
-              <i style={{ background: '#818CF8' }}>AI</i>
-              <i style={{ background: '#38BDF8' }}>SF</i>
-              <i style={{ background: '#34D399' }}>✨</i>
+              <i style={{ background: 'var(--ux-accent)' }}>AI</i>
+              <i style={{ background: 'var(--ux-accent-2)' }}>SF</i>
+              <i style={{ background: 'var(--ux-mint)' }}>✨</i>
             </div>
             <div className="u215-wh-actions">
               <button

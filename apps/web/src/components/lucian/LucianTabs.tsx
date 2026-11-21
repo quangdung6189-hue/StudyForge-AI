@@ -1,7 +1,7 @@
 'use client';
 
 // Lucian UX/UI Prompt #039 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#039
-// Ported to React / Next.js with sliding pill animation and keyboard navigation
+// Segmented Sliding Pill Tabs with glass inset styling & keyboard nav
 
 import React, { useRef, useEffect } from 'react';
 
@@ -39,6 +39,12 @@ export function LucianTabs({ tabs, activeId, onChange }: LucianTabsProps) {
       e.preventDefault();
       const prevIndex = (index - 1 + tabs.length) % tabs.length;
       onChange(tabs[prevIndex].id);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      onChange(tabs[0].id);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      onChange(tabs[tabs.length - 1].id);
     }
   };
 
@@ -55,12 +61,14 @@ export function LucianTabs({ tabs, activeId, onChange }: LucianTabsProps) {
           display: flex;
           padding: 4px;
           border-radius: 999px;
-          background: var(--ux-surface);
-          box-shadow: 0 0 0 1px var(--ux-line);
+          background: var(--ux-surface-2);
+          box-shadow: inset 0 0 0 1px var(--ux-line);
           overflow-x: auto;
           scrollbar-width: none;
         }
         .u039-tabs::-webkit-scrollbar { display: none; }
+
+        /* Glass inset pill indicator */
         .u039-pill {
           position: absolute;
           left: 0;
@@ -68,48 +76,63 @@ export function LucianTabs({ tabs, activeId, onChange }: LucianTabsProps) {
           bottom: 4px;
           width: var(--w, 80px);
           border-radius: 999px;
-          background: var(--ux-accent);
+          background: var(--ux-surface);
+          border: 1px solid var(--ux-line-2);
           transform: translateX(var(--x, 4px));
-          box-shadow: 0 4px 12px var(--ux-shadow);
-          transition: transform .4s var(--ux-spring), width .4s var(--ux-spring);
+          box-shadow: 0 2px 8px -2px var(--ux-shadow);
+          transition: transform .35s var(--ux-ease-spring), width .35s var(--ux-ease-spring);
           pointer-events: none;
         }
+
         .u039-tab {
           position: relative;
-          height: 38px;
+          height: 36px;
           padding: 0 16px;
           border: 0;
           border-radius: 999px;
           background: none;
           font-size: 13.5px;
-          font-weight: 700;
+          font-weight: 650;
           color: var(--ux-ink-2);
           white-space: nowrap;
           cursor: pointer;
-          transition: color .3s var(--ux-ease);
+          transition: color .25s var(--ux-ease);
           z-index: 1;
           display: flex;
           align-items: center;
           gap: 6px;
+          outline: none;
+        }
+        .u039-tab:hover {
+          color: var(--ux-ink);
         }
         .u039-tab[aria-selected="true"] {
-          color: var(--ux-accent-ink);
+          color: var(--ux-accent-text);
+          font-weight: 750;
         }
         .u039-tab:focus-visible {
           outline: 2px solid var(--ux-accent);
           outline-offset: 2px;
         }
+
         .u039-badge {
-          padding: 1px 6px;
+          padding: 1px 7px;
           border-radius: 999px;
           font-size: 11px;
           font-weight: 800;
-          background: var(--ux-surface-2);
-          color: var(--ux-ink);
+          background: var(--ux-surface-3);
+          color: var(--ux-ink-2);
+          transition: background-color .2s ease, color .2s ease;
         }
         .u039-tab[aria-selected="true"] .u039-badge {
-          background: rgba(255, 255, 255, 0.25);
-          color: var(--ux-accent-ink);
+          background: var(--ux-accent-soft);
+          color: var(--ux-accent-text);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .u039-pill {
+            transition: none !important;
+          }
         }
       `}</style>
 

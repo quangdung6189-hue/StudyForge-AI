@@ -10,32 +10,32 @@
   font-family: inherit;
 }
 
-/* Lucian #215 Launcher Button */
+/* Lucian #215 Launcher Button (Squircle with state feedback) */
 .u215-ln {
   position: fixed;
   right: 20px;
   bottom: 20px;
   z-index: 95;
-  width: 56px;
-  height: 56px;
-  border: 0;
-  border-radius: 50%;
+  width: 54px;
+  height: 54px;
+  border: 1px solid color-mix(in srgb, var(--ux-accent-ink) 20%, transparent);
+  border-radius: 18px;
   background: var(--ux-accent);
   color: var(--ux-accent-ink);
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 14px 28px -8px var(--ux-accent);
-  transition: transform 0.3s cubic-bezier(0.3, 1.6, 0.5, 1), box-shadow 0.25s ease;
+  box-shadow: 0 12px 26px -8px color-mix(in srgb, var(--ux-accent) 70%, transparent);
+  transition: transform 0.28s var(--ux-ease-spring), box-shadow 0.25s ease, background-color 0.2s ease;
 }
 
 .u215-ln:hover {
-  transform: scale(1.08);
-  box-shadow: 0 18px 36px -8px var(--ux-accent);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 16px 32px -8px color-mix(in srgb, var(--ux-accent) 85%, transparent);
 }
 
 .u215-ln:active {
-  transform: scale(0.92);
+  transform: var(--ux-press);
 }
 
 .u215-ln svg {
@@ -60,7 +60,7 @@
   opacity: 1;
 }
 
-/* Scrim Backdrop */
+/* Scrim Backdrop (Opacity derived from gesture drag progress) */
 .assistant-scrim {
   position: fixed;
   inset: 0;
@@ -75,7 +75,7 @@
 }
 
 .u215.is-open .assistant-scrim {
-  opacity: 1;
+  opacity: calc((1 - var(--assistant-drag-progress, 0)) * 1);
   pointer-events: auto;
 }
 
@@ -119,10 +119,12 @@
 .assistant-drag-handle {
   display: none;
   width: 44px;
-  height: 4px;
+  height: 5px;
   margin: 0 auto 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.45);
+  cursor: grab;
+  touch-action: none;
 }
 
 .u215-wh-top {
