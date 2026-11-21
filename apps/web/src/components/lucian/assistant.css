@@ -18,20 +18,21 @@
   z-index: 95;
   width: 54px;
   height: 54px;
-  border: 1px solid color-mix(in srgb, var(--ux-accent-ink) 20%, transparent);
+  border: 1px solid var(--ux-line-2);
   border-radius: 18px;
   background: var(--ux-accent);
   color: var(--ux-accent-ink);
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 12px 26px -8px color-mix(in srgb, var(--ux-accent) 70%, transparent);
+  box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.4);
   transition: transform 0.28s var(--ux-ease-spring), box-shadow 0.25s ease, background-color 0.2s ease;
 }
 
 .u215-ln:hover {
   transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 16px 32px -8px color-mix(in srgb, var(--ux-accent) 85%, transparent);
+  box-shadow: 0 14px 28px -6px rgba(0, 0, 0, 0.5);
+  background: var(--ux-accent-hover);
 }
 
 .u215-ln:active {
@@ -106,13 +107,14 @@
   pointer-events: auto;
 }
 
-/* Lucian #215 Signature Header */
+/* Lucian #215 Signature Header (Clean Minimalist Surface) */
 .u215-wh {
   position: relative;
   flex: none;
   padding: 16px 18px 14px;
-  background: var(--ux-grad);
-  color: #FFFFFF;
+  background: var(--ux-surface);
+  border-bottom: 1px solid var(--ux-line);
+  color: var(--ux-ink);
   user-select: none;
 }
 
@@ -122,7 +124,7 @@
   height: 5px;
   margin: 0 auto 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--ux-line-2);
   cursor: grab;
   touch-action: none;
 }
@@ -133,24 +135,22 @@
   justify-content: space-between;
 }
 
-/* Lucian avatar stack */
 .u215-fs {
   display: flex;
   align-items: center;
 }
 
-.u215-fs i {
-  width: 28px;
-  height: 28px;
-  margin-right: -8px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+.u215-avatar-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--ux-accent);
+  color: var(--ux-accent-ink);
   display: grid;
   place-items: center;
-  font-style: normal;
-  font-size: 11px;
-  font-weight: 850;
-  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .u215-wh-actions {
@@ -160,13 +160,13 @@
 }
 
 .u215-wh-btn {
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #FFFFFF;
-  padding: 5px 11px;
-  font-size: 11px;
-  font-weight: 700;
+  border: 1px solid var(--ux-line-2);
+  border-radius: 8px;
+  background: var(--ux-surface-2);
+  color: var(--ux-ink-2);
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 650;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -175,8 +175,9 @@
 }
 
 .u215-wh-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.6);
+  background: var(--ux-surface-3);
+  color: var(--ux-ink);
+  border-color: var(--ux-line);
 }
 
 .u215-wh-btn:disabled {
@@ -188,8 +189,9 @@
   display: block;
   margin-top: 10px;
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: -0.02em;
+  color: var(--ux-ink);
 }
 
 .u215-wh small {
@@ -198,17 +200,17 @@
   gap: 6px;
   margin-top: 3px;
   font-size: 11px;
-  font-weight: 700;
-  opacity: 0.95;
+  font-weight: 600;
+  color: var(--ux-ink-3);
 }
 
 .u215-wh small::before {
   content: "";
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #4ADE80;
-  box-shadow: 0 0 6px #4ADE80;
+  background: var(--ux-mint);
+  box-shadow: 0 0 6px var(--ux-mint);
 }
 
 /* Context Filter Bar */
@@ -291,7 +293,8 @@
   height: 28px;
   flex: none;
   border-radius: 9px;
-  background: var(--ux-grad);
+  background: var(--ux-surface-3);
+  border: 1px solid var(--ux-line-2);
   display: grid;
   place-items: center;
   margin-top: 2px;
@@ -299,10 +302,10 @@
 
 .u086-av::after {
   content: "";
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 2px;
-  background: #FFFFFF;
+  background: var(--ux-ink);
   transform: rotate(45deg);
 }
 
@@ -458,14 +461,13 @@
 .u215-qk {
   height: 30px;
   padding: 0 12px;
-  border: 0;
+  border: 1px solid var(--ux-line-2);
   border-radius: 999px;
-  background: var(--ux-surface);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ux-accent) 45%, transparent);
-  color: var(--ux-accent);
+  background: var(--ux-surface-2);
+  color: var(--ux-ink-2);
   font: inherit;
   font-size: 11.5px;
-  font-weight: 750;
+  font-weight: 650;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -473,6 +475,7 @@
 .u215-qk:hover:not(:disabled) {
   background: var(--ux-accent);
   color: var(--ux-accent-ink);
+  border-color: var(--ux-accent);
   transform: translateY(-1px);
 }
 

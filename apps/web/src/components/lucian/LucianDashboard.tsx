@@ -155,12 +155,12 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           background: var(--ux-accent);
           color: var(--ux-accent-ink);
           border-color: var(--ux-accent);
-          box-shadow: 0 4px 14px -3px color-mix(in srgb, var(--ux-accent) 45%, transparent);
+          box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.3);
         }
         .ld-btn.primary:hover {
           color: var(--ux-accent-ink);
           background: var(--ux-accent-hover);
-          box-shadow: 0 6px 18px -3px color-mix(in srgb, var(--ux-accent) 55%, transparent);
+          box-shadow: 0 6px 18px -3px rgba(0, 0, 0, 0.4);
         }
 
         /* Stat Cards with Left Focus Rail & Icons */
@@ -191,8 +191,9 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           width: 40px;
           height: 40px;
           border-radius: 11px;
-          background: var(--ux-accent-soft);
-          color: var(--ux-accent-text);
+          background: var(--ux-surface-2);
+          border: 1px solid var(--ux-line-2);
+          color: var(--ux-ink);
           display: grid;
           place-items: center;
           flex: none;

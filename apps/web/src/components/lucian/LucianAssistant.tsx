@@ -336,9 +336,11 @@ export function LucianAssistant() {
           <div className="assistant-drag-handle" aria-hidden="true" />
           <div className="u215-wh-top">
             <div className="u215-fs" aria-hidden="true">
-              <i style={{ background: 'var(--ux-accent)' }}>AI</i>
-              <i style={{ background: 'var(--ux-accent-2)' }}>SF</i>
-              <i style={{ background: 'var(--ux-mint)' }}>✨</i>
+              <span className="u215-avatar-badge">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3v3m0 12v3M5 12H2m20 0h-3m-2.05-6.95l-2.12 2.12M8.17 15.83l-2.12 2.12m0-11.9l2.12 2.12m7.66 7.66l2.12 2.12" />
+                </svg>
+              </span>
             </div>
             <div className="u215-wh-actions">
               <button

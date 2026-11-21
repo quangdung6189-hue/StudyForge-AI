@@ -38,7 +38,7 @@
 /* Document chips row */
 .sf-doc-row{display:flex;gap:8px;flex-wrap:wrap}
 .sf-doc-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;background:rgba(0,0,0,.03);border:1px solid var(--ux-line-2);font-size:12.5px;font-weight:600;color:var(--ux-ink)}
-.sf-doc-chip .sf-doc-ext{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:10px;font-weight:800;background:var(--ux-accent);color:#fff}
+.sf-doc-chip .sf-doc-ext{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:10px;font-weight:800;background:var(--ux-accent);color:var(--ux-accent-ink)}
 
 /* Citation / source row */
 .sf-source-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}

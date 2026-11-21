@@ -232,11 +232,11 @@ export default function TakeQuizPage() {
             height: 560px;
             max-width: 92vw;
             max-height: 92vh;
-            background: radial-gradient(ellipse 65% 55% at 50% 50%, var(--ux-accent-soft) 0%, transparent 70%);
+            background: radial-gradient(ellipse 65% 55% at 50% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
             pointer-events: none;
             z-index: 0;
             filter: blur(24px);
-            opacity: var(--ux-glow-opacity, 0.6);
+            opacity: 0.5;
           }
           .join-card {
             position: relative;
@@ -246,7 +246,7 @@ export default function TakeQuizPage() {
             padding: 44px 36px;
             border-radius: 16px; /* rounded-2xl */
             background: var(--ux-surface);
-            border: 1px solid var(--ux-line);
+            border: 1px solid var(--ux-line-2);
             box-shadow: 0 25px 50px -12px var(--ux-shadow-strong), 0 0 0 1px var(--ux-line);
             text-align: center;
             backdrop-filter: blur(8px);
@@ -257,12 +257,12 @@ export default function TakeQuizPage() {
             height: 56px;
             margin: 0 auto 20px;
             border-radius: 16px;
-            background: var(--ux-accent-soft);
-            border: 1px solid var(--ux-accent-soft);
+            background: var(--ux-surface-2);
+            border: 1px solid var(--ux-line-2);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--ux-accent-text);
+            color: var(--ux-ink);
             box-shadow: 0 4px 16px var(--ux-shadow);
           }
           .join-title {
@@ -310,12 +310,12 @@ export default function TakeQuizPage() {
             height: 50px;
             border-radius: 12px;
             background: var(--ux-accent);
-            color: #FFFFFF;
+            color: var(--ux-accent-ink);
             border: none;
             font-size: 15px;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 10px 20px -5px color-mix(in srgb, var(--ux-accent) 40%, transparent);
+            box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -324,12 +324,12 @@ export default function TakeQuizPage() {
           }
           .join-btn:hover {
             background: var(--ux-accent-hover);
-            box-shadow: 0 14px 24px -5px color-mix(in srgb, var(--ux-accent) 50%, transparent);
+            box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5);
             transform: translateY(-1px);
           }
           .join-btn:active {
             transform: var(--ux-press);
-            box-shadow: 0 6px 12px -3px color-mix(in srgb, var(--ux-accent) 40%, transparent);
+            box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.4);
           }
           .join-error {
             display: flex;
@@ -528,11 +528,11 @@ export default function TakeQuizPage() {
                 padding: '12px 28px',
                 borderRadius: '12px',
                 background: 'var(--ux-accent)',
-                color: 'white',
+                color: 'var(--ux-accent-ink)',
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '14px',
-                boxShadow: '0 10px 15px -3px color-mix(in srgb, var(--ux-accent) 25%, transparent)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -871,7 +871,7 @@ export default function TakeQuizPage() {
                           borderRadius: '50%',
                           background: isSelected ? 'var(--ux-accent)' : 'var(--ux-surface)',
                           border: isSelected ? 'none' : '1px solid var(--ux-line)',
-                          color: isSelected ? 'white' : 'var(--ux-ink-2)',
+                          color: isSelected ? 'var(--ux-accent-ink)' : 'var(--ux-ink-2)',
                           display: 'grid',
                           placeItems: 'center',
                           fontWeight: 800,
@@ -930,12 +930,12 @@ export default function TakeQuizPage() {
                   padding: '12px 24px',
                   borderRadius: '12px',
                   background: 'var(--ux-accent)',
-                  color: 'white',
+                  color: 'var(--ux-accent-ink)',
                   border: 0,
                   fontWeight: 600,
                   fontSize: '14px',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px color-mix(in srgb, var(--ux-accent) 25%, transparent)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
                 }}
               >
                 <span>Câu tiếp theo</span>

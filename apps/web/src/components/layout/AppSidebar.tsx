@@ -122,11 +122,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
           height: 38px;
           flex: none;
           border-radius: 12px;
-          background: var(--ux-grad);
+          background: var(--ux-accent);
           color: var(--ux-accent-ink);
           display: grid;
           place-items: center;
-          box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--ux-accent) 65%, transparent);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
           transition: transform var(--ux-motion-fast) var(--ux-ease), box-shadow var(--ux-motion-fast) ease;
         }
         .u040-logo svg {
@@ -136,7 +136,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         @media (hover: hover) and (pointer: fine) {
           .u040-brand:hover .u040-logo {
             transform: translateY(-2px);
-            box-shadow: 0 12px 24px -8px color-mix(in srgb, var(--ux-accent) 75%, transparent);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
           }
         }
 
@@ -179,7 +179,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           border-color: var(--ux-line);
         }
 
-        /* Focus Rail Indicator (Teal focus rail, notch & soft tint) */
+        /* Focus Rail Indicator (Monochrome focus rail, notch & soft tint) */
         .u040-nav {
           position: relative;
           margin: 0;
@@ -196,8 +196,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
           top: 0;
           height: 48px;
           border-radius: 12px;
-          background: var(--ux-accent-soft);
-          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ux-accent) 22%, transparent);
+          background: var(--ux-surface-2);
+          box-shadow: inset 0 0 0 1px var(--ux-line-2);
           transform: translateY(calc(var(--active-index) * 54px));
           transition: transform .32s var(--ux-ease-spring), background-color .2s ease;
           pointer-events: none;
@@ -208,10 +208,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
           left: 0;
           top: 10px;
           bottom: 10px;
-          width: 3.5px;
+          width: 3px;
           border-radius: 0 3px 3px 0;
-          background: var(--ux-accent-bar);
-          box-shadow: 0 0 8px color-mix(in srgb, var(--ux-accent) 70%, transparent);
+          background: var(--ux-accent);
         }
 
         .u040-it {
@@ -225,7 +224,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           border: 0;
           border-radius: 12px;
           background: none;
-          color: var(--ux-ink-2);
+          color: var(--ux-ink-3);
           opacity: .88;
           transition: opacity .2s, color .2s, background-color .2s, transform var(--ux-motion-fast) ease;
           cursor: pointer;
@@ -244,7 +243,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         }
         .u040-it[aria-current="page"] {
           opacity: 1;
-          color: var(--ux-accent-text);
+          color: var(--ux-ink);
           font-weight: 700;
         }
         .u040-it:active {
@@ -266,7 +265,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           transform: translateY(-1px);
         }
         .u040-it[aria-current="page"] svg {
-          stroke: var(--ux-accent-text);
+          stroke: var(--ux-ink);
         }
 
         .u040-it span {
@@ -466,8 +465,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
             height: 48px;
             margin-left: -24px;
             border-radius: 50%;
-            background: var(--ux-grad);
-            box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--ux-accent) 75%, transparent);
+            background: var(--ux-accent);
+            box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--ux-line-2);
             transition: left .38s var(--ux-ease-spring);
             pointer-events: none;
             z-index: 2;
