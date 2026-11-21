@@ -2,18 +2,24 @@
 .sf-landing{--sf-bg:#090F1E;--sf-ink:#F8FAFC;--sf-ink-2:#CBD5E1;--sf-ink-3:#94A3B8;--sf-accent:#818CF8;--sf-accent-2:#38BDF8;--sf-mint:#34D399;--sf-line:rgba(148,163,184,.16);--sf-line-2:rgba(148,163,184,.28);--sf-card:rgba(17,25,44,.86);position:relative;min-height:100vh;background:var(--sf-bg);color:var(--sf-ink);overflow:clip;font-family:'Be Vietnam Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 .sf-scroll-progress{position:fixed;inset:0 0 auto 0;height:2.5px;z-index:100;background:linear-gradient(90deg,#6366F1,#38BDF8,#34D399);transform-origin:0 50%;pointer-events:none}
 .sf-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.sf-bg-grid{position:absolute;inset:-40px;background-image:linear-gradient(rgba(129,140,248,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(129,140,248,.06) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(72% 58% at 50% 30%,black 30%,transparent 75%);-webkit-mask-image:radial-gradient(72% 58% at 50% 30%,black 30%,transparent 75%);animation:sf-grid-pan 22s linear infinite}
+.sf-bg-grid{position:absolute;inset:-64px;background-image:linear-gradient(rgba(129,140,248,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(129,140,248,.06) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(72% 58% at 50% 30%,black 30%,transparent 75%);-webkit-mask-image:radial-gradient(72% 58% at 50% 30%,black 30%,transparent 75%)}
 .sf-bg-glow{position:absolute;left:50%;top:-220px;width:960px;height:560px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(99,102,241,.24),rgba(56,189,248,.08) 48%,transparent 75%);filter:blur(18px)}
 .sf-bg-glow2{position:absolute;left:50%;top:340px;width:760px;height:360px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(56,189,248,.14),rgba(52,211,153,.06) 50%,transparent 72%)}
 .sf-beam{position:absolute;border-radius:999px;filter:blur(1px);opacity:.45}
-.sf-beam-x{left:-10%;right:-10%;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,.45) 20%,rgba(56,189,248,.65) 50%,transparent 80%);animation:sf-beam-x 7s ease-in-out infinite}
-.sf-beam-y{top:-10%;bottom:-10%;width:1px;background:linear-gradient(180deg,transparent,rgba(129,140,248,.4) 40%,rgba(52,211,153,.35) 75%,transparent);animation:sf-beam-y 9s ease-in-out infinite}
-@keyframes sf-beam-x{0%,100%{transform:translateY(120px);opacity:0}25%{opacity:.5}50%{transform:translateY(300px);opacity:.3}75%{opacity:.5}}
-@keyframes sf-beam-y{0%,100%{transform:translateX(-220px);opacity:0}30%{opacity:.5}60%{transform:translateX(240px);opacity:.2}}
-@keyframes sf-grid-pan{to{background-position:44px 44px,44px 44px}}
-@keyframes sf-shine-sweep{to{left:130%}}
-@keyframes sf-pop-in{from{opacity:0;transform:translateY(10px) scale(.92)}to{opacity:1;transform:none}}
-@keyframes sf-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.sf-beam-x{left:-10%;right:-10%;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,.45) 20%,rgba(56,189,248,.65) 50%,transparent 80%)}
+.sf-beam-y{top:-10%;bottom:-10%;width:1px;background:linear-gradient(180deg,transparent,rgba(129,140,248,.4) 40%,rgba(52,211,153,.35) 75%,transparent)}
+@media(prefers-reduced-motion:no-preference){
+  .sf-bg-grid{animation:sf-grid-pan 22s linear infinite;will-change:transform}
+  .sf-beam-x{animation:sf-beam-x 7s ease-in-out infinite}
+  .sf-beam-y{animation:sf-beam-y 9s ease-in-out infinite}
+}
+.sf-bg[data-paused="true"] .sf-bg-grid,.sf-bg[data-paused="true"] .sf-beam{animation-play-state:paused}
+@keyframes sf-beam-x{0%,100%{transform:translate3d(0,120px,0);opacity:0}25%{opacity:.5}50%{transform:translate3d(0,300px,0);opacity:.3}75%{opacity:.5}}
+@keyframes sf-beam-y{0%,100%{transform:translate3d(-220px,0,0);opacity:0}30%{opacity:.5}60%{transform:translate3d(240px,0,0);opacity:.2}}
+@keyframes sf-grid-pan{to{transform:translate3d(44px,44px,0)}}
+@keyframes sf-shine-sweep{to{transform:translate3d(340%,0,0) skewX(-18deg)}}
+@keyframes sf-pop-in{from{opacity:0;transform:translate3d(0,10px,0) scale(.92)}to{opacity:1;transform:none}}
+@keyframes sf-float{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-8px,0)}}
 /* nav */
 .sf-nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:rgba(9,15,30,.82);border-bottom:1px solid var(--sf-line)}
 .sf-nav-inner{max-width:1160px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:16px}

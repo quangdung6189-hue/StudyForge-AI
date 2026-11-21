@@ -6,7 +6,8 @@
 .sf-pill-msg{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--sf-ink-2);text-align:left}
 .sf-pill-arrow{color:#A5B4FC;font-size:15px}
 .sf-shine{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
-.sf-shine::after{content:"";position:absolute;top:0;bottom:0;width:70px;left:-90px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.25),transparent);transform:skewX(-18deg);animation:sf-shine-sweep 3.2s ease-in-out infinite}
+.sf-shine::after{content:"";position:absolute;top:0;bottom:0;left:0;width:70px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.25),transparent);transform:translate3d(-130%,0,0) skewX(-18deg)}
+@media(prefers-reduced-motion:no-preference){.sf-shine::after{animation:sf-shine-sweep 3.2s ease-in-out infinite}}
 .sf-title{margin:26px 0 18px;font-size:clamp(38px,6.4vw,64px);line-height:1.08;font-weight:900;letter-spacing:-.035em;text-wrap:balance}
 .sf-title-grad{background:linear-gradient(135deg,#A5B4FC 0%,#38BDF8 52%,#34D399 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .sf-sub{margin:0 auto 34px;max-width:680px;color:var(--sf-ink-2);font-size:17.5px;line-height:1.65}
@@ -39,7 +40,8 @@
 .sf-play-head h2{margin:0 0 8px;font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.03em}
 .sf-play-head p{margin:0;color:var(--sf-ink-2);font-size:15px}
 .sf-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
-.sf-tab{border:1px solid var(--sf-line-2);background:rgba(30,41,59,.55);color:var(--sf-ink-2);font-size:13.5px;font-weight:700;padding:9px 18px;border-radius:999px;cursor:pointer;font-family:inherit;transition:all .2s ease}
+.sf-tab{border:1px solid var(--sf-line-2);background:rgba(30,41,59,.55);color:var(--sf-ink-2);font-size:13.5px;font-weight:700;padding:9px 18px;border-radius:999px;cursor:pointer;font-family:inherit;transition:background-color .2s var(--ux-ease),color .2s var(--ux-ease),border-color .2s var(--ux-ease),box-shadow .2s var(--ux-ease),transform .15s var(--ux-ease)}
+.sf-tab:active{transform:scale(0.97)}
 .sf-tab[aria-selected="true"]{background:linear-gradient(135deg,#4F46E5,#2563EB);color:#FFFFFF;border-color:transparent;box-shadow:0 6px 20px -4px rgba(79,70,229,.55)}
 .sf-stage{border:1px solid rgba(129,140,248,.2);border-radius:22px;background:linear-gradient(180deg,rgba(30,41,59,.7),rgba(15,23,42,.82));padding:30px;min-height:210px;display:grid;gap:18px}
 .sf-doc-row{display:flex;gap:10px;flex-wrap:wrap}

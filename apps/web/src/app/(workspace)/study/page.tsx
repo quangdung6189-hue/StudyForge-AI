@@ -1,7 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { DocumentDTO } from '@studyforge/contracts';
+import { AnimatePresence, motion } from 'motion/react';
+import {
+  blur,
+  ReducedMotionConfig,
+  spring,
+  transition as motionTokens,
+  useShouldReduceMotion,
+  useTempoTransition,
+} from '@animate-ui/react/utils/motion';
 
 interface Flashcard {
   id: string;
@@ -55,6 +64,10 @@ export default function StudyPage() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [masteredIds, setMasteredIds] = useState<Set<string>>(new Set());
   const [reviewIds, setReviewIds] = useState<Set<string>>(new Set());
+  const reduceMotion = useShouldReduceMotion();
+  const pressSpring = useTempoTransition(spring.press);
+  const panelInTransition = useTempoTransition(motionTokens.panelIn);
+  const panelOutTransition = useTempoTransition(motionTokens.panelOut);
 
   // Load user documents
   useEffect(() => {
@@ -468,7 +481,10 @@ export default function StudyPage() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          transition: all 0.2s var(--ux-ease);
+          transition: transform 0.2s var(--ux-spring), background-color 0.2s var(--ux-ease), border-color 0.2s var(--ux-ease), color 0.2s var(--ux-ease), box-shadow 0.2s var(--ux-ease);
+        }
+        .btn-study-action:active {
+          transform: scale(0.97);
         }
         .btn-study-action:hover {
           transform: translateY(-1px);
@@ -567,70 +583,106 @@ export default function StudyPage() {
       </div>
 
       {/* Flashcard */}
-      <div
-        className="study-card"
-        onClick={() => setFlipped((f) => !f)}
-        tabIndex={0}
-        role="button"
-        aria-label="Nhấn hoặc bấm phím cách để lật thẻ"
-        onKeyDown={(e) => {
-          if (e.key === ' ' || e.key === 'Enter') {
-            e.preventDefault();
-            setFlipped((f) => !f);
-          }
-        }}
-      >
-        <div className="study-card-head">
-          <span className="study-card-topic">{current.topic}</span>
-          <span className="study-card-type">{current.type} · {current.citation}</span>
-        </div>
+      <ReducedMotionConfig>
+        <motion.div
+          className="study-card"
+          whileTap={reduceMotion ? undefined : { transform: 'scale(0.985)' }}
+          transition={pressSpring}
+          onClick={() => setFlipped((f) => !f)}
+          tabIndex={0}
+          role="button"
+          aria-label="Nhấn hoặc bấm phím cách để lật thẻ"
+          onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              setFlipped((f) => !f);
+            }
+          }}
+        >
+          <div className="study-card-head">
+            <span className="study-card-topic">{current.topic}</span>
+            <span className="study-card-type">{current.type} · {current.citation}</span>
+          </div>
 
-        {!flipped ? (
-          <>
-            <div style={{ fontSize: '13px', color: 'var(--ux-ink-3)', fontWeight: 700, marginTop: '10px' }}>
-              CÂU HỎI {currentIdx + 1} / {total}
-            </div>
-            <div className="study-card-content">{current.question}</div>
+          <AnimatePresence mode="wait" initial={false}>
+            {!flipped ? (
+              <motion.div
+                key={`front-${current.id}-${currentIdx}`}
+                initial={
+                  reduceMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0, filter: `blur(${blur.surface}px)`, transform: 'translate3d(0, 6px, 0)' }
+                }
+                animate={{ opacity: 1, filter: 'blur(0px)', transform: 'translate3d(0, 0, 0)' }}
+                exit={
+                  reduceMotion
+                    ? { opacity: 0, transition: panelOutTransition }
+                    : { opacity: 0, filter: `blur(${blur.surface}px)`, transform: 'translate3d(0, -6px, 0)', transition: panelOutTransition }
+                }
+                transition={panelInTransition}
+                style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+              >
+                <div style={{ fontSize: '13px', color: 'var(--ux-ink-3)', fontWeight: 700, marginTop: '10px' }}>
+                  CÂU HỎI {currentIdx + 1} / {total}
+                </div>
+                <div className="study-card-content">{current.question}</div>
 
-            {current.options && current.options.length > 0 && (
-              <div className="study-options-preview">
-                {current.options.map((opt, idx) => (
-                  <div key={idx} className="study-option-item">
-                    <b>{String.fromCharCode(65 + idx)}.</b> {opt}
+                {current.options && current.options.length > 0 && (
+                  <div className="study-options-preview">
+                    {current.options.map((opt, idx) => (
+                      <div key={idx} className="study-option-item">
+                        <b>{String.fromCharCode(65 + idx)}.</b> {opt}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
 
-            <div className="study-card-hint">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-              Nhấn vào thẻ hoặc phím Cách để xem đáp án
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ fontSize: '13px', color: 'var(--ux-mint)', fontWeight: 800, marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              ĐÁP ÁN CHÍNH XÁC
-            </div>
-            <div className="study-card-content" style={{ color: 'var(--ux-mint)' }}>
-              {current.answer}
-            </div>
-            {current.explanation && (
-              <div style={{ fontSize: '13px', color: 'var(--ux-ink-2)', maxWidth: '540px', lineHeight: 1.6, marginBottom: '14px', textAlign: 'left', background: 'var(--ux-surface-2)', padding: '12px 16px', borderRadius: '12px' }}>
-                <b style={{ color: 'var(--ux-ink)' }}>Giải thích chi tiết: </b>{current.explanation}
-              </div>
+                <div className="study-card-hint">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                  Nhấn vào thẻ hoặc phím Cách để xem đáp án
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={`back-${current.id}-${currentIdx}`}
+                initial={
+                  reduceMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0, filter: `blur(${blur.surface}px)`, transform: 'translate3d(0, 6px, 0)' }
+                }
+                animate={{ opacity: 1, filter: 'blur(0px)', transform: 'translate3d(0, 0, 0)' }}
+                exit={
+                  reduceMotion
+                    ? { opacity: 0, transition: panelOutTransition }
+                    : { opacity: 0, filter: `blur(${blur.surface}px)`, transform: 'translate3d(0, -6px, 0)', transition: panelOutTransition }
+                }
+                transition={panelInTransition}
+                style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+              >
+                <div style={{ fontSize: '13px', color: 'var(--ux-mint)', fontWeight: 800, marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  ĐÁP ÁN CHÍNH XÁC
+                </div>
+                <div className="study-card-content" style={{ color: 'var(--ux-mint)' }}>
+                  {current.answer}
+                </div>
+                {current.explanation && (
+                  <div style={{ fontSize: '13px', color: 'var(--ux-ink-2)', maxWidth: '540px', lineHeight: 1.6, marginBottom: '14px', textAlign: 'left', background: 'var(--ux-surface-2)', padding: '12px 16px', borderRadius: '12px' }}>
+                    <b style={{ color: 'var(--ux-ink)' }}>Giải thích chi tiết: </b>{current.explanation}
+                  </div>
+                )}
+                <div style={{ fontSize: '11.5px', color: 'var(--ux-ink-3)' }}>
+                  Nguồn trích dẫn: {current.citation}
+                </div>
+                <div className="study-card-hint">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                  Nhấn để quay lại câu hỏi
+                </div>
+              </motion.div>
             )}
-            <div style={{ fontSize: '11.5px', color: 'var(--ux-ink-3)' }}>
-              Nguồn trích dẫn: {current.citation}
-            </div>
-            <div className="study-card-hint">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-              Nhấn để quay lại câu hỏi
-            </div>
-          </>
-        )}
-      </div>
+          </AnimatePresence>
+        </motion.div>
+      </ReducedMotionConfig>
 
       {/* Actions */}
       <div className="study-actions">

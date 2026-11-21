@@ -171,7 +171,9 @@ export default function QuizzesListPage() {
           display: flex;
           flex-direction: column;
           gap: 14px;
-          transition: transform .25s var(--ux-ease), box-shadow .25s, border-color .25s;
+          content-visibility: auto;
+          contain-intrinsic-size: auto 220px;
+          transition: transform .25s var(--ux-ease), box-shadow .25s ease, border-color .25s ease;
           position: relative;
         }
         .qz-card:hover {

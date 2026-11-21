@@ -42,8 +42,9 @@
 .documents-studio .documents-stat span{font-size:10.5px;color:var(--ux-ink-3)}
 .documents-studio .documents-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--ux-surface-2);border:1px solid var(--ux-line);border-radius:16px;padding:10px 12px;margin-bottom:12px}
 .documents-studio .documents-toolbar .t-label{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--ux-ink-3);margin-right:2px}
-.documents-studio .documents-toolbtn{border:1px solid var(--ux-line-2);background:var(--ux-surface);border-radius:999px;padding:9px 14px;font-size:12px;font-weight:700;color:var(--ux-ink);cursor:pointer;transition:all .25s}
+.documents-studio .documents-toolbtn{border:1px solid var(--ux-line-2);background:var(--ux-surface);border-radius:999px;padding:9px 14px;font-size:12px;font-weight:700;color:var(--ux-ink);cursor:pointer;transition:transform .2s var(--ux-ease),border-color .2s ease,background-color .2s ease,color .2s ease}
 .documents-studio .documents-toolbtn:hover{border-color:var(--ux-accent);transform:translateY(-1px)}
+.documents-studio .documents-toolbtn:active{transform:scale(0.97)}
 .documents-studio .documents-toolbtn.primary{background:var(--ux-ink);color:var(--ux-page);border-color:transparent}
 .documents-studio .documents-toolbtn:disabled{opacity:.5;cursor:default;transform:none}
 .documents-studio .documents-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.documents-studio .documents-tools a{font-size:12px;color:var(--ux-accent);padding:8px;border-radius:8px;text-decoration:none;border:1px dashed transparent}
@@ -58,7 +59,7 @@
 .documents-studio .documents-filter label{font-size:11px;font-weight:700;color:var(--ux-ink-3)}
 .documents-studio .documents-filter input,.documents-studio .documents-filter select{display:block;width:100%;min-width:0;height:44px;border:1px solid var(--ux-line-2);border-radius:12px;background:var(--ux-surface-2);padding:0 12px;margin-top:8px;color:var(--ux-ink);font-size:12.5px}
 .documents-studio .documents-filter input:focus,.documents-studio .documents-filter select:focus{border-color:var(--ux-accent);outline:none;box-shadow:0 0 0 3px var(--ux-accent-soft)}
-.documents-studio .documents-question.u039-row{display:block;padding:18px;margin-bottom:14px;transition:transform .35s cubic-bezier(.34,1.45,.64,1),border-color .25s}
+.documents-studio .documents-question.u039-row{display:block;padding:18px;margin-bottom:14px;content-visibility:auto;contain-intrinsic-size:auto 180px;transition:transform .3s var(--ux-spring),border-color .2s ease}
 .documents-studio .documents-question:hover{border-color:var(--ux-accent)}
 .documents-studio .documents-question-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--ux-accent);align-items:center}
 .documents-studio .documents-qpill{font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:4px 10px;border-radius:999px;background:var(--ux-accent-soft);color:var(--ux-accent)}

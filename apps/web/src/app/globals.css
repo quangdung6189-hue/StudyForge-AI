@@ -256,11 +256,14 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ux, .ux *, .ux *::before, .ux *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
+  html, .app-content {
+    scroll-behavior: auto;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html, .app-content {
+    scroll-behavior: smooth;
   }
 }
 
@@ -322,6 +325,7 @@ body {
   height: calc(100dvh - 64px);
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-gutter: stable;
   padding: 32px;
   -webkit-overflow-scrolling: touch;
 }

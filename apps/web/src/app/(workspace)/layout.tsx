@@ -2,6 +2,7 @@ import { requireUser } from '@/server/auth';
 import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { WorkspaceMotionShell } from '@/components/layout/WorkspaceMotionShell';
 import { LucianAssistant } from '@/components/lucian/LucianAssistant';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
       <div className="app-main">
         <AppHeader />
         <main className="app-content">
-          {children}
+          <WorkspaceMotionShell>{children}</WorkspaceMotionShell>
         </main>
       </div>
       <LucianAssistant />

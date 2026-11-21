@@ -3,6 +3,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'motion/react';
+import {
+  ReducedMotionConfig,
+  transition as motionTokens,
+  useShouldReduceMotion,
+  useTempoTransition,
+} from '@animate-ui/react/utils/motion';
 import { MathText } from '@/components/common/MathText';
 
 export default function TakeQuizPage() {
@@ -19,6 +26,8 @@ export default function TakeQuizPage() {
   const [submitError, setSubmitError] = useState('');
   const [result, setResult] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const reduceMotion = useShouldReduceMotion();
+  const questionFade = useTempoTransition(motionTokens.fade);
 
   const answersRef = useRef(answers);
   answersRef.current = answers;
@@ -695,10 +704,13 @@ export default function TakeQuizPage() {
           font-size: 15px;
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+          transition: transform 0.18s var(--ux-spring), background-color 0.2s var(--ux-ease), border-color 0.2s var(--ux-ease), color 0.2s var(--ux-ease), box-shadow 0.2s var(--ux-ease);
           display: flex;
           align-items: center;
           gap: 12px;
+        }
+        .opt-btn:active {
+          transform: scale(0.985);
         }
         .opt-btn:hover {
           border-color: var(--ux-accent);
@@ -736,7 +748,10 @@ export default function TakeQuizPage() {
           display: grid;
           place-items: center;
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: transform 0.16s var(--ux-spring), background-color 0.18s var(--ux-ease), border-color 0.18s var(--ux-ease), color 0.18s var(--ux-ease), box-shadow 0.18s var(--ux-ease);
+        }
+        .palette-num:active {
+          transform: scale(0.94);
         }
         .palette-num:hover {
           border-color: var(--ux-accent);
@@ -792,16 +807,23 @@ export default function TakeQuizPage() {
 
       <div className="exam-layout">
         <div className="q-box">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ux-accent-text)', letterSpacing: '0.04em' }}>
-              CÂU {currentIdx + 1} / {attempt.questions.length}
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--ux-ink-3)', fontWeight: 600 }}>
-              {currentQ.points} điểm
-            </span>
-          </div>
+          <ReducedMotionConfig>
+            <motion.div
+              key={currentQ.id}
+              initial={reduceMotion ? { opacity: 0.9 } : { opacity: 0.9, transform: 'translate3d(0, 6px, 0)' }}
+              animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+              transition={questionFade}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ux-accent-text)', letterSpacing: '0.04em' }}>
+                  CÂU {currentIdx + 1} / {attempt.questions.length}
+                </span>
+                <span style={{ fontSize: '13px', color: 'var(--ux-ink-3)', fontWeight: 600 }}>
+                  {currentQ.points} điểm
+                </span>
+              </div>
 
-          <div className="q-stem"><MathText text={currentQ.stem} /></div>
+              <div className="q-stem"><MathText text={currentQ.stem} /></div>
 
           {currentQ.imageRefs && currentQ.imageRefs.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', margin: '14px 0', padding: '12px', background: 'var(--ux-surface-2)', borderRadius: '12px', border: '1px solid var(--ux-line-2)' }}>
@@ -888,6 +910,8 @@ export default function TakeQuizPage() {
               </div>
             );
           })()}
+            </motion.div>
+          </ReducedMotionConfig>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '32px' }}>
             <button
