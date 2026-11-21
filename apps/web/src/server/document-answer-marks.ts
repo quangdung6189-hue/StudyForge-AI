@@ -73,13 +73,13 @@ export async function readDocxAnswerMarks(buffer: Buffer, rawText: string): Prom
   const hasReliableBaseline = backgroundColors.size === 1;
   const evidence: AnswerMarkEvidence[] = [];
   for (const paragraph of paragraphs) {
-    // Only an option paragraph may supply an answer mark, never a colored heading.
-    const option = paragraph.text.match(/^\*?([A-Ha-h])[.)]\s+(.+)$/u); if (!option) continue;
-    const inlineOptions = [...paragraph.text.matchAll(/(?:^|\s+)\*?[A-Ha-h][.)]\s+/gu)].length > 1;
+    // Only an option paragraph (A. B. C. D. or true/false a) b) c) d)) may supply an answer mark, never a colored heading or A) stem sub-item.
+    const option = paragraph.text.match(/^\*?(?:([A-H])\*?\.|([a-h])\))\s+(.+)$/u); if (!option) continue;
+    const inlineOptions = [...paragraph.text.matchAll(/(?:^|\s+)\*?(?:[A-H]\*?\.|[a-h]\))\s+/gu)].length > 1;
     const nonempty = paragraph.runs.filter(run => run.text.trim());
     const labelRuns: typeof nonempty = []; let labelText = '';
     for (const run of nonempty) { if (labelText.length >= 2) break; labelRuns.push(run); labelText += run.text.trim(); }
-    const isStrictLabel = /^[A-Ha-h][.)]$/.test(labelText);
+    const isStrictLabel = /^(?:[A-H]\.|[a-h]\))$/.test(labelText);
     const underlinedLabel = isStrictLabel && labelRuns.every(run => !['', 'none', '0', 'false'].includes(run.underline));
     const highlightedLabel = isStrictLabel && labelRuns.every(run => Boolean(run.highlight && !['none', 'white'].includes(run.highlight)));
     const totalTextLength = Math.max(1, paragraph.text.replace(/\s/g, '').length);

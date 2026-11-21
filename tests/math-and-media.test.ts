@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DOMParser } from '@xmldom/xmldom';
 import { ommlToLatex, formatOmmlAsLatex } from '../apps/web/src/lib/omml-to-latex';
-import { normalizeMathText, hasMathContent } from '../apps/web/src/lib/math-normalizer';
+import { normalizeMathText, convertPlainFormulasToLatex, hasMathContent } from '../apps/web/src/lib/math-normalizer';
+import { StemFormulaToolbar, STEM_FORMULA_PRESETS } from '../apps/web/src/components/lucian/StemFormulaToolbar';
 import JSZip from 'jszip';
 import { preprocessDocxMathAndImages } from '../apps/web/src/server/docx-preprocessor';
 import { extractDocumentContent } from '../apps/web/src/server/document-extractor';
@@ -364,6 +365,89 @@ describe('DOCX Math Preprocessor & Nuclear Isotope Extraction', () => {
     expect(processedXml).toContain('{}^{235}_{92}{U}');
     expect(processedXml).not.toContain('mc:Fallback');
     expect(processedXml).not.toContain('v:imagedata');
+  });
+
+  it('recognizes Word Symbol and Euclid Symbol formula fonts (<w:sym> and <w:rFonts>) and converts to LaTeX', async () => {
+    const zip = new JSZip();
+    const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r><w:t>Tia </w:t></w:r>
+      <w:r><w:sym w:font="Symbol" w:char="F061"/></w:r>
+      <w:r><w:t> và điện trở </w:t></w:r>
+      <w:r>
+        <w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol"/></w:rPr>
+        <w:t>W</w:t>
+      </w:r>
+      <w:r><w:t> cùng độ biến thiên </w:t></w:r>
+      <w:r>
+        <w:rPr><w:rFonts w:ascii="Euclid Symbol"/></w:rPr>
+        <w:t>D</w:t>
+      </w:r>
+    </w:p>
+  </w:body>
+</w:document>`;
+    zip.file('word/document.xml', docXml);
+    const rawBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+
+    const preprocessed = await preprocessDocxMathAndImages(rawBuffer);
+    expect(preprocessed.convertedEquationCount).toBe(3);
+
+    const processedZip = await JSZip.loadAsync(preprocessed.buffer);
+    const processedXml = await processedZip.file('word/document.xml')!.async('string');
+    expect(processedXml).toContain('$\\alpha$');
+    expect(processedXml).toContain('$\\Omega$');
+    expect(processedXml).toContain('$\\Delta$');
+  });
+});
+
+describe('STEM (Math, Physics, Chemistry, Biology) Formula Font & Toolbar', () => {
+  it('converts Chemistry and Biology Unicode/subscript/superscript notations to KaTeX formula font', () => {
+    // Chemistry with Unicode subscripts/superscripts or _(..) ^(..)
+    const chem1 = normalizeMathText('Dung dịch H₂SO₄ tác dụng với ion Fe³⁺ và H_(2)O');
+    expect(chem1).toContain('$\\text{H}_{2}\\text{SO}_{4}$');
+    expect(chem1).toContain('$\\text{Fe}^{3+}$');
+    expect(chem1).toContain('$\\text{H}_{2}\\text{O}$');
+
+    // Render with MathText to verify KaTeX font classes (.katex) are used instead of plain text
+    const chemHtml = renderToStaticMarkup(React.createElement(MathText, { text: 'Phản ứng H₂SO₄ ⇌ SO₄²⁻' }));
+    expect(chemHtml).toContain('class="katex"');
+
+    // Biology genetics alleles, generation F1, chromosome 2n = 46, and 5' -> 3'
+    const bio = normalizeMathText('Ở F_(1), kiểu gen X^(A)X^(a) có bộ NST 2n = 46 và mạch 5\' -> 3\'');
+    expect(bio).toContain('$\\text{F}_{1}$');
+    expect(bio).toContain('$\\text{X}^{\\text{A}}\\text{X}^{\\text{a}}$');
+    expect(bio).toContain('$2n = 46$');
+    expect(bio).toContain("$5' \\to 3'$");
+
+    const bioHtml = renderToStaticMarkup(React.createElement(MathText, { text: bio }));
+    expect(bioHtml).toContain('class="katex"');
+  });
+
+  it('converts plain-text chemical formulas via convertPlainFormulasToLatex', () => {
+    const raw = 'Cho H2SO4 tác dụng với BaCl2 thu được kết tủa BaSO4 và khí CO2.';
+    const converted = convertPlainFormulasToLatex(raw);
+    expect(converted).toContain('$\\text{H}_2\\text{SO}_4$');
+    expect(converted).toContain('$\\text{BaCl}_2$');
+    expect(converted).toContain('$\\text{BaSO}_4$');
+    expect(converted).toContain('$\\text{CO}_2$');
+  });
+
+  it('renders StemFormulaToolbar with all 4 subject tabs (Toán, Lý, Hóa, Sinh) using KaTeX formula fonts', () => {
+    expect(Object.keys(STEM_FORMULA_PRESETS)).toEqual(['math', 'physics', 'chemistry', 'biology']);
+    const html = renderToStaticMarkup(
+      React.createElement(StemFormulaToolbar, {
+        onInsert: () => {},
+        onNormalizeAll: () => {},
+      })
+    );
+    expect(html).toContain('∑ Toán');
+    expect(html).toContain('⚡ Lý');
+    expect(html).toContain('⚗️ Hóa');
+    expect(html).toContain('🧬 Sinh');
+    expect(html).toContain('Chuẩn hóa phông công thức');
+    expect(html).toContain('class="katex"');
   });
 });
 

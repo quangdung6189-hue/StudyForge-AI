@@ -110,12 +110,62 @@ Khi đề thi có cấu trúc nhiều phần và số thứ tự câu hỏi lặ
 
 ---
 
-## 6. Quy Chuẩn Toán - Lý & Bố Cục Lưới Phương Án
+## 6. Quy Chuẩn Phân Định Nhãn Đáp Án (`A. B. C. D.`) vs Ý Con Trong Câu Hỏi (`A) a) b) c) d)`)
 
+1. **Phương án trả lời trắc nghiệm (`Answer Options`)**:
+   - Chỉ nhận diện các nhãn chữ cái in hoa đi kèm **dấu chấm**: **`A.`, `B.`, `C.`, `D.`** (hoặc có ký hiệu đánh dấu đáp án trực tiếp như `*A.`, `A*.`, `✓ A.`, `[x] A.`).
+2. **Các ý liệt kê / mệnh đề con thuộc thân câu hỏi (`Stem Sub-items`)**:
+   - Các ký hiệu có **dấu ngoặc đơn** như **`A)`, `B)`, `C)`, `D)`** hoặc chữ thường **`a)`, `b)`, `c)`, `d)`**, **`a.`, `b.`, `c.`, `d.`**, **`(a)`, `(b)`, `(1)`, `(2)`** khi xuất hiện trong câu hỏi trắc nghiệm khách quan là **ý con nằm trong thân câu hỏi (`question_stem`)**, **TUYỆT ĐỐI KHÔNG phải phương án trả lời**.
+   - **Ví dụ thực tế**:
+     * *"Cho các phát biểu sau: a) ... b) ... c) ... d) ... Số phát biểu đúng là: A. 1  B. 2  C. 3  D. 4"* $\rightarrow$ Toàn bộ `a), b), c), d)` thuộc `stem`; chỉ `A. B. C. D.` là `options`.
+     * *"Cho các bước thí nghiệm: A) Bước 1... B) Bước 2... C) Bước 3... D) Bước 4... Thứ tự đúng là: A. A-B-C-D  B. B-A-C-D..."* $\rightarrow$ `A), B), C), D)` thuộc `stem`; chỉ `A., B., C., D.` ở cụm cuối mới là `options`.
+3. **Ngoại lệ duy nhất cho Dạng Đúng – Sai (Phần II chuẩn BGD)**:
+   - Chỉ khi câu hỏi thuộc **Phần Đúng – Sai (`TRUE_FALSE` / `boolean`)** và **không có cụm phương án `A. B. C. D.` ở cuối câu**, các mệnh đề `a), b), c), d)` mới được bóc tách thành các nhận định Đúng/Sai (`statements`).
+
+---
+
+## 7. Nhận Diện Phông Chữ Công Thức & Bộ Công Cụ Ký Tự Toán – Lý – Hóa – Sinh (STEM Formula & Font Protocol)
+
+> **Quy tắc bắt buộc**: Mọi công thức, ký hiệu, chỉ số trên/dưới của Toán, Vật lý, Hóa học, Sinh học **bắt buộc** phải được nhận diện và hiển thị bằng **phông chữ công thức chuyên dụng (`KaTeX_Math`, `KaTeX_Main`, `mhchem` `\ce{...}`)**, **TUYỆT ĐỐI KHÔNG dùng ký tự văn bản bình thường** (như `H2SO4`, `Fe3+`, `x^2`, chữ `a` thường thay cho $\alpha$).
+
+### 7.1 Nhận diện Phông chữ Công thức từ Tài liệu gốc (DOCX OOXML / PDF / OCR)
+Tham khảo kiến trúc từ các dự án mã nguồn mở trên GitHub (`plurimath/plurimath`, `hrushikeshrv/docxlatex`, `mhchem/mhchemParser`, `breezedeus/Pix2Text`):
+1. **Word Native Equations & MathType OLE**:
+   - Giải mã `<m:oMath>`, `<m:oMathPara>` (OMML) và `w:object` (MathType MTEF binary stream) trực tiếp sang chuỗi LaTeX `$...$`.
+2. **Nhận diện Phông chữ Ký hiệu (`<w:rFonts>` & `<w:sym>`)**:
+   - Quét các thẻ `<w:sym w:font="Symbol|MT Extra|Euclid..." w:char="..."/>` và các `<w:r>` dùng phông `Symbol`, `MT Extra`, `Euclid Symbol`, `Euclid Extra`, `Euclid Math One`, `Euclid Math Two`, `Cambria Math`.
+   - Ánh xạ chính xác bảng mã glyph của phông chữ công thức sang lệnh LaTeX (`\alpha, \beta, \gamma, \Delta, \Omega, \lambda, \mu, \pi, \varphi, \rightleftharpoons, \uparrow, \downarrow, \le, \ge, \ne, \approx, \pm, \times, \div, \infty, \angle, \perp, \parallel`) thay vì để Mammoth xuất ra ký tự ASCII thường bị sai lệch.
+3. **Nhận diện Chỉ số Trên / Dưới (`<w:vertAlign>`) & Chữ nghiêng Biến số (`<w:i>`)**:
+   - Mọi `<w:r>` có `<w:vertAlign w:val="subscript"/>` hoặc `<w:vertAlign w:val="superscript"/>` (rất phổ biến khi giáo viên gõ công thức Hóa học $\text{H}_2\text{SO}_4$, $\text{Fe}^{3+}$, Sinh học $\text{F}_1, \text{X}^{\text{A}}\text{X}^{\text{a}}$, Vật lý $v_0, t_1$) phải được gom cùng cơ số liền trước và chuyển thành LaTeX `$..._{...}^{...}$` hoặc `$\ce{...}$`.
+   - Trong PDF/OCR: Nhận diện chênh lệch baseline và kích thước font của glyph chỉ số trên/dưới để tái tạo đúng `_{...}` và `^{...}`.
+
+### 7.2 Bộ Công Cụ Gõ Ký Tự & Công Thức Toán – Lý – Hóa – Sinh (STEM Visual Input Toolbar)
+Tích hợp thanh công cụ nhập công thức trực quan (tham khảo chuẩn `arnog/mathlive` `<math-field>` & `KaTeX mhchem`) trong trình soạn thảo câu hỏi:
+- **Tab Toán học (Math)**:
+  - Phân số `\tfrac{a}{b}`, `\frac{a}{b}`, căn thức `\sqrt{x}`, `\sqrt[n]{x}`, lũy thừa/chỉ số `x^{n}`, `x_{i}`.
+  - Giải tích: `\int_{a}^{b}`, `\sum_{i=1}^{n}`, `\prod`, `\lim_{x \to x_0}`, đạo hàm `f'(x)`, `\frac{dy}{dx}`.
+  - Đại số & Tập hợp: Hệ phương trình `\begin{cases} ... \end{cases}`, ma trận, `\in, \notin, \subset, \subseteq, \cup, \cap, \emptyset, \mathbb{N}, \mathbb{Z}, \mathbb{Q}, \mathbb{R}, \mathbb{C}`.
+  - Hình học & Lượng giác: `\widehat{ABC}`, `\angle A`, `\vec{AB}`, `\perp`, `\parallel`, `\triangle`, `\sin, \cos, \tan, \cot`.
+- **Tab Vật lý (Physics)**:
+  - Vectơ & Trường: `\vec{v}, \vec{a}, \vec{F}, \vec{p}, \vec{E}, \vec{B}, \vec{M}`.
+  - Biến thiên & Dao động: `\Delta t, \Delta x, \Delta l, \Delta \varphi, \omega, \lambda, \varphi, A\cos(\omega t + \varphi)`.
+  - Vật lý hạt nhân: Ký hiệu đồng vị `{}^{A}_{Z}\text{X}` (ví dụ `{}^{235}_{92}\text{U}`), tia `\alpha, \beta^+, \beta^-, \gamma`.
+  - Đơn vị đo lường chuẩn: `^\circ\text{C}`, `\text{K}`, `\Omega`, `\mu\text{F}`, `\text{m/s}^2`, `\text{rad/s}`, `\text{Hz}`, `\text{eV}`, `\text{MeV}`.
+- **Tab Hóa học (Chemistry - `mhchem` `\ce{...}`)**:
+  - Phân tử, Ion & Điện tích: `\text{H}_2\text{SO}_4`, `\text{Fe}^{3+}`, `\text{Cu}^{2+}`, `\text{SO}_4^{2-}`, `\text{NO}_3^-`, `\text{NH}_4^+`.
+  - Mũi tên phản ứng & Điều kiện: `\longrightarrow`, `\xrightarrow{t^\circ}`, `\xrightarrow{t^\circ, \text{xt}, p}`, `\rightleftharpoons` (thuận nghịch), `\downarrow` (kết tủa), `\uparrow` (bay hơi).
+  - Liên kết & Cấu trúc hữu cơ: Liên kết đơn `-`, đôi `=`, ba `\equiv`, nhóm chức `-\text{CHO}`, `-\text{COOH}`, `-\text{OH}`, `-\text{NH}_2`, `-\text{COO}-`, cấu hình electron `1s^2 2s^2 2p^6`.
+- **Tab Sinh học (Biology)**:
+  - Di truyền học & Phép lai: `\text{P}`, `\text{F}_1`, `\text{F}_2`, `\text{G}`, `\times`, giới tính `\female` ($\female$), `\male` ($\male$).
+  - Nhiễm sắc thể & Đột biến: `2n`, `n`, `2n+1` (thể ba), `2n-1` (thể một), `3n`, `4n`.
+  - Kiểu gen & Liên kết gen: Alen trội/lặn, gen trên NST giới tính `\text{X}^{\text{A}}\text{X}^{\text{a}}`, `\text{X}^{\text{a}}\text{Y}`, nhóm máu `\text{I}^{\text{A}}\text{I}^{\text{B}}, \text{I}^{\text{O}}\text{I}^{\text{O}}`, kiểu gen liên kết `\frac{\underline{\text{AB}}}{\text{ab}}`.
+  - Sinh học phân tử & Chuyển hóa: `5' \to 3'`, `3' \to 5'`, `\text{A}-\text{T}`, `\text{G}-\text{X}`, `\text{ATP}, \text{ADP}, \text{NADH}, \text{FADH}_2`.
+
+### 7.3 Hòa đồng KaTeX Typography & Bố cục lưới phương án
 1. **Hòa đồng KaTeX & Typography**:
    - KaTeX inline: kích thước `1.02em`, `vertical-align: -0.06em` khớp phông chữ `Be Vietnam Pro`.
    - Phân số inline ưu tiên `\tfrac`.
-   - Chuẩn hóa ký hiệu: `\vec{v}`, `^\circ\text{C}`, `\Omega`, `\Delta t`, `\angle A`.
+   - Mọi biểu thức công thức bắt buộc render qua font `KaTeX_Main` / `KaTeX_Math`, không fallback về sans-serif thường.
 2. **Bố cục lưới phương án (Dynamic Option Grid)**:
    - Ngắn ($\le 14$ ký tự): 4 cột (1 dòng).
    - Trung bình ($15 - 35$ ký tự): 2 cột (2 dòng).
@@ -123,7 +173,7 @@ Khi đề thi có cấu trúc nhiều phần và số thứ tự câu hỏi lặ
 
 ---
 
-## 7. Danh Mục Điểm Triển Khai & Kiểm Thử
+## 8. Danh Mục Điểm Triển Khai & Kiểm Thử
 
 - `apps/web/src/lib/text-sanitizer.ts`: Khử nhiễu văn bản, bảo toàn `\f` (`\x0C`), bảo vệ dấu nhân toán học `*`.
 - `apps/web/src/lib/exam-layout.ts`: Tách ranh giới dính dòng, xếp phương án A–D, nhận diện dạng câu hỏi bottom-up.

@@ -215,4 +215,85 @@ BẢNG ĐÁP ÁN
       expect(parsed.questions[1].options.find(o => parsed.questions[1].correctOptionIds.includes(o.id))?.letter).toBe('A');
     });
   });
+
+  describe('3. Phân định nghiêm ngặt nhãn đáp án (A. B. C. D.) vs ý con trong câu hỏi (A) B) C) D) / a) b) c) d))', () => {
+    it('giữ nguyên các ý A) B) C) D) và a) b) c) d) trong thân câu hỏi (stem), chỉ tách A. B. C. D. làm phương án trả lời', () => {
+      const code = `PHẦN I. TRẮC NGHIỆM
+Câu 1: Cho các bước tiến hành thí nghiệm sau:
+A) Cho dung dịch NaOH vào ống nghiệm.
+B) Nhỏ thêm vài giọt dung dịch CuSO4.
+C) Lắc đều ống nghiệm.
+D) Đun nóng nhẹ hỗn hợp.
+Thứ tự các bước đúng để thu được kết tủa xanh lam là:
+A. A - B - C
+*B. A - C - B
+C. B - A - D
+D. D - C - B - A
+
+Câu 2: Cho các phát biểu sau về quá trình quang hợp:
+a) Diễn ra ở lục lạp của tế bào thực vật.
+b) Giải phóng khí O2 từ quá trình quang phân li nước.
+c) Pha tối chỉ diễn ra khi không có ánh sáng.
+d) Sử dụng nguyên liệu là CO2 và H2O.
+Số phát biểu đúng là:
+A. 1
+B. 2
+*C. 3
+D. 4`;
+
+      const parsed = parseExamCode(code);
+      expect(parsed.questions).toHaveLength(2);
+
+      // Câu 1: A) B) C) D) phải nằm nguyên trong stem, options chỉ gồm A. B. C. D.
+      const q1 = parsed.questions[0];
+      expect(q1.type).toBe('single');
+      expect(q1.options).toHaveLength(4);
+      expect(q1.options.map(o => o.text)).toEqual(['A - B - C', 'A - C - B', 'B - A - D', 'D - C - B - A']);
+      expect(q1.stem).toContain('A) Cho dung dịch NaOH');
+      expect(q1.stem).toContain('B) Nhỏ thêm vài giọt');
+      expect(q1.stem).toContain('C) Lắc đều ống nghiệm');
+      expect(q1.stem).toContain('D) Đun nóng nhẹ hỗn hợp');
+
+      // Câu 2: a) b) c) d) phải nằm nguyên trong stem, options chỉ gồm A. 1, B. 2, C. 3, D. 4
+      const q2 = parsed.questions[1];
+      expect(q2.type).toBe('single');
+      expect(q2.options).toHaveLength(4);
+      expect(q2.options.map(o => o.text)).toEqual(['1', '2', '3', '4']);
+      expect(q2.stem).toContain('a) Diễn ra ở lục lạp');
+      expect(q2.stem).toContain('d) Sử dụng nguyên liệu');
+
+      // Kiểm tra đồng bộ với analyzeDocument (server reader) và parseExamPro
+      const analysis = analyzeDocument(code);
+      expect(analysis.questions).toHaveLength(2);
+      expect(analysis.questions[0].options).toEqual(['A - B - C', 'A - C - B', 'B - A - D', 'D - C - B - A']);
+      expect(analysis.questions[0].stem).toContain('A) Cho dung dịch NaOH');
+      expect(analysis.questions[1].options).toEqual(['1', '2', '3', '4']);
+      expect(analysis.questions[1].stem).toContain('a) Diễn ra ở lục lạp');
+
+      const pro = parseExamPro(code, 'Test A. vs A) a)');
+      expect(pro.questions[0].question_stem).toContain('A) Cho dung dịch NaOH');
+      expect(pro.questions[0].options).toHaveLength(4);
+      expect(pro.questions[1].question_stem).toContain('a) Diễn ra ở lục lạp');
+      expect(pro.questions[1].options).toHaveLength(4);
+    });
+
+    it('không bao giờ biến A) B) C) D) thành phương án trả lời khi câu hỏi không có A. B. C. D.', () => {
+      const code = `PHẦN III. TRẢ LỜI NGẮN
+Câu 1: Cho các chất sau:
+A) NaCl
+B) CaCO3
+C) BaSO4
+D) KOH
+Có bao nhiêu chất tan tốt trong nước ở điều kiện thường?
+Đáp án: 2`;
+
+      const parsed = parseExamCode(code);
+      expect(parsed.questions).toHaveLength(1);
+      expect(parsed.questions[0].type).toBe('short');
+      expect(parsed.questions[0].options).toHaveLength(0);
+      expect(parsed.questions[0].stem).toContain('A) NaCl');
+      expect(parsed.questions[0].stem).toContain('D) KOH');
+      expect(parsed.questions[0].acceptedAnswers).toEqual(['2']);
+    });
+  });
 });

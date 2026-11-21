@@ -12,10 +12,10 @@ export function unglueExamText(value: string): { text: string; notices: LayoutNo
   text = text.replace(/([^\s])(?=(?:Câu|Cau|Question|Bài)\s*\d+\s*[.:)]\s*)/gu, '$1\n');
   text = text.replace(/([^\s])(?=(?:PHẦN|PHAN|Phần)\s+[IVXABC\d]+(?:[.:)]|\s))/gu, '$1\n');
   text = text.replace(/([^\sIVX\n])(?=[IVX]+[.]\s*Trắc nghiệm)/gu, '$1\n');
-  // Split option boundaries only where multiple explicit labels establish an option run.
+  // Split option boundaries only where multiple explicit uppercase dot labels (A. B. C. D.) establish an option run.
   text = text.split('\n').map(line => {
     if (answer.test(line)) return line;
-    const labels = [...line.matchAll(/\*?([A-H])[.)]\s+/g)];
+    const labels = [...line.matchAll(/\*?([A-H])\.\s+/g)];
     if (new Set(labels.map(label => label[1])).size < 2) return line;
     let next = line;
     for (let index = labels.length - 1; index >= 0; index--) {
@@ -38,8 +38,8 @@ export function bottomUpLayout(input: string[], section = '', explicitType?: Que
   const notices: LayoutNotice[] = [];
   const heading = foldExamText(section);
   const labels = body.flatMap((line, index) => {
-    const match = line.match(/^(?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*(?:([A-H])[.)]|[\(\[]([A-H])[\)\]]|([A-H])\*[.)])\s+(.+)$/u);
-    const label = (match ? (match[1] || match[2] || match[3]) : '').toUpperCase();
+    const match = line.match(/^(?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*(?:([A-H])\.|([A-H])\*\.)\s+(.+)$/u);
+    const label = (match ? (match[1] || match[2]) : '').toUpperCase();
     return label ? [{ label, text: line, index }] : [];
   });
   if (labels.length && body.some(line => /^[A-H]\d[^\s]*$/u.test(line))) notices.push({ code: 'OCR_OPTION_LABEL_UNRESOLVED', message: 'Có dòng nghi lỗi OCR nhãn/số (ví dụ D15/0). Giữ nguyên nội dung, cần đối chiếu bản gốc; không tự bổ sung chữ số.', requiresReview: true });
@@ -108,8 +108,8 @@ export function bottomUpLayout(input: string[], section = '', explicitType?: Que
     notices.push({ code: 'UNRESOLVED_VERDICT_TABLE', message: 'Chưa đọc đủ cột/nhận định trong bảng Đúng/Sai; cần đối chiếu file gốc.', requiresReview: true });
     return { lines, kind: 'boolean', notices, choiceFooter: false };
   }
-  if (/dung\s*[/–-]?\s*sai/.test(heading) || body.slice(1).some(line => /^[a-h][)]\s+/u.test(line))) {
-    if (!body.slice(1).some(line => /^\*?[a-hA-H][.)]\s+/u.test(line))) {
+  if (/dung\s*[/–-]?\s*sai/.test(heading) || (!labels.length && body.slice(1).some(line => /^[a-h][)]\s+/u.test(line)))) {
+    if (!body.slice(1).some(line => /^\*?(?:[A-H]\.|[a-h][.)])\s+/u.test(line))) {
       if (body.length === 1) return { lines: ['Xác định nhận định đúng hay sai.', `a) ${body[0]}`, ...tail.map(line => line.replace(/^(Đáp án|Trả lời)\s*:\s*(Đúng|Sai|Đ|S)\s*$/iu, '$1: a - $2'))], kind: 'boolean', notices, choiceFooter: false };
       const numeric = body.slice(1).every(line => /^\d+[.)-]\s+/.test(line));
       if (numeric || /phat bieu nao dung.*phat bieu nao sai|tinh dung.*sai|nhan dinh.*dung.*sai/.test(foldExamText(body[0]))) {

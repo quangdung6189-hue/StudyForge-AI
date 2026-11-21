@@ -13,7 +13,8 @@ import { ExamValidationSummary } from './ExamValidationSummary';
 import './code-exam-studio.css';
 import './exam-review.css';
 import { MathText } from '@/components/common/MathText';
-import { hasMathContent } from '@/lib/math-normalizer';
+import { convertPlainFormulasToLatex, hasMathContent } from '@/lib/math-normalizer';
+import { StemFormulaToolbar } from './StemFormulaToolbar';
 export { parseExamCode, isSectionHeader, normalizeLine } from '@/lib/code-exam-parser';
 
 type Saved = { id: string; code: string; title: string; minutes: number; revision: number; sourceDocumentId: string | null; savedAt: string };
@@ -51,6 +52,7 @@ export function CodeExamStudio({ initialCode, documentText, documentTitle, sourc
   const importDialog = useRef<HTMLDialogElement>(null);
   const id = useRef(''), revision = useRef(0), source = useRef(sourceDocumentId ?? null), lastSaved = useRef('');
   const inFlight = useRef<Promise<Saved> | null>(null), alive = useRef(true), text = useRef<HTMLTextAreaElement>(null), gutter = useRef<HTMLDivElement>(null);
+  const lastFocusedField = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
   const restoreFailure = useRef(false);
   const pendingVisualEdit = useRef(false);
   const history = useRef<string[]>([]), future = useRef<string[]>([]), skipDirty = useRef(false);
@@ -201,6 +203,44 @@ export function CodeExamStudio({ initialCode, documentText, documentTitle, sourc
     setNotice('Đã chuẩn hóa dãn dòng thông thoáng và phân cách các phần.');
   };
 
+  const normalizeAllFormulas = () => {
+    const converted = convertPlainFormulasToLatex(currentCode.current);
+    change(converted);
+    setNotice('Đã nhận diện và chuyển toàn bộ ký tự công thức Toán – Lý – Hóa – Sinh sang phông chữ công thức chuẩn KaTeX.');
+  };
+
+  const insertFormulaAtCursor = (latexWrapped: string) => {
+    const field = lastFocusedField.current;
+    if (field && field !== text.current && document.body.contains(field)) {
+      const start = field.selectionStart ?? field.value.length;
+      const end = field.selectionEnd ?? field.value.length;
+      const nextVal = field.value.slice(0, start) + latexWrapped + field.value.slice(end);
+      field.value = nextVal;
+      field.focus();
+      const caret = start + latexWrapped.length;
+      field.setSelectionRange(caret, caret);
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.dispatchEvent(new Event('blur', { bubbles: true }));
+      setNotice(`Đã chèn công thức ${latexWrapped} vào ô đang chọn.`);
+      return;
+    }
+    const area = text.current;
+    if (area) {
+      const start = area.selectionStart ?? currentCode.current.length;
+      const end = area.selectionEnd ?? currentCode.current.length;
+      const nextCode = currentCode.current.slice(0, start) + latexWrapped + currentCode.current.slice(end);
+      change(nextCode);
+      requestAnimationFrame(() => {
+        area.focus();
+        const caret = start + latexWrapped.length;
+        area.setSelectionRange(caret, caret);
+      });
+    } else {
+      change(currentCode.current + (currentCode.current.endsWith(' ') || !currentCode.current ? '' : ' ') + latexWrapped);
+    }
+    setNotice(`Đã chèn công thức ${latexWrapped} bằng phông chuẩn KaTeX.`);
+  };
+
   const addQuestion = (type: QuestionType) => {
     const q: ExamQuestion = { id: '', globalIndex: 0, number: Math.max(0, ...parsed.questions.map(q => q.number)) + 1, group: active?.group ?? '', type, stem: 'Nội dung câu hỏi mới', options: type === 'single' || type === 'multiple' ? ['A', 'B', 'C', 'D'].map(letter => ({ id: letter, letter, text: `Phương án ${letter}` })) : [], statements: type === 'boolean' ? ['a', 'b', 'c', 'd'].map(letter => ({ id: letter, letter, text: `Nhận định ${letter}`, verdict: null })) : [], correctOptionIds: [], acceptedAnswers: [], points: 1, explanation: '', startLine: 0, endLine: 0, sourceText: '', issues: [], answerEvidence: [], hasAnswer: false, hasImage: false, imageRefs: [] };
     change(code.trimEnd() + '\n\n' + questionCode(q));
@@ -228,7 +268,12 @@ export function CodeExamStudio({ initialCode, documentText, documentTitle, sourc
     setShowImport(false); setImportText(''); setNotice('Đã nhập nội dung. Đối chiếu các câu cần xác minh trước khi dùng.');
   };
 
-  return <section className={`ux exam-studio ${full ? 'exam-full' : ''} exam-view-${view}`} onInputCapture={event => {
+  return <section className={`ux exam-studio ${full ? 'exam-full' : ''} exam-view-${view}`} onFocusCapture={event => {
+    const target = event.target;
+    if ((target instanceof HTMLTextAreaElement || (target instanceof HTMLInputElement && target.type === 'text')) && !target.closest('.stem-formula-toolbar') && !target.closest('.exam-settings') && !target.closest('.exam-search')) {
+      lastFocusedField.current = target;
+    }
+  }} onInputCapture={event => {
     const target = event.target;
     if (target instanceof HTMLTextAreaElement && target.closest('.exam-card') && !target.closest('.exam-answer-composer')) { pendingVisualEdit.current = true; setSaveState('dirty'); }
   }} onBlurCapture={event => { if (event.target instanceof HTMLTextAreaElement && event.target.closest('.exam-card')) pendingVisualEdit.current = false; }} onKeyDown={event => {
@@ -237,7 +282,8 @@ export function CodeExamStudio({ initialCode, documentText, documentTitle, sourc
   }} aria-label="Trình biên soạn đề thi">
     <header className="exam-heading"><div><span className="exam-eyebrow">STUDYFORGE / ASSESSMENT STUDIO</span><h3>Trình biên soạn đề thi</h3><p>Soạn chính xác. Rõ nguồn đáp án. Chủ động kiểm duyệt.</p></div><button className="exam-icon-button" type="button" onClick={() => { setGuideStep(0); setHelp(true); }}>? <span>Hướng dẫn</span></button></header>
     <div className="exam-settings"><label className="exam-title-label">Tên đề<input value={title} onChange={event => setTitle(event.target.value)} placeholder="Ví dụ: Kiểm tra giữa kỳ · Tin học 10" maxLength={200}/></label><label>Thời gian<div className="exam-number"><input aria-label="Thời gian làm bài" type="number" min={1} max={1440} value={minutes} onChange={event => setMinutes(Number(event.target.value))}/><span>phút</span></div></label><div className="exam-score"><small>Tổng điểm</small><b>{Number(total.toFixed(4))}<span> / 10</span></b></div><div className="exam-save-state" data-state={saveState} role="status"><svg viewBox="0 0 24 20" aria-hidden="true"><path d="M7 16.5h10.5a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.4 7.6 4.5 4.5 0 0 0 7 16.5z"/>{saveState === 'saved' && <path className="exam-save-check" d="M9.3 12l2.2 2.1 4-4.2"/>}</svg><span>{saveState === 'saved' ? `Đã lưu ${savedAt ? new Date(savedAt).toLocaleTimeString('vi', { hour: '2-digit', minute: '2-digit' }) : ''}` : saveState === 'saving' ? 'Đang lưu nháp…' : saveState === 'loading' ? 'Đang mở nháp…' : saveState === 'error' ? 'Chưa lưu được' : 'Có thay đổi chưa lưu'}</span></div></div>
-    <div className="exam-toolbar"><div className="exam-tool-group"><button type="button" onClick={undo} disabled={!history.current.length} title="Hoàn tác">↶ <span>Hoàn tác</span></button><button type="button" onClick={redo} disabled={!future.current.length} title="Làm lại">↷</button><span className="exam-divider"/><button type="button" onClick={() => setShowImport(true)}>Nhập đề</button><details className="exam-menu"><summary>＋ Thêm câu</summary><div>{Object.entries(QUESTION_LABELS).map(([value, label]) => <button key={value} type="button" onClick={event => { addQuestion(value as QuestionType); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{label}</button>)}</div></details><details className="exam-menu"><summary>Công cụ ⌄</summary><div><button type="button" onClick={() => { change(allocateExamPoints(code)); setNotice('Đã phân bổ điểm, tổng đúng 10. Các ý đúng–sai chia đều trong câu.'); }}>Chia đều thang điểm 10</button><button type="button" onClick={() => { if (!parsed.questions.length) return; change(normalizeExamCode(code)); setNotice('Đã chuẩn hóa cấu trúc. Kiểm tra cảnh báo trước khi áp dụng.'); }}>Chuẩn hóa văn bản</button><button type="button" onClick={beautifySpacing}>Dãn dòng thoáng & cấu trúc chuẩn</button><button type="button" onClick={async () => { try { await navigator.clipboard.writeText(code); setNotice('Đã sao chép văn bản đề.'); } catch { setError('Trình duyệt không cho sao chép. Hãy chọn văn bản trong editor.'); } }}>Sao chép văn bản</button><button type="button" onClick={() => { const blob = new Blob([JSON.stringify({ format: 'studyforge.exam.v1', title, minutes, code }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = 'studyforge-exam.json'; a.click(); URL.revokeObjectURL(url); }}>Xuất bản soạn JSON</button><button type="button" onClick={() => { if (window.confirm('Thay nội dung đang soạn bằng đề mẫu? Có thể Hoàn tác.')) change(EXAM_SAMPLE); }}>Mở đề mẫu ba dạng</button>{documentText && <button type="button" onClick={() => { if (window.confirm('Nạp lại nội dung tài liệu gốc? Có thể Hoàn tác.')) { change(documentText); source.current = sourceDocumentId ?? null; } }}>Nạp lại tài liệu nguồn</button>}</div></details></div><div className="exam-view-tabs" ref={tabs} role="tablist" aria-label="Chế độ biên soạn"><span ref={pill} className="exam-view-pill" aria-hidden="true"/>{([['split', 'Song song'], ['visual', 'Trực quan'], ['code', 'Văn bản']] as const).map(([value, label], i) => <button type="button" role="tab" id={`${uid}-${value}`} aria-controls={`${uid}-workspace`} aria-selected={view === value} tabIndex={view === value ? 0 : -1} key={value} onClick={() => setView(value)} onKeyDown={event => { const modes = ['split', 'visual', 'code'] as const; if (['ArrowRight', 'ArrowLeft'].includes(event.key)) { event.preventDefault(); const next = (i + (event.key === 'ArrowRight' ? 1 : -1) + 3) % 3; setView(modes[next]); tabs.current?.querySelectorAll<HTMLButtonElement>('[role=tab]')[next].focus(); } }}>{label}</button>)}</div><button type="button" className="exam-full-button" onClick={() => setFull(!full)}>{full ? '↙ Thu nhỏ' : '⛶ Tập trung'}</button></div>
+    <div className="exam-toolbar"><div className="exam-tool-group"><button type="button" onClick={undo} disabled={!history.current.length} title="Hoàn tác">↶ <span>Hoàn tác</span></button><button type="button" onClick={redo} disabled={!future.current.length} title="Làm lại">↷</button><span className="exam-divider"/><button type="button" onClick={() => setShowImport(true)}>Nhập đề</button><details className="exam-menu"><summary>＋ Thêm câu</summary><div>{Object.entries(QUESTION_LABELS).map(([value, label]) => <button key={value} type="button" onClick={event => { addQuestion(value as QuestionType); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{label}</button>)}</div></details><details className="exam-menu"><summary>Công cụ ⌄</summary><div><button type="button" onClick={() => { change(allocateExamPoints(code)); setNotice('Đã phân bổ điểm, tổng đúng 10. Các ý đúng–sai chia đều trong câu.'); }}>Chia đều thang điểm 10</button><button type="button" onClick={() => { if (!parsed.questions.length) return; change(normalizeExamCode(code)); setNotice('Đã chuẩn hóa cấu trúc. Kiểm tra cảnh báo trước khi áp dụng.'); }}>Chuẩn hóa văn bản</button><button type="button" onClick={normalizeAllFormulas}>Chuẩn hóa phông công thức Toán–Lý–Hóa–Sinh</button><button type="button" onClick={beautifySpacing}>Dãn dòng thoáng & cấu trúc chuẩn</button><button type="button" onClick={async () => { try { await navigator.clipboard.writeText(code); setNotice('Đã sao chép văn bản đề.'); } catch { setError('Trình duyệt không cho sao chép. Hãy chọn văn bản trong editor.'); } }}>Sao chép văn bản</button><button type="button" onClick={() => { const blob = new Blob([JSON.stringify({ format: 'studyforge.exam.v1', title, minutes, code }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = 'studyforge-exam.json'; a.click(); URL.revokeObjectURL(url); }}>Xuất bản soạn JSON</button><button type="button" onClick={() => { if (window.confirm('Thay nội dung đang soạn bằng đề mẫu? Có thể Hoàn tác.')) change(EXAM_SAMPLE); }}>Mở đề mẫu ba dạng</button>{documentText && <button type="button" onClick={() => { if (window.confirm('Nạp lại nội dung tài liệu gốc? Có thể Hoàn tác.')) { change(documentText); source.current = sourceDocumentId ?? null; } }}>Nạp lại tài liệu nguồn</button>}</div></details></div><div className="exam-view-tabs" ref={tabs} role="tablist" aria-label="Chế độ biên soạn"><span ref={pill} className="exam-view-pill" aria-hidden="true"/>{([['split', 'Song song'], ['visual', 'Trực quan'], ['code', 'Văn bản']] as const).map(([value, label], i) => <button type="button" role="tab" id={`${uid}-${value}`} aria-controls={`${uid}-workspace`} aria-selected={view === value} tabIndex={view === value ? 0 : -1} key={value} onClick={() => setView(value)} onKeyDown={event => { const modes = ['split', 'visual', 'code'] as const; if (['ArrowRight', 'ArrowLeft'].includes(event.key)) { event.preventDefault(); const next = (i + (event.key === 'ArrowRight' ? 1 : -1) + 3) % 3; setView(modes[next]); tabs.current?.querySelectorAll<HTMLButtonElement>('[role=tab]')[next].focus(); } }}>{label}</button>)}</div><button type="button" className="exam-full-button" onClick={() => setFull(!full)}>{full ? '↙ Thu nhỏ' : '⛶ Tập trung'}</button></div>
+    <StemFormulaToolbar onInsert={insertFormulaAtCursor} onNormalizeAll={normalizeAllFormulas} />
     {error && <div className="exam-alert" role="alert">{error}<button type="button" aria-label="Đóng thông báo lỗi" onClick={() => setError('')}>×</button></div>}
     <div className="exam-review-strip" aria-label="Tổng quan kiểm tra">
       <div><span className="exam-eyebrow">KIỂM TRA THEO TỪNG NGUYÊN NHÂN</span><b>{reviewSummary.answered}/{parsed.questions.length} câu đã có đáp án</b><small>Đáp án, xác minh và cách chấm là các trạng thái riêng.</small></div>

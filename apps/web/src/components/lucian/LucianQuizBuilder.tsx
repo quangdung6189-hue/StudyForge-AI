@@ -7,7 +7,9 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { DocumentDTO, FullQuestionDTO, QuestionType } from '@studyforge/contracts';
 import { CodeExamStudio } from './CodeExamStudio';
+import { StemFormulaToolbar } from './StemFormulaToolbar';
 import { MathText } from '@/components/common/MathText';
+import { convertPlainFormulasToLatex } from '@/lib/math-normalizer';
 import './quiz-builder.css';
 import './quiz-builder-app.css';
 
@@ -396,7 +398,17 @@ export function LucianQuizBuilder() {
             <h3><MathText text={q.stem} /></h3><div className="studio-options">{q.options.map((option, i) => <div className={q.correctOptionIds.includes(option.id) ? 'correct' : ''} key={option.id}><b>{q.type === 'boolean' ? '' : `${String.fromCharCode(65 + i)}. `}</b><MathText text={option.text} inline />{q.correctOptionIds.includes(option.id) && <strong> ✓</strong>}</div>)}</div>
             {q.acceptedAnswers.length > 0 && <div className="studio-text-answer"><b>Đáp án chấp nhận: </b>{q.acceptedAnswers.join(' / ')}</div>}
             <details className="studio-solution" open><summary>Lời giải chi tiết</summary><p>{q.explanation}</p>{q.sourceRefs.length > 0 && <><b>Căn cứ trong tài liệu</b>{q.sourceRefs.map((ref, i) => <blockquote key={`${ref.chunkId}-${i}`}>{ref.quote}</blockquote>)}</>}</details>
-            <details className="studio-editor"><summary>Chỉnh câu hỏi, đáp án và lời giải</summary><fieldset disabled={busy} className="studio-fieldset"><label className="studio-label">Nội dung câu hỏi<textarea className="studio-input" value={q.stem} onChange={event => edit(q.id, { stem: event.target.value })}/></label>
+            <details className="studio-editor"><summary>Chỉnh câu hỏi, đáp án và lời giải</summary><fieldset disabled={busy} className="studio-fieldset">
+              <StemFormulaToolbar
+                compact
+                onInsert={(latexWrapped) => edit(q.id, { stem: `${q.stem}${q.stem.endsWith(' ') || !q.stem ? '' : ' '}${latexWrapped}` })}
+                onNormalizeAll={() => edit(q.id, {
+                  stem: convertPlainFormulasToLatex(q.stem),
+                  options: q.options.map(o => ({ ...o, text: convertPlainFormulasToLatex(o.text) })),
+                  explanation: convertPlainFormulasToLatex(q.explanation),
+                })}
+              />
+              <label className="studio-label">Nội dung câu hỏi<textarea className="studio-input" value={q.stem} onChange={event => edit(q.id, { stem: event.target.value })}/></label>
               {q.options.length > 0 ? q.options.map(option => <div className="studio-edit-option" key={option.id}><label><input type={q.type === 'multiple' ? 'checkbox' : 'radio'} name={`answer-${q.id}`} checked={q.correctOptionIds.includes(option.id)} aria-label={`Đáp án đúng: ${option.text}`} onChange={() => edit(q.id, { answerOrigin: 'teacher', correctOptionIds: q.type === 'multiple' ? q.correctOptionIds.includes(option.id) ? q.correctOptionIds.filter(id => id !== option.id) : [...q.correctOptionIds, option.id] : [option.id] })}/></label><input className="studio-input" aria-label={`Phương án ${option.text}`} value={option.text} readOnly={q.type === 'boolean'} onChange={event => edit(q.id, { answerOrigin: 'teacher', options: q.options.map(o => o.id === option.id ? { ...o, text: event.target.value } : o) })}/></div>) : <label className="studio-label">Đáp án chấp nhận (mỗi dòng một cách trả lời)<textarea className="studio-input" value={q.acceptedAnswers.join('\n')} onChange={event => edit(q.id, { answerOrigin: 'teacher', acceptedAnswers: event.target.value.split('\n') })}/></label>}
               <label className="studio-label">Lời giải<textarea className="studio-input studio-explanation-input" value={q.explanation} onChange={event => edit(q.id, { explanation: event.target.value })}/></label></fieldset></details>
             <label className="studio-review"><input type="checkbox" checked={q.reviewed} disabled={busy} onChange={event => { setSaveNotice(''); setQuestions(current => current.map(item => item.id === q.id ? { ...item, reviewed: event.target.checked } : item)); }}/>Tôi đã kiểm tra câu hỏi, đáp án và lời giải</label>

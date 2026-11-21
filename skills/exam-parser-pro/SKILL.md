@@ -22,8 +22,11 @@ Không hứa chính xác tuyệt đối với OCR/file tùy ý. Skill là quy tr
 
 ### Nhóm 1: Trắc nghiệm 1 đáp án (MULTIPLE_CHOICE / single)
 
-1. Tìm cụm kết quả A–D cuối phần thân, trước đáp án/lời giải. Nếu có đủ nhãn riêng biệt và chỉ có 1 đáp án đúng -> `MULTIPLE_CHOICE`.
-2. Bảng ghép nối `1,2… / a),b)…`, danh sách phát biểu nằm trước A–D phải giữ trong `question_stem`; không biến thành các câu đúng–sai riêng.
+1. **Phân định nghiêm ngặt nhãn phương án trả lời (`A. B. C. D.`) vs ý con trong thân câu hỏi (`A) B) C) D)` / `a) b) c) d)`)**:
+   - **Phương án trả lời (`options`)**: Bắt buộc là chữ cái in hoa đi kèm **dấu chấm** (`A.`, `B.`, `C.`, `D.`, hoặc có dấu đáp án `*A.`, `A*.`, `✓ A.`, `[x] A.`).
+   - **Ý con trong câu hỏi (`question_stem`)**: Các nhãn có dấu ngoặc đơn như **`A)`, `B)`, `C)`, `D)`**, hoặc chữ thường **`a)`, `b)`, `c)`, `d)`**, **`a.`, `b.`, `c.`, `d.`**, **`(a)`, `(b)`** là các mệnh đề/ý liệt kê thuộc phần thân câu hỏi (`question_stem`), **TUYỆT ĐỐI KHÔNG tách thành phương án trả lời** của câu trắc nghiệm.
+   - Tìm cụm kết quả `A. B. C. D.` ở cuối phần thân, trước đáp án/lời giải. Nếu có đủ nhãn riêng biệt và chỉ có 1 đáp án đúng -> `MULTIPLE_CHOICE`.
+2. Bảng ghép nối `1,2… / a),b)…`, danh sách phát biểu `a), b), c), d)` hoặc các bước `A), B), C), D)` nằm trước cụm phương án `A. B. C. D.` phải giữ nguyên vẹn trong `question_stem`; không biến thành các câu đúng–sai riêng và không nhận nhầm là phương án trả lời.
 3. Cột PDF A,C,B,D: sắp theo nhãn, giữ nguyên text và khóa theo nhãn. Không sắp theo nội dung/ngữ nghĩa. Nhãn trùng hoặc thiếu báo lỗi.
 
 ### Nhóm 2: Trắc nghiệm chọn nhiều ý đúng (MULTIPLE_SELECT / multiple)
@@ -112,15 +115,21 @@ Runtime export `studyforge.exam-parser-pro.v1` có `exam_metadata`, `questions`,
 - `hasImage` không ảnh hưởng type classification; không lưu binary image data; không tự sinh mô tả.
 
 
-## 5.1 Quy chuẩn hiển thị Toán - Lý & Hòa đồng Typography (Math-Text Typography Harmony)
+## 5.1 Quy chuẩn Công thức Toán – Lý – Hóa – Sinh, Nhận diện Phông chữ Công thức & Hòa đồng Typography
 
+> **Nguyên tắc cốt lõi**: Tuyệt đối không dùng ký tự văn bản thường để biểu diễn công thức. Mọi biểu thức Toán, Vật lý, Hóa học, Sinh học phải được chuyển về LaTeX/KaTeX (`$...$`, `\ce{...}`) và hiển thị bằng phông chữ công thức chuẩn (`KaTeX_Math`, `KaTeX_Main`).
+
+- **Nhận diện Phông chữ Công thức từ OOXML/PDF (`Formula Font Recognition`)**:
+  - **OMML & MathType OLE**: Giải mã `<m:oMath>`, `<m:oMathPara>` và OLE `Equation Native` (MTEF v3/v5) sang LaTeX.
+  - **Symbol & Math Fonts (`<w:rFonts>` & `<w:sym>`)**: Bắt buộc kiểm tra thuộc tính phông chữ của từng run (`Symbol`, `MT Extra`, `Euclid Symbol`, `Euclid Extra`, `Euclid Math One/Two`, `Cambria Math`). Chuyển đổi toàn bộ mã ký tự private-use (`\uF000-\uF0FF`) và ASCII-mapped Greek/Math glyphs sang lệnh LaTeX chuẩn (`\alpha, \beta, \gamma, \Delta, \Omega, \mu, \lambda, \pi, \rightleftharpoons, \uparrow, \downarrow...`).
+  - **Chỉ số trên/dưới (`<w:vertAlign w:val="superscript|subscript"/>`)**: Gom cơ số và chỉ số liền kề trong DOCX/PDF để chuyển thành LaTeX `$..._{...}^{...}$` (ví dụ `H` + sub `2` + `SO` + sub `4` $\rightarrow$ `$\text{H}_2\text{SO}_4$` hoặc `$\ce{H2SO4}$`, `Fe` + sup `3+` $\rightarrow$ `$\text{Fe}^{3+}$`, `X` + sup `A` + `X` + sup `a` $\rightarrow$ `$\text{X}^{\text{A}}\text{X}^{\text{a}}$`), không để mất định dạng thành text phẳng (`H2SO4`, `Fe3+`).
 - **KaTeX Font Matching**: Tỷ lệ kích thước công thức KaTeX nội dòng (`.math-inline`) cố định ở `1.02em`, đường gióng `vertical-align: -0.06em` khớp chuẩn với phông chữ `Be Vietnam Pro` của đề thi; phân số nội dòng ưu tiên `\tfrac` để tránh phình khoảng cách dòng.
-- **Ký hiệu Vật lí & Toán học chuyên ngành**:
-  - Vectơ: `\vec{v}`, `\vec{F}`, `\vec{a}`, `\vec{p}`.
-  - Ký hiệu độ Celsius: `$37^\circ\text{C}$` (không để số và chữ C bị tách rời).
-  - Đơn vị điện học / quang học: `$100\ \Omega$`, `$10\ \mu\text{F}$`, `$\lambda$`.
-  - Đại lượng biến thiên: `$\Delta t$`, `$\Delta x$`, `$\Delta l$`.
-  - Góc hình học: `$\widehat{ABC}$`, `$\angle A$`.
+- **Ký hiệu Toán – Lý – Hóa – Sinh chuyên ngành**:
+  - **Toán học**: Phân số `\tfrac{a}{b}`, căn `\sqrt[n]{x}`, tích phân `\int`, tổng `\sum`, giới hạn `\lim`, hệ phương trình `\begin{cases}...\end{cases}`, góc `\widehat{ABC}`, `\angle A`, tập hợp `\in, \subset, \cup, \cap, \emptyset, \mathbb{R}`.
+  - **Vật lí**: Vectơ `\vec{v}, \vec{F}, \vec{a}, \vec{p}, \vec{E}, \vec{B}`; nhiệt độ `$37^\circ\text{C}$`; đơn vị `$100\ \Omega$`, `$10\ \mu\text{F}$`, `$\lambda$`; biến thiên `$\Delta t, \Delta x, \Delta \varphi$`; hạt nhân `${}^{A}_{Z}\text{X}$`.
+  - **Hóa học (`mhchem` / LaTeX)**: Phân tử & ion `$\text{H}_2\text{SO}_4$`, `$\text{SO}_4^{2-}$`; mũi tên phản ứng `$\xrightarrow{t^\circ, \text{xt}}$`, thuận nghịch `$\rightleftharpoons$`; kết tủa `$\downarrow$`, bay hơi `$\uparrow$`; cấu hình electron `$1s^2 2s^2 2p^6$`.
+  - **Sinh học**: Phép lai `$\text{P}, \text{F}_1, \text{F}_2, \times, \female, \male$`; bộ NST `$2n = 46, 2n+1, 2n-1$`; kiểu gen liên kết & giới tính `$\text{X}^{\text{A}}\text{X}^{\text{a}}$`, `$\frac{\underline{\text{AB}}}{\text{ab}}$`; chiều mạch polynucleotide `$5' \to 3'$`.
+- **Bộ công cụ gõ ký tự STEM (Visual Formula Toolbar)**: Cung cấp bảng chèn nhanh ký tự và mẫu công thức theo 4 phân môn Toán – Lý – Hóa – Sinh trong trình soạn thảo, xuất trực tiếp LaTeX chuẩn render bằng phông KaTeX.
 
 ## 5.2 Phân định rạch ròi Hình ảnh minh họa thật vs Công thức/Ký hiệu Inline & Bố cục lưới phương án
 

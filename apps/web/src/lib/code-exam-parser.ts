@@ -134,20 +134,36 @@ export function parseExamCode(code: string, mediaMap?: Record<number, string>): 
     answerEvidence.push(...textParts.answers.map(answer => answer.quote));
     const checkboxLetters = new Set<string>();
     const verdicts = new Map<string, boolean>();
-    const optionStart = layout.choiceFooter ? layout.lines.findIndex((line, index) => index > 0 && /^\*?A[.)]\s+/.test(line)) : -1;
+    const hasBooleanAnswers = answers.some(ans => /([a-h])\s*[-:=]\s*(?:Đúng|Sai|Đ|S|true|false)(?=\s*[,;]|\s*$)/iu.test(ans));
+    const hasInlineBooleanVerdicts = layout.lines.slice(1).some(l => /^[a-h]\)\s+.+\s+(?:ĐÚNG|SAI|Đ|S)(?:\s+[xX✗✘])?\s*$/iu.test(normalizeLine(l)));
+    let optionStart = -1;
+    for (let i = layout.lines.length - 1; i >= 1; i--) {
+      if (/^(?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*(?:A\.|A\*\.)(?:\s+|$)/u.test(normalizeLine(layout.lines[i]))) {
+        optionStart = i;
+        break;
+      }
+    }
+    if (optionStart < 0 && !layout.choiceFooter && type !== 'boolean') {
+      optionStart = layout.lines.findIndex((l, idx) => idx > 0 && /^(?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*(?:[A-H]\.|[A-H]\*\.)\s+/u.test(normalizeLine(l)));
+    }
+    const isActuallyBoolean = optionStart < 0 && (type === 'boolean' || hasBooleanAnswers || hasInlineBooleanVerdicts);
     for (const [bodyIndex, raw] of layout.lines.slice(1).entries()) {
       const line = normalizeLine(raw); if (!line) continue;
-      if (layout.kind === 'essay' || optionStart > 0 && bodyIndex + 1 < optionStart) { stemLines.push(raw); continue; }
-      const choices = [...line.matchAll(/(?:^|\s+)((?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*)(?:([A-Ha-h])[.)]|[\(\[]([A-Ha-h])[\)\]]|([A-Ha-h])\*[.)])\s+(.*?)(?=(?:\s+(?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*(?:[A-Ha-h][.)]|[\(\[][A-Ha-h][\)\]]|[A-Ha-h]\*[.)]))|$)/gu)];
+      if (layout.kind === 'essay' || (optionStart > 0 && bodyIndex + 1 < optionStart)) { stemLines.push(raw); continue; }
+      const choices = [...line.matchAll(/(?:^|\s+)((?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*)(?:([A-H])\.|([A-H])\*\.|([a-h])\))\s+(.*?)(?=(?:\s+(?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*(?:[A-H]\.|[A-H]\*\.|[a-h]\))\s+)|$)/gu)];
       const checkbox = line.match(/^\[([xX ]?)\]\s+(.+)$/);
       if (checkbox) checkboxLetters.add(String.fromCharCode(65 + options.length));
       if (choices.length || checkbox) {
         const entries = checkbox ? [{ label: String.fromCharCode(65 + options.length), text: checkbox[2], marked: checkbox[1].toLowerCase() === 'x', lower: false }] : choices.map(m => {
           const rawLetter = m[2] || m[3] || m[4];
           const prefixMarker = m[1] ?? '';
-          const isMarkedPrefix = /[✓✔√☑*]|\[[xX✓✔√]\]/.test(prefixMarker) || Boolean(m[4]);
-          return { label: rawLetter.toUpperCase(), text: m[5], marked: isMarkedPrefix, lower: rawLetter === rawLetter.toLowerCase() };
+          const isMarkedPrefix = /[✓✔√☑*]|\[[xX✓✔√]\]/.test(prefixMarker) || Boolean(m[3]);
+          return { label: rawLetter.toUpperCase(), text: m[5], marked: isMarkedPrefix, lower: Boolean(m[4]) };
         });
+        if (!checkbox && entries.every(e => e.lower) && !isActuallyBoolean) {
+          stemLines.push(raw);
+          continue;
+        }
         for (const entry of entries) {
           let text = entry.text.trim();
           const hasStar = entry.marked || /\s*\*$/.test(text) || /^\s*\*/.test(text);
@@ -155,7 +171,7 @@ export function parseExamCode(code: string, mediaMap?: Record<number, string>): 
           const hasAnswerTag = /\[\s*Đáp án\s*\*?\s*\]/iu.test(text);
           const isMarked = hasStar || hasCheck || hasAnswerTag;
           text = text.replace(/\[\s*Đáp án\s*\*?\s*\]|(?:^|\s)[✓✔√☑]\s*|\s*[✓✔√☑]\s*$|(?:^|\s)\[[xX✓✔√]\]\s*|\s*\[[xX✓✔√]\]\s*$|^\s*\*|\s*\*$/giu, '').trim();
-          if (entry.lower || type === 'boolean') {
+          if (entry.lower || isActuallyBoolean) {
             type = 'boolean';
             const verdict = text.match(/\s+(ĐÚNG|SAI|Đ|S)(?:\s+[xX✗✘])?\s*$/iu);
             let value: boolean | null = verdict ? !['s', 'sai'].includes(fold(verdict[1])) : isMarked ? true : null;
@@ -277,7 +293,7 @@ export function parseExamCode(code: string, mediaMap?: Record<number, string>): 
     if (match && !(match[3] && current && (!current.plain || current.region !== 'body'))) {
       flush(index); const content = match[2] ?? match[4], part = splitQuestionContent([content]);
       current = { start: index, number: Number(match[1] ?? match[3]), lines: [content], group, kind, plain: !!match[3], region: part.region ?? 'body' };
-    } else if (kind === 'short' && (!current || current.region === 'body' || readAnswerMarker(nextLines[index])?.kind === 'answer') && /\?\s*$/.test(line) && !/^(?:[A-Ha-h][.)]|Đáp án|Trả lời)/iu.test(line)) {
+    } else if (kind === 'short' && (!current || current.plain || current.region !== 'body' || /\?\s*$/.test(current.lines[0] ?? '')) && (!current || current.region === 'body' || readAnswerMarker(nextLines[index])?.kind === 'answer') && /\?\s*$/.test(line) && !/^(?:[A-Ha-h][.)]|Đáp án|Trả lời)/iu.test(line)) {
       flush(index); current = { start: index, number: questions.filter(question => question.group === group).length + 1, lines: [line], group, kind, plain: true, region: 'body' };
     } else if (current) {
       current.lines.push(lines[index]); const part = splitQuestionContent([line]);

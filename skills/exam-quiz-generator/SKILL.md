@@ -55,11 +55,18 @@ description: Design, generate, validate, and publish Vietnamese quizzes and exam
 
 | Dạng câu hỏi | Code contract | Cấu trúc `options` | Cấu trúc đáp án đúng |
 |---|---|---|---|
-| **Trắc nghiệm đơn** | `single` | 2-8 phương án (`{ id, text }`) | `correctOptionIds: [id]` (duy nhất 1 ID) |
-| **Trắc nghiệm chọn nhiều** | `multiple` | 2-8 phương án | `correctOptionIds: [id1, id2, ...]` ($\ge 2$ IDs) |
-| **Đúng / Sai** | `boolean` | Luôn gồm 2 phương án: `['Đúng', 'Sai']` | `correctOptionIds: [id]` |
+| **Trắc nghiệm đơn** | `single` | 2-8 phương án (`{ id, text }`) được trích từ nhãn `A. B. C. D.` (dấu chấm) | `correctOptionIds: [id]` (duy nhất 1 ID) |
+| **Trắc nghiệm chọn nhiều** | `multiple` | 2-8 phương án (`A. B. C. D.`) | `correctOptionIds: [id1, id2, ...]` ($\ge 2$ IDs) |
+| **Đúng / Sai** | `boolean` | Luôn gồm 2 phương án: `['Đúng', 'Sai']` cho từng mệnh đề `a) b) c) d)` (khi câu thuộc phần Đúng–Sai và không có cụm `A. B. C. D.` cuối câu) | `correctOptionIds: [id]` |
 | **Trả lời ngắn** | `short` | Mảng rỗng `[]` | `acceptedAnswers: [val1, val2, ...]` (không dùng `options`) |
 | **Điền chỗ trống** | `fill` | Mảng rỗng `[]` | `acceptedAnswers: [val1, val2, ...]` (không dùng `options`) |
+
+### Quy tắc Bảo toàn Ý con trong Thân câu hỏi & Chuẩn hóa Công thức STEM (Toán – Lý – Hóa – Sinh)
+1. **Phân biệt Nhãn đáp án (`A. B. C. D.`) và Ý con trong câu hỏi (`A) a) b) c) d)`)**:
+   - Trong câu hỏi trắc nghiệm (`single` / `multiple`), chỉ các dòng bắt đầu bằng chữ hoa + dấu chấm (`A.`, `B.`, `C.`, `D.`) mới là phương án trả lời (`options`).
+   - Mọi ý liệt kê dạng `A)`, `B)`, `C)`, `D)` hoặc `a)`, `b)`, `c)`, `d)` nằm trong đề bài là các ý con của câu hỏi, bắt buộc giữ nguyên trong `stem`, không được tách nhầm thành `options`.
+2. **Bắt buộc dùng Phông chữ Công thức (`$LaTeX$` / KaTeX) cho Toán – Lý – Hóa – Sinh**:
+   - Khi AI sinh câu hỏi mới (`ai_generate`), trích xuất đề (`extract_existing`) hoặc viết lời giải (`explanation`), **tất cả** biểu thức Toán học, Vật lý, công thức/phương trình Hóa học (`$\text{H}_2\text{SO}_4$`, `$\text{Fe}^{3+}$`, `$\xrightarrow{t^\circ}$`, `$\rightleftharpoons$`, `$\downarrow$`, `$\uparrow$`) và ký hiệu di truyền Sinh học (`$2n = 46$`, `$\text{X}^{\text{A}}\text{X}^{\text{a}}$`, `$\frac{\underline{\text{AB}}}{\text{ab}}$`, `$\text{F}_1$`) **bắt buộc** bọc trong cú pháp LaTeX `$...$` để hiển thị bằng phông chữ công thức KaTeX, tuyệt đối không xuất dạng ký tự văn bản thuần (`H2SO4`, `Fe3+`, `x^2`).
 
 ---
 

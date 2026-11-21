@@ -203,6 +203,174 @@
   box-shadow: 0 0 0 2px var(--ux-accent-soft);
 }
 
+/* STEM Formula & Symbol Toolbar (Math, Physics, Chemistry, Biology) */
+.stem-formula-toolbar {
+  border: 1px solid var(--ux-line-2);
+  border-radius: 13px;
+  background: var(--ux-surface);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stem-formula-bar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.stem-formula-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.stem-formula-tab {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--ux-line) !important;
+  background: var(--ux-surface-2) !important;
+  color: var(--ux-ink-2) !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.stem-formula-tab.active {
+  background: var(--ux-accent-soft) !important;
+  border-color: var(--ux-accent) !important;
+  color: var(--ux-accent) !important;
+}
+.stem-formula-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stem-formula-convert-btn {
+  padding: 6px 12px !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--ux-accent) !important;
+  background: var(--ux-accent-soft) !important;
+  color: var(--ux-accent) !important;
+}
+.stem-formula-toggle-btn {
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  border-radius: 8px !important;
+  color: var(--ux-ink-3) !important;
+}
+.stem-formula-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ux-line);
+}
+.stem-formula-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 6px;
+  max-height: 165px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.stem-formula-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 8px !important;
+  min-height: 50px;
+  border-radius: 9px !important;
+  border: 1px solid var(--ux-line) !important;
+  background: var(--ux-surface-2) !important;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+.stem-formula-chip:hover {
+  border-color: var(--ux-accent) !important;
+  background: var(--ux-surface) !important;
+  transform: translateY(-1px);
+}
+.stem-formula-chip-math {
+  font-size: 14px;
+  color: var(--ux-ink);
+  line-height: 1.3;
+}
+.stem-formula-chip-label {
+  font-size: 10px;
+  color: var(--ux-ink-3);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.stem-formula-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--ux-surface-2);
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--ux-line);
+}
+.stem-formula-composer-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.stem-formula-composer-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ux-ink-2);
+  white-space: nowrap;
+}
+.stem-formula-composer-input {
+  flex: 1;
+  min-width: 200px;
+  height: 34px;
+  padding: 0 10px !important;
+  font: 12px/1.4 ui-monospace, Consolas, monospace !important;
+  background: var(--ux-surface) !important;
+  border: 1px solid var(--ux-line-2) !important;
+  border-radius: 7px !important;
+}
+.stem-formula-insert-btn {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  background: var(--ux-accent) !important;
+  color: var(--ux-accent-ink) !important;
+  border-color: transparent !important;
+  border-radius: 7px !important;
+}
+.stem-formula-composer-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--ux-line);
+  font-size: 12px;
+}
+.stem-formula-composer-preview small {
+  color: var(--ux-ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+.stem-formula-preview-box {
+  padding: 4px 10px;
+  background: var(--ux-surface);
+  border-radius: 6px;
+  border: 1px solid var(--ux-line-2);
+  font-size: 14px;
+}
+
 
 
 @media(max-width:600px){.quiz-studio .exam-studio .exam-tool-group{gap:3px}.quiz-studio .exam-studio .exam-tool-group>button{padding:8px;font-size:11px}.quiz-studio .exam-studio .exam-outline nav small{display:inline;font-size:8px;max-width:30px;overflow:hidden;text-overflow:clip}.quiz-studio .exam-studio .exam-outline nav>div{max-width:30%;margin:0 2px}.quiz-studio .exam-studio .exam-outline nav button{gap:4px;padding:8px 5px}.quiz-studio .exam-studio .exam-outline nav button b{font-size:10px}}

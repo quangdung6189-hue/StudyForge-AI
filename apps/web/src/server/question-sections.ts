@@ -81,7 +81,7 @@ export function analyzeDocument(text: string) {
     if (question && !(question[2] && current && (!current.plain || current.region !== 'body'))) {
       finish(); const content = splitQuestionContent([question[3]]);
       current = { number: question[1] ?? question[2], lines: [question[3]], type: section, section: sectionName, pageNumber: pageIndex + 1, plain: !!question[2], region: content.region ?? 'body' };
-    } else if (section === 'short' && (!current || current.region === 'body' || readAnswerMarker(nextLine)?.kind === 'answer') && /\?\s*$/.test(line) && !/^(?:[A-Ha-h][.)]|Đáp án|Trả lời)/iu.test(line)) {
+    } else if (section === 'short' && (!current || current.plain || current.region !== 'body' || /\?\s*$/.test(current.lines[0] ?? '')) && (!current || current.region === 'body' || readAnswerMarker(nextLine)?.kind === 'answer') && /\?\s*$/.test(line) && !/^(?:[A-Ha-h][.)]|Đáp án|Trả lời)/iu.test(line)) {
       finish(); current = { number: String(blocks.filter(block => block.section === sectionName).length + 1), lines: [line], type: section, section: sectionName, pageNumber: pageIndex + 1, plain: true, region: 'body' };
     } else if (current) { current.lines.push(originalLine); const content = splitQuestionContent([line]); if (content.region && content.region !== 'body') current.region = content.region; }
     }
@@ -99,13 +99,18 @@ export function analyzeDocument(text: string) {
     const answerLine = answerItem ? [answerItem.quote, answerItem.text] : undefined;
     const sourceText = compactLayout(separated.body.join('\n'));
     const sourceExplanation = textParts.explanation || undefined;
-    const linearized = layout.lines.join('\n').replace(/(?<!^)(?<!\n)\s*([B-Fb-f])[.)]\s+(?=[^\n]{1,200})/g, "\n$1) ");
-    const markers = [...linearized.matchAll(/(?:^|\n|[ \t]+)\*?([A-Fa-f])[.)]\s+/g)];
-    const uppercase = markers.filter(match => match[1] === match[1].toUpperCase());
-    const lower = markers.filter(match => match[1] === match[1].toLowerCase());
+    const linearized = layout.lines.join('\n').replace(/(?<!^)(?<!\n)\s*([B-F]\.|[b-f]\))\s+(?=[^\n]{1,200})/g, '\n$1 ');
+    const allUppercaseDot = [...linearized.matchAll(/(?:^|\n|[ \t]+)(?:[\s*✓✔√☑]|\[[xX✓✔√ ]\])*([A-H])\*?\.\s+/g)];
+    let lastAIdx = -1;
+    for (let i = allUppercaseDot.length - 1; i >= 0; i--) {
+      if (allUppercaseDot[i][1].toUpperCase() === 'A') { lastAIdx = i; break; }
+    }
+    const uppercase = lastAIdx >= 0 ? allUppercaseDot.slice(lastAIdx) : allUppercaseDot;
+    const lower = [...linearized.matchAll(/(?:^|\n|[ \t]+)\*?([a-h])\)\s+/g)];
+    const markers = lower.length ? lower : uppercase;
     const inlineBoolean = /dung\s*[/\-–]?\s*sai/.test(fold(sourceText.slice(0, 100))) || !block.type && markers.filter((match, i) => /\s(?:ĐÚNG|SAI|Đ|S)\s*$/iu.test(linearized.slice(match.index! + match[0].length, markers[i + 1]?.index ?? sourceText.length).trim())).length >= 2;
     const isMultipleStem = /(?:chọn|những|các)\s+(?:phát biểu|đáp án|mệnh đề|khẳng định|ý|câu)\s+(?:đúng|nào đúng)|chọn nhiều|nhiều hơn một đáp án|chọn tất cả/i.test(fold(linearized));
-    let type = layout.choiceFooter ? layout.kind as 'single' | 'multiple' : layout.kind === 'essay' ? 'unsupported' : inlineBoolean ? 'boolean' : block.type ?? layout.kind ?? (uppercase.length >= 2 ? 'single' : lower.length >= 2 ? 'boolean' : /_{2,}|\.{3,}|\(\s*\.{2,}\s*\)|\u2026/.test(linearized) ? 'fill' : /tinh|bao nhieu|gom may|co may|qua trinh nao|neu ten|viet dap|tra loi ngan|dien vao|dien tu|hoan thanh/.test(fold(linearized)) ? 'short' : 'unsupported');
+    let type = layout.choiceFooter ? layout.kind as 'single' | 'multiple' : layout.kind === 'essay' ? 'unsupported' : inlineBoolean && !uppercase.length ? 'boolean' : block.type ?? layout.kind ?? (uppercase.length >= 2 ? 'single' : lower.length >= 2 ? 'boolean' : /_{2,}|\.{3,}|\(\s*\.{2,}\s*\)|\u2026/.test(linearized) ? 'fill' : /tinh|bao nhieu|gom may|co may|qua trinh nao|neu ten|viet dap|tra loi ngan|dien vao|dien tu|hoan thanh/.test(fold(linearized)) ? 'short' : 'unsupported');
     if (isMultipleStem && type === 'single') type = 'multiple';
     const writtenWarnings: string[] = [];
     if (/\[Cần xác minh\]/iu.test(fullText)) writtenWarnings.push('Định dạng đáp án chưa rõ; cần giáo viên đối chiếu bản gốc, không tự điền.');
