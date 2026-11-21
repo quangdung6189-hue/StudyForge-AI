@@ -106,7 +106,9 @@ function createClient(): PrismaClient {
 
   if (process.env.NODE_ENV === 'production' && !url) throw new Error('DATABASE_URL must be configured in production');
   mkdirSync(path.join(root, '.data'), { recursive: true });
-  const sqliteUrl = url ?? process.env.SQLITE_DATABASE_URL ?? `file:${path.join(root, '.data', 'dev.db').replaceAll('\\', '/')}`;
+  const defaultSqlitePath = `file:${path.join(root, '.data', 'dev.db').replaceAll('\\', '/')}`;
+  process.env.SQLITE_DATABASE_URL ??= url ?? defaultSqlitePath;
+  const sqliteUrl = url ?? process.env.SQLITE_DATABASE_URL;
   return new SQLiteClient({ datasourceUrl: sqliteUrl }) as unknown as PrismaClient;
 }
 
