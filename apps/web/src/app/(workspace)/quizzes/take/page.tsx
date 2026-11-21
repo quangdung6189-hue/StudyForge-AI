@@ -310,12 +310,12 @@ export default function TakeQuizPage() {
             height: 50px;
             border-radius: 12px;
             background: var(--ux-accent);
-            color: var(--ux-accent-ink, #FFFFFF);
+            color: #FFFFFF;
             border: none;
             font-size: 15px;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--ux-accent) 30%, transparent), 0 4px 6px -4px color-mix(in srgb, var(--ux-accent) 25%, transparent);
+            box-shadow: 0 10px 20px -5px color-mix(in srgb, var(--ux-accent) 40%, transparent);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -324,12 +324,12 @@ export default function TakeQuizPage() {
           }
           .join-btn:hover {
             background: var(--ux-accent-hover);
-            box-shadow: 0 14px 20px -3px color-mix(in srgb, var(--ux-accent) 40%, transparent);
+            box-shadow: 0 14px 24px -5px color-mix(in srgb, var(--ux-accent) 50%, transparent);
             transform: translateY(-1px);
           }
           .join-btn:active {
             transform: var(--ux-press);
-            box-shadow: 0 6px 10px -2px color-mix(in srgb, var(--ux-accent) 30%, transparent);
+            box-shadow: 0 6px 12px -3px color-mix(in srgb, var(--ux-accent) 40%, transparent);
           }
           .join-error {
             display: flex;
