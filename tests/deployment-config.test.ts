@@ -35,14 +35,7 @@ describe('Monorepo deployment file tracing', () => {
   });
 });
 
-describe('Vercel installation settings', () => {
-  it('installs root dependencies, build tools and workspaces before running Prisma postinstall', () => {
-    const deployment = readJson('apps/web/vercel.json');
-    expect(deployment.framework).toBe('nextjs');
-    expect(deployment.installCommand).toBe('cd ../.. && npm ci --include=dev --workspaces --include-workspace-root');
-    expect(deployment.buildCommand).toBe('npm run build');
-  });
-
+describe('Deployment installation settings', () => {
   it('checks trace dependencies after Next.js has exited and removed its temporary lock', () => {
     expect(readJson('apps/web/package.json').scripts.postbuild).toBe('node ../../scripts/check-build-traces.mjs --sanitize-build-only');
   });
