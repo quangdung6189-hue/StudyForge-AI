@@ -350,9 +350,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
           width: 34px;
           height: 34px;
           border-radius: 11px;
-          background: var(--ux-accent-soft);
-          color: var(--ux-accent-text);
-          border: 1px solid color-mix(in srgb, var(--ux-accent) 24%, transparent);
+          background: var(--ux-surface-2);
+          color: var(--ux-ink);
+          border: 1px solid var(--ux-line-2);
           font-weight: 800;
           font-size: 13.5px;
           display: grid;
