@@ -53,7 +53,10 @@ const nextConfig: NextConfig = {
       './node_modules/.prisma/client/**/*',
     ],
   },
-  experimental: { serverActions: { bodySizeLimit: '1mb' } },
+  experimental: {
+    serverActions: { bodySizeLimit: '1mb' },
+    agentUpgrade: 'security',
+  } as any,
   async headers() {
     return [
       {
