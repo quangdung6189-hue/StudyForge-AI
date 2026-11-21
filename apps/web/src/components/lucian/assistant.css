@@ -18,21 +18,21 @@
   z-index: 95;
   width: 54px;
   height: 54px;
-  border: 1px solid var(--ux-line-2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 18px;
-  background: var(--ux-accent);
-  color: var(--ux-accent-ink);
+  background: var(--ux-grad);
+  color: #FFFFFF;
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.4);
-  transition: transform 0.28s var(--ux-ease-spring), box-shadow 0.25s ease, background-color 0.2s ease;
+  box-shadow: 0 10px 26px -6px color-mix(in srgb, var(--ux-accent) 55%, transparent);
+  transition: transform 0.28s var(--ux-ease-spring), box-shadow 0.25s ease, filter 0.2s ease;
 }
 
 .u215-ln:hover {
   transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 14px 28px -6px rgba(0, 0, 0, 0.5);
-  background: var(--ux-accent-hover);
+  box-shadow: 0 14px 32px -6px color-mix(in srgb, var(--ux-accent) 65%, transparent);
+  filter: brightness(1.06);
 }
 
 .u215-ln:active {
@@ -607,14 +607,18 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--ux-ink);
-  color: var(--ux-page);
+  background: var(--ux-accent);
+  color: var(--ux-accent-ink);
   font: inherit;
   font-size: 12.5px;
   font-weight: 750;
   cursor: pointer;
   flex: none;
-  transition: transform 0.3s var(--ux-spring), opacity 0.3s;
+  transition: transform 0.3s var(--ux-spring), opacity 0.3s, background-color 0.2s ease;
+}
+
+.u086-ctl:hover:not(:disabled) {
+  background: var(--ux-accent-hover);
 }
 
 .u086-ctl:active {
@@ -628,7 +632,7 @@
 
 .u086-ctl.is-stop {
   background: var(--ux-danger);
-  color: #FFFFFF;
+  color: var(--ux-accent-ink);
 }
 
 .u086-ctl i {

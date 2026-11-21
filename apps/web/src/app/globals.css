@@ -1,38 +1,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap');
 
-/* Lucian UX/UI Prompt theme tokens · UI/UX Pro Max Optimized
-   Tối ưu hóa màu sắc cho giao diện học tập & thi cử:
-   - Tăng độ tương phản (WCAG AAA/AA) cho câu hỏi, công thức toán và văn bản dài
-   - Giảm chói mắt (anti-glare), dịu nhẹ khi đọc lâu trên cả Light Mode & Dark Mode
-  - Hệ màu Graphite/Teal/Amber: rõ, dịu mắt, tránh gradient tím kiểu AI */
+/* Lucian UX/UI Prompt theme tokens · UI/UX Pro Max & Modern Web Guidance Optimized
+   Hệ màu Sapphire-Indigo & Emerald Academic:
+   - Độ tương phản đạt chuẩn WCAG AA/AAA cho văn bản, công thức toán và nhãn phụ trên cả Light & Dark Mode
+   - Dịu mắt khi đọc lâu (anti-glare paper & deep midnight navy), giàu điểm nhấn màu sắc trực quan */
 :root {
-  color-scheme: light;
-  --ux-page: #F8FAFC;
+  color-scheme: light dark;
+  --ux-page: #F4F7FB;
   --ux-surface: #FFFFFF;
-  --ux-surface-2: #F1F5F9;
+  --ux-surface-2: #EEF2F7;
   --ux-surface-3: #E2E8F0;
   --ux-sidebar: #FFFFFF;
-  --ux-header: rgba(255, 255, 255, 0.94);
+  --ux-header: rgba(255, 255, 255, 0.90);
   --ux-ink: #0F172A;
-  --ux-ink-2: #475569;
-  --ux-ink-3: #64748B;
-  --ux-line: rgba(15, 23, 42, 0.08);
-  --ux-line-2: rgba(15, 23, 42, 0.14);
-  --ux-accent: #0F172A;
-  --ux-accent-hover: #1E293B;
-  --ux-accent-2: #334155;
-  --ux-accent-soft: rgba(15, 23, 42, 0.06);
-  --ux-accent-text: #0F172A;
-  --ux-accent-bar: #0F172A;
+  --ux-ink-2: #334155;
+  --ux-ink-3: #475569;
+  --ux-line: rgba(15, 23, 42, 0.11);
+  --ux-line-2: rgba(15, 23, 42, 0.20);
+  --ux-accent: #4338CA;
+  --ux-accent-hover: #3730A3;
+  --ux-accent-2: #0284C7;
+  --ux-accent-soft: rgba(67, 56, 202, 0.10);
+  --ux-accent-text: #3730A3;
+  --ux-accent-bar: #4F46E5;
   --ux-accent-ink: #FFFFFF;
-  --ux-mint: #10B981;
-  --ux-warn: #F59E0B;
-  --ux-danger: #EF4444;
-  --ux-glass: rgba(255, 255, 255, 0.88);
+  --ux-mint: #047857;
+  --ux-mint-ink: #FFFFFF;
+  --ux-warn: #B45309;
+  --ux-danger: #DC2626;
+  --ux-glass: rgba(255, 255, 255, 0.86);
   --ux-glass-line: rgba(255, 255, 255, 0.95);
-  --ux-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --ux-shadow-strong: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-  --ux-grad: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+  --ux-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.08), 0 1px 3px -1px rgba(15, 23, 42, 0.05);
+  --ux-shadow-strong: 0 16px 36px -10px rgba(30, 41, 59, 0.16), 0 4px 12px -4px rgba(67, 56, 202, 0.08);
+  --ux-grad: linear-gradient(135deg, #4F46E5 0%, #2563EB 55%, #0369A1 100%);
+  --ux-scrollbar-track: #EEF2F7;
+  --ux-scrollbar-thumb: #94A3B8;
   --ux-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ux-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
   --ux-press: scale(0.975);
@@ -43,36 +45,41 @@
   --ux-motion-fast: 150ms;
   --ux-motion-base: 240ms;
   --ux-motion-panel: 380ms;
+  accent-color: var(--ux-accent);
+  scrollbar-color: var(--ux-scrollbar-thumb) var(--ux-scrollbar-track);
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --ux-page: #F8FAFC;
+  --ux-page: #F4F7FB;
   --ux-surface: #FFFFFF;
-  --ux-surface-2: #F1F5F9;
+  --ux-surface-2: #EEF2F7;
   --ux-surface-3: #E2E8F0;
   --ux-sidebar: #FFFFFF;
-  --ux-header: rgba(255, 255, 255, 0.94);
+  --ux-header: rgba(255, 255, 255, 0.90);
   --ux-ink: #0F172A;
-  --ux-ink-2: #475569;
-  --ux-ink-3: #64748B;
-  --ux-line: rgba(15, 23, 42, 0.08);
-  --ux-line-2: rgba(15, 23, 42, 0.14);
-  --ux-accent: #0F172A;
-  --ux-accent-hover: #1E293B;
-  --ux-accent-2: #334155;
-  --ux-accent-soft: rgba(15, 23, 42, 0.06);
-  --ux-accent-text: #0F172A;
-  --ux-accent-bar: #0F172A;
+  --ux-ink-2: #334155;
+  --ux-ink-3: #475569;
+  --ux-line: rgba(15, 23, 42, 0.11);
+  --ux-line-2: rgba(15, 23, 42, 0.20);
+  --ux-accent: #4338CA;
+  --ux-accent-hover: #3730A3;
+  --ux-accent-2: #0284C7;
+  --ux-accent-soft: rgba(67, 56, 202, 0.10);
+  --ux-accent-text: #3730A3;
+  --ux-accent-bar: #4F46E5;
   --ux-accent-ink: #FFFFFF;
-  --ux-mint: #10B981;
-  --ux-warn: #F59E0B;
-  --ux-danger: #EF4444;
-  --ux-glass: rgba(255, 255, 255, 0.88);
+  --ux-mint: #047857;
+  --ux-mint-ink: #FFFFFF;
+  --ux-warn: #B45309;
+  --ux-danger: #DC2626;
+  --ux-glass: rgba(255, 255, 255, 0.86);
   --ux-glass-line: rgba(255, 255, 255, 0.95);
-  --ux-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --ux-shadow-strong: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-  --ux-grad: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+  --ux-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.08), 0 1px 3px -1px rgba(15, 23, 42, 0.05);
+  --ux-shadow-strong: 0 16px 36px -10px rgba(30, 41, 59, 0.16), 0 4px 12px -4px rgba(67, 56, 202, 0.08);
+  --ux-grad: linear-gradient(135deg, #4F46E5 0%, #2563EB 55%, #0369A1 100%);
+  --ux-scrollbar-track: #EEF2F7;
+  --ux-scrollbar-thumb: #94A3B8;
   --ux-press: scale(0.975);
   --ux-ease-glide: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ux-ease-spring: cubic-bezier(0.3, 1.2, 0.4, 1);
@@ -82,32 +89,35 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --ux-page: #0B0F17;
-    --ux-sidebar: #0D1117;
-    --ux-header: rgba(13, 17, 23, 0.88);
-    --ux-surface: #161B22;
-    --ux-surface-2: #21262D;
-    --ux-surface-3: #30363D;
-    --ux-ink: #F0F6FC;
-    --ux-ink-2: #8B949E;
-    --ux-ink-3: #6E7681;
-    --ux-line: rgba(240, 246, 252, 0.1);
-    --ux-line-2: rgba(240, 246, 252, 0.16);
-    --ux-accent: #FFFFFF;
-    --ux-accent-hover: #E6EDF3;
-    --ux-accent-2: #C9D1D9;
-    --ux-accent-soft: rgba(255, 255, 255, 0.08);
-    --ux-accent-text: #FFFFFF;
-    --ux-accent-bar: #FFFFFF;
-    --ux-accent-ink: #0B0F17;
+    --ux-page: #0B1120;
+    --ux-sidebar: #0F172A;
+    --ux-header: rgba(15, 23, 42, 0.88);
+    --ux-surface: #151E32;
+    --ux-surface-2: #1E293B;
+    --ux-surface-3: #283548;
+    --ux-ink: #F8FAFC;
+    --ux-ink-2: #CBD5E1;
+    --ux-ink-3: #94A3B8;
+    --ux-line: rgba(148, 163, 184, 0.18);
+    --ux-line-2: rgba(148, 163, 184, 0.30);
+    --ux-accent: #818CF8;
+    --ux-accent-hover: #A5B4FC;
+    --ux-accent-2: #38BDF8;
+    --ux-accent-soft: rgba(129, 140, 248, 0.16);
+    --ux-accent-text: #A5B4FC;
+    --ux-accent-bar: #818CF8;
+    --ux-accent-ink: #0B1120;
     --ux-mint: #34D399;
+    --ux-mint-ink: #06281E;
     --ux-warn: #FBBF24;
     --ux-danger: #F87171;
-    --ux-glass: rgba(22, 27, 34, 0.88);
-    --ux-glass-line: rgba(240, 246, 252, 0.12);
-    --ux-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
-    --ux-shadow-strong: 0 20px 40px -10px rgba(0, 0, 0, 0.8);
-    --ux-grad: linear-gradient(135deg, #21262D 0%, #161B22 100%);
+    --ux-glass: rgba(21, 30, 50, 0.88);
+    --ux-glass-line: rgba(148, 163, 184, 0.22);
+    --ux-shadow: 0 4px 20px -2px rgba(2, 6, 23, 0.55);
+    --ux-shadow-strong: 0 20px 44px -10px rgba(2, 6, 23, 0.85);
+    --ux-grad: linear-gradient(135deg, #4F46E5 0%, #2563EB 55%, #0369A1 100%);
+    --ux-scrollbar-track: #0F172A;
+    --ux-scrollbar-thumb: #475569;
     --ux-press: scale(0.975);
     --ux-ease-glide: cubic-bezier(0.2, 0.8, 0.2, 1);
     --ux-ease-spring: cubic-bezier(0.3, 1.2, 0.4, 1);
@@ -117,36 +127,78 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ux-page: #0B0F17;
-  --ux-sidebar: #0D1117;
-  --ux-header: rgba(13, 17, 23, 0.88);
-  --ux-surface: #161B22;
-  --ux-surface-2: #21262D;
-  --ux-surface-3: #30363D;
-  --ux-ink: #F0F6FC;
-  --ux-ink-2: #8B949E;
-  --ux-ink-3: #6E7681;
-  --ux-line: rgba(240, 246, 252, 0.1);
-  --ux-line-2: rgba(240, 246, 252, 0.16);
-  --ux-accent: #FFFFFF;
-  --ux-accent-hover: #E6EDF3;
-  --ux-accent-2: #C9D1D9;
-  --ux-accent-soft: rgba(255, 255, 255, 0.08);
-  --ux-accent-text: #FFFFFF;
-  --ux-accent-bar: #FFFFFF;
-  --ux-accent-ink: #0B0F17;
+  --ux-page: #0B1120;
+  --ux-sidebar: #0F172A;
+  --ux-header: rgba(15, 23, 42, 0.88);
+  --ux-surface: #151E32;
+  --ux-surface-2: #1E293B;
+  --ux-surface-3: #283548;
+  --ux-ink: #F8FAFC;
+  --ux-ink-2: #CBD5E1;
+  --ux-ink-3: #94A3B8;
+  --ux-line: rgba(148, 163, 184, 0.18);
+  --ux-line-2: rgba(148, 163, 184, 0.30);
+  --ux-accent: #818CF8;
+  --ux-accent-hover: #A5B4FC;
+  --ux-accent-2: #38BDF8;
+  --ux-accent-soft: rgba(129, 140, 248, 0.16);
+  --ux-accent-text: #A5B4FC;
+  --ux-accent-bar: #818CF8;
+  --ux-accent-ink: #0B1120;
   --ux-mint: #34D399;
+  --ux-mint-ink: #06281E;
   --ux-warn: #FBBF24;
   --ux-danger: #F87171;
-  --ux-glass: rgba(22, 27, 34, 0.88);
-  --ux-glass-line: rgba(240, 246, 252, 0.12);
-  --ux-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
-  --ux-shadow-strong: 0 20px 40px -10px rgba(0, 0, 0, 0.8);
-  --ux-grad: linear-gradient(135deg, #21262D 0%, #161B22 100%);
+  --ux-glass: rgba(21, 30, 50, 0.88);
+  --ux-glass-line: rgba(148, 163, 184, 0.22);
+  --ux-shadow: 0 4px 20px -2px rgba(2, 6, 23, 0.55);
+  --ux-shadow-strong: 0 20px 44px -10px rgba(2, 6, 23, 0.85);
+  --ux-grad: linear-gradient(135deg, #4F46E5 0%, #2563EB 55%, #0369A1 100%);
+  --ux-scrollbar-track: #0F172A;
+  --ux-scrollbar-thumb: #475569;
   --ux-press: scale(0.975);
   --ux-ease-glide: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ux-ease-spring: cubic-bezier(0.3, 1.2, 0.4, 1);
   --ux-ease-settle: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@media (forced-colors: active) {
+  :root {
+    --ux-page: Canvas;
+    --ux-surface: Canvas;
+    --ux-surface-2: Canvas;
+    --ux-surface-3: Canvas;
+    --ux-sidebar: Canvas;
+    --ux-ink: CanvasText;
+    --ux-ink-2: CanvasText;
+    --ux-ink-3: GrayText;
+    --ux-line: ButtonBorder;
+    --ux-line-2: CanvasText;
+    --ux-accent: Highlight;
+    --ux-accent-text: LinkText;
+    --ux-accent-ink: HighlightText;
+    --ux-mint: Highlight;
+    --ux-mint-ink: HighlightText;
+  }
+}
+
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--ux-scrollbar-track);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--ux-scrollbar-thumb);
+    border-radius: 999px;
+  }
+}
+
+::selection {
+  background: var(--ux-accent-soft);
+  color: var(--ux-accent-text);
 }
 
 @keyframes pulse {
@@ -258,9 +310,9 @@ body {
 }
 
 .app-header-context{display:flex;align-items:center;gap:10px;min-width:0}
-.app-header-mark{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--ux-surface-2);color:var(--ux-ink);border:1px solid var(--ux-line-2)}
+.app-header-mark{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--ux-accent-soft);color:var(--ux-accent-text);border:1px solid color-mix(in srgb, var(--ux-accent) 28%, transparent)}
 .app-header-mark svg{width:18px;height:18px}
-.app-header-kicker{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ux-ink-3);white-space:nowrap}
+.app-header-kicker{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ux-accent-text);white-space:nowrap}
 .app-header-separator{width:1px;height:18px;background:var(--ux-line-2)}
 .app-header-title{max-width:50vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ux-ink);font-size:15px;font-weight:750;letter-spacing:-.015em;transition:color var(--ux-motion-fast) ease}
 
@@ -291,13 +343,18 @@ body {
     position: sticky;
     top: 0;
     z-index: 20;
+    height: 58px;
+    flex-basis: 58px;
+    padding: 0 16px;
   }
-  .app-header{height:58px;flex-basis:58px;padding:0 16px}.app-header-mark,.app-header-kicker,.app-header-separator{display:none}.app-header-title{max-width:70vw}
+  .app-header-mark,.app-header-kicker,.app-header-separator{display:none}
+  .app-header-title{max-width:70vw}
   .app-content {
     height: auto;
     overflow-y: visible;
     padding: 16px 16px calc(96px + env(safe-area-inset-bottom));
   }
+}
 
 /* KaTeX Math & Physics Typography Harmony */
 .katex {
@@ -335,15 +392,13 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--ux-accent);
+  color: var(--ux-accent-text);
   font-weight: 650;
   font-size: 11px;
   padding: 2px 7px;
   background: var(--ux-accent-soft);
-  border: 1px solid var(--ux-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--ux-accent) 24%, transparent);
   border-radius: 6px;
   margin: 0 3px;
   vertical-align: middle;
-}
-
 }

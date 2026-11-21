@@ -481,7 +481,7 @@ export default function StudyPage() {
         }
         .btn-study-action.mastered {
           background: var(--ux-accent);
-          color: #ffffff;
+          color: var(--ux-accent-ink);
           border-color: var(--ux-accent);
           box-shadow: 0 4px 14px color-mix(in srgb, var(--ux-accent) 30%, transparent);
         }

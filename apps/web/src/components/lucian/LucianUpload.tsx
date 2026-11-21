@@ -268,7 +268,7 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
         }
         .u032-st.ok {
           background: var(--ux-mint);
-          color: white;
+          color: var(--ux-mint-ink);
           font-size: 13px;
           font-weight: 800;
         }

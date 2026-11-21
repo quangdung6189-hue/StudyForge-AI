@@ -87,7 +87,7 @@ export function DocxViewer({ url, zoom = 100, className, onError, onSuccess }: D
           <a
             href={`${url}?download=1`}
             className="documents-download-btn"
-            style={{ background: 'var(--ux-accent)', color: 'white', padding: '9px 18px', borderRadius: '10px' }}
+            style={{ background: 'var(--ux-accent)', color: 'var(--ux-accent-ink)', padding: '9px 18px', borderRadius: '10px' }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

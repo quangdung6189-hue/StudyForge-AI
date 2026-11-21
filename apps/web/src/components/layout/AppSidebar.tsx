@@ -122,11 +122,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
           height: 38px;
           flex: none;
           border-radius: 12px;
-          background: var(--ux-accent);
-          color: var(--ux-accent-ink);
+          background: var(--ux-grad);
+          color: #FFFFFF;
           display: grid;
           place-items: center;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+          box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--ux-accent) 45%, transparent);
           transition: transform var(--ux-motion-fast) var(--ux-ease), box-shadow var(--ux-motion-fast) ease;
         }
         .u040-logo svg {
@@ -136,7 +136,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         @media (hover: hover) and (pointer: fine) {
           .u040-brand:hover .u040-logo {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 8px 20px -4px color-mix(in srgb, var(--ux-accent) 55%, transparent);
           }
         }
 
@@ -196,8 +196,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
           top: 0;
           height: 48px;
           border-radius: 12px;
-          background: var(--ux-surface-2);
-          box-shadow: inset 0 0 0 1px var(--ux-line-2);
+          background: var(--ux-accent-soft);
+          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ux-accent) 24%, transparent);
           transform: translateY(calc(var(--active-index) * 54px));
           transition: transform .32s var(--ux-ease-spring), background-color .2s ease;
           pointer-events: none;
@@ -210,7 +210,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           bottom: 10px;
           width: 3px;
           border-radius: 0 3px 3px 0;
-          background: var(--ux-accent);
+          background: var(--ux-accent-bar);
         }
 
         .u040-it {
@@ -224,8 +224,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
           border: 0;
           border-radius: 12px;
           background: none;
-          color: var(--ux-ink-3);
-          opacity: .88;
+          color: var(--ux-ink-2);
+          opacity: .92;
           transition: opacity .2s, color .2s, background-color .2s, transform var(--ux-motion-fast) ease;
           cursor: pointer;
           text-decoration: none;
@@ -243,7 +243,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         }
         .u040-it[aria-current="page"] {
           opacity: 1;
-          color: var(--ux-ink);
+          color: var(--ux-accent-text);
           font-weight: 700;
         }
         .u040-it:active {
@@ -265,7 +265,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           transform: translateY(-1px);
         }
         .u040-it[aria-current="page"] svg {
-          stroke: var(--ux-ink);
+          stroke: var(--ux-accent-text);
         }
 
         .u040-it span {
@@ -350,9 +350,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
           width: 34px;
           height: 34px;
           border-radius: 11px;
-          background: var(--ux-surface-2);
-          color: var(--ux-ink);
-          border: 1px solid var(--ux-line-2);
+          background: var(--ux-accent-soft);
+          color: var(--ux-accent-text);
+          border: 1px solid color-mix(in srgb, var(--ux-accent) 26%, transparent);
           font-weight: 800;
           font-size: 13.5px;
           display: grid;

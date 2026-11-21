@@ -62,7 +62,7 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
         .ld-welcome {
           padding: 28px 32px;
           border-radius: 20px;
-          background: var(--ux-surface);
+          background: radial-gradient(120% 140% at 0% 0%, var(--ux-accent-soft) 0%, transparent 55%), var(--ux-surface);
           border: 1px solid var(--ux-line);
           box-shadow: var(--ux-shadow);
           display: flex;
@@ -80,7 +80,7 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           top: 0;
           bottom: 0;
           width: 4px;
-          background: var(--ux-accent);
+          background: var(--ux-grad);
         }
 
         .ld-status-rail {
@@ -155,12 +155,12 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           background: var(--ux-accent);
           color: var(--ux-accent-ink);
           border-color: var(--ux-accent);
-          box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 6px 18px -4px color-mix(in srgb, var(--ux-accent) 42%, transparent);
         }
         .ld-btn.primary:hover {
           color: var(--ux-accent-ink);
           background: var(--ux-accent-hover);
-          box-shadow: 0 6px 18px -3px rgba(0, 0, 0, 0.4);
+          box-shadow: 0 8px 22px -4px color-mix(in srgb, var(--ux-accent) 52%, transparent);
         }
 
         /* Stat Cards with Left Focus Rail & Icons */
@@ -179,11 +179,11 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          transition: transform var(--ux-motion-fast) var(--ux-ease), box-shadow 0.2s ease;
+          transition: transform var(--ux-motion-fast) var(--ux-ease), box-shadow 0.2s ease, border-color 0.2s ease;
         }
         @media (hover: hover) and (pointer: fine) {
           .ld-stat:hover {
-            transform: translateY(-1px);
+            transform: translateY(-2px);
             box-shadow: var(--ux-shadow-strong);
           }
         }
@@ -191,9 +191,9 @@ export function LucianDashboard({ docs, quizzes }: LucianDashboardProps) {
           width: 40px;
           height: 40px;
           border-radius: 11px;
-          background: var(--ux-surface-2);
-          border: 1px solid var(--ux-line-2);
-          color: var(--ux-ink);
+          background: var(--ux-accent-soft);
+          border: 1px solid color-mix(in srgb, var(--ux-accent) 22%, transparent);
+          color: var(--ux-accent-text);
           display: grid;
           place-items: center;
           flex: none;

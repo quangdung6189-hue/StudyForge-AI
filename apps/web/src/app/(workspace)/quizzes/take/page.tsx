@@ -744,7 +744,7 @@ export default function TakeQuizPage() {
         }
         .palette-num.done {
           background: var(--ux-mint);
-          color: white;
+          color: var(--ux-mint-ink);
           border-color: var(--ux-mint);
         }
         .palette-num.current {
@@ -956,12 +956,12 @@ export default function TakeQuizPage() {
                   padding: '12px 28px',
                   borderRadius: '12px',
                   background: 'var(--ux-mint)',
-                  color: 'white',
+                  color: 'var(--ux-mint-ink)',
                   border: 0,
                   fontWeight: 700,
                   fontSize: '14px',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+                  boxShadow: '0 4px 14px color-mix(in srgb, var(--ux-mint) 30%, transparent)',
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1014,7 +1014,7 @@ export default function TakeQuizPage() {
                 height: '46px',
                 borderRadius: '12px',
                 background: 'var(--ux-mint)',
-                color: 'white',
+                color: 'var(--ux-mint-ink)',
                 border: 0,
                 fontWeight: 700,
                 fontSize: '14px',
@@ -1023,7 +1023,7 @@ export default function TakeQuizPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.25)',
+                boxShadow: '0 4px 14px color-mix(in srgb, var(--ux-mint) 25%, transparent)',
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -163,7 +163,7 @@ export default function DocumentsPage() {
                       className="documents-qpill"
                       style={{
                         background: isWord ? '#2563EB' : isPdf ? '#DC2626' : isImage ? '#7C3AED' : 'var(--ux-accent)',
-                        color: 'white',
+                        color: (isWord || isPdf || isImage) ? '#FFFFFF' : 'var(--ux-accent-ink)',
                       }}
                     >
                       {isWord ? 'FILE WORD (.DOCX)' : isPdf ? 'FILE PDF' : isImage ? 'FILE ẢNH' : 'VĂN BẢN'}

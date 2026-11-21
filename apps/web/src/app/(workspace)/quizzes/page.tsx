@@ -82,7 +82,7 @@ export default function QuizzesListPage() {
           padding: 12px 22px;
           border-radius: 14px;
           background: var(--ux-accent);
-          color: #ffffff;
+          color: var(--ux-accent-ink);
           text-decoration: none;
           font-size: 14px;
           font-weight: 700;
@@ -289,7 +289,7 @@ export default function QuizzesListPage() {
           padding: 11px 16px;
           border-radius: 12px;
           background: var(--ux-accent);
-          color: #ffffff;
+          color: var(--ux-accent-ink);
           text-decoration: none;
           font-size: 13.5px;
           font-weight: 700;
@@ -534,7 +534,7 @@ export default function QuizzesListPage() {
           border-radius: 12px;
           background: var(--ux-accent);
           border: 0;
-          color: white;
+          color: var(--ux-accent-ink);
           font-size: 13.5px;
           font-weight: 700;
           cursor: pointer;

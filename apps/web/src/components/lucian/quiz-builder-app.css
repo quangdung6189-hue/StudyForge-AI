@@ -7,7 +7,7 @@
 .quiz-studio .studio-eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--ux-accent)}
 .quiz-studio h1{font-size:clamp(24px,2.5vw,32px);letter-spacing:-.04em;margin:8px 0}
 .quiz-studio .studio-heading p{font-size:14px;color:var(--ux-ink-3);margin:0;line-height:1.6}
-.quiz-studio .studio-mark{display:grid;place-items:center;width:56px;height:56px;border-radius:18px;background:var(--ux-grad);color:var(--ux-accent-ink);font-size:28px;flex:none;box-shadow:0 12px 32px var(--ux-shadow)}
+.quiz-studio .studio-mark{display:grid;place-items:center;width:56px;height:56px;border-radius:18px;background:var(--ux-grad);color:#FFFFFF;font-size:28px;flex:none;box-shadow:0 12px 32px var(--ux-shadow)}
 .quiz-studio .u042{width:100%;height:auto;max-width:100%;padding:24px 28px;background:var(--ux-surface);border:1px solid var(--ux-line);border-radius:24px}
 .quiz-studio .u042-steps{margin:0 16px 14px}
 .quiz-studio .u042-view{flex:initial;overflow:hidden}
