@@ -10,6 +10,10 @@ import { CodeExamStudio } from './CodeExamStudio';
 import { StemFormulaToolbar } from './StemFormulaToolbar';
 import { MathText } from '@/components/common/MathText';
 import { convertPlainFormulasToLatex } from '@/lib/math-normalizer';
+import { TYPE_LABELS } from '@/lib/labels';
+import { useFeedback } from '@/components/ui/Feedback';
+import { ShareDialog } from '@/components/ui/ShareDialog';
+import { ManualQuestionComposer, MatrixEditor, QuestionExtrasEditor, matrixCells, matrixTotal, type Matrix } from './QuestionExtras';
 import './quiz-builder.css';
 import './quiz-builder-app.css';
 
@@ -20,7 +24,7 @@ const typeInfo: { type: QuestionType; title: string; hint: string; icon: string 
   { type: 'multiple', title: 'Nhiều đáp án', hint: 'Chọn các phương án đúng', icon: 'AB' },
   { type: 'fill', title: 'Điền từ', hint: 'Hoàn thành chỗ trống', icon: '…' },
 ];
-const label = (type: QuestionType) => typeInfo.find(item => item.type === type)!.title;
+const label = (type: string) => TYPE_LABELS[type] ?? type;
 type Analysis = { counts: Record<QuestionType, number>; total: number; status: string };
 type Published = { shareCode: string; shareUrl: string };
 type Progress = { completed: number; total: number; cached: number; stage: string };
@@ -61,8 +65,8 @@ async function api<T>(url: string, body?: unknown, signal?: AbortSignal): Promis
 }
 
 const modes = [
-  ['ai_analyze', 'Phân tích đề bằng AI', 'AI đọc tài liệu, phân tích dạng câu hỏi và tự động suy luận giải đáp án nếu tài liệu chưa có sẵn.', '🧠'],
-  ['code_editor', 'Trình biên soạn đề thi', 'Nhập tài liệu hoặc văn bản cấu trúc, chỉnh trực quan và kiểm chứng đáp án trước khi xuất bản.', '▤'],
+  ['ai_analyze', 'Phân tích đề bằng AI', 'AI đọc tài liệu, phân tích dạng câu hỏi và tự động suy luận giải đáp án nếu tài liệu chưa có sẵn.'],
+  ['code_editor', 'Trình biên soạn đề thi', 'Nhập tài liệu hoặc văn bản cấu trúc, chỉnh trực quan và kiểm chứng đáp án trước khi xuất bản.'],
 ] as const;
 
 function ModeCards({ value, onChange }: { value: string; onChange: (value: 'ai_analyze' | 'code_editor') => void }) {
@@ -80,9 +84,9 @@ function ModeCards({ value, onChange }: { value: string; onChange: (value: 'ai_a
   }, [value]);
   return <div className="ux u015"><div ref={group} className="u015-grp" role="radiogroup" aria-label="Chế độ tạo câu hỏi">
     <span className="u015-frame" style={frame} aria-hidden="true" />
-    {modes.map(([mode, title, hint, icon], index) => <button type="button" key={mode} className="u015-opt" role="radio" aria-checked={value === mode} tabIndex={value === mode ? 0 : -1} onClick={() => onChange(mode as any)} onKeyDown={event => {
+    {modes.map(([mode, title, hint], index) => <button type="button" key={mode} className="u015-opt" role="radio" aria-checked={value === mode} tabIndex={value === mode ? 0 : -1} onClick={() => onChange(mode as any)} onKeyDown={event => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) { event.preventDefault(); const next = (index + (event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1) + modes.length) % modes.length; onChange(modes[next][0] as any); group.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next].focus(); }
-    }}><span className="u015-dot" aria-hidden="true"/><span className="u015-ic" style={{ '--g': mode === 'ai_analyze' ? 'linear-gradient(140deg,#8B6CFF,#5B8CFF)' : 'linear-gradient(140deg,#22C3A6,#0EA5E9)' } as CSSProperties} aria-hidden="true">{icon}</span><span className="u015-txt"><b>{title}</b><small>{hint}</small></span></button>)}
+    }}><span className="u015-dot" aria-hidden="true"/><span className="u015-ic" style={{ '--g': 'var(--ux-surface-2)', color: 'var(--ux-ink)', border: '1px solid var(--ux-line)' } as CSSProperties} aria-hidden="true">{mode === 'ai_analyze' ? <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6l-5 3.6 1.9-5.8L4 8.8h6.1L12 3z"/></svg> : <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/><line x1="13" y1="9" x2="18" y2="9"/><line x1="13" y1="13" x2="17" y2="13"/></svg>}</span><span className="u015-txt"><b>{title}</b><small>{hint}</small></span></button>)}
   </div></div>;
 }
 
@@ -110,7 +114,12 @@ export function LucianQuizBuilder() {
   const [error, setError] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
   const [questions, setQuestions] = useState<FullQuestionDTO[]>([]);
-  const [filter, setFilter] = useState<QuestionType | 'all'>('all');
+  const [filter, setFilter] = useState<string>('all');
+  const [source, setSource] = useState<'analyze' | 'matrix'>('analyze');
+  const [matrix, setMatrix] = useState<Matrix>({ 'single:recognition': 2, 'single:comprehension': 2, 'single:application': 1, 'boolean:comprehension': 1 });
+  const [docChunks, setDocChunks] = useState<{ id: string; content: string }[]>([]);
+  const [sharing, setSharing] = useState(false);
+  const { confirm, toast } = useFeedback();
   const [reviewPage, setReviewPage] = useState(0);
   const [saveNotice, setSaveNotice] = useState('');
   const requestId = useRef<string | null>(null);
@@ -165,6 +174,7 @@ export function LucianQuizBuilder() {
     setAnalysis(null); setAnalysisLoading(true);
     api<any>(`/api/documents/${documentId}`, undefined, abort.signal).then(data => {
       setDocRawText(data.rawText || '');
+      setDocChunks((data.chunks || []).map((c: { id: string; content: string }) => ({ id: c.id, content: c.content })));
       setAnalysis(data.analysis || null);
       if (data.extraction?.mediaMap) setMediaMap(data.extraction.mediaMap);
     }).catch(err => { if (!abort.signal.aborted) setError(err.message); }).finally(() => { if (!abort.signal.aborted) setAnalysisLoading(false); });
@@ -188,15 +198,18 @@ export function LucianQuizBuilder() {
 
   const found = types.reduce((total, type) => total + (analysis?.counts[type] ?? 0), 0);
   const ready = documents.find(d => d.id === documentId)?.status === 'ready';
-  const valid = title.trim().length > 0 && Number.isInteger(count) && count >= 1 && count <= 100 && Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440 && types.length > 0;
+  const blueprintTotal = matrixTotal(matrix, types);
+  const valid = title.trim().length > 0 && Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440 && types.length > 0 && (source === 'matrix' ? blueprintTotal >= 1 && blueprintTotal <= 100 : Number.isInteger(count) && count >= 1 && count <= 100);
   const reviewed = questions.filter(q => q.reviewed).length;
   const allReviewed = questions.length > 0 && reviewed === questions.length;
   const move = (next: number) => { setError(''); setStep(next); };
   const edit = (id: string, update: Partial<FullQuestionDTO>) => { setSaveNotice(''); setQuestions(current => current.map(q => q.id === id ? { ...q, ...update, reviewed: false } : q)); };
-  const setAllReviewed = () => {
+  // Metadata (tags, rubric) changes don't invalidate the teacher's review of the content.
+  const meta = (id: string, update: Partial<FullQuestionDTO>) => { setSaveNotice(''); setQuestions(current => current.map(q => q.id === id ? { ...q, ...update } : q)); };
+  const setAllReviewed = async () => {
     if (!questions.length || busy) return;
     const nextReviewed = !allReviewed;
-    if (nextReviewed && !window.confirm(`Xác nhận đã kiểm tra ${questions.length} câu hỏi, đáp án và lời giải? Hành động này cho phép chuyển sang bước xuất bản.`)) return;
+    if (nextReviewed && !(await confirm({ title: `Duyệt cả ${questions.length} câu?`, message: 'Xác nhận bạn đã kiểm tra câu hỏi, đáp án và lời giải. Thao tác này cho phép chuyển sang bước xuất bản.', confirmLabel: 'Đã kiểm tra, duyệt tất cả' }))) return;
     setSaveNotice('');
     setQuestions(current => current.map(question => ({ ...question, reviewed: nextReviewed })));
   };
@@ -204,11 +217,18 @@ export function LucianQuizBuilder() {
   async function generate() {
     if (!valid || busy) return;
     setBusy(true); setError(''); setWarnings([]);
-    setProgress({ completed: 0, total: count, cached: 0, stage: 'preparing' });
+    const usingMatrix = source === 'matrix';
+    const cells = matrixCells(matrix, types);
+    const planned = usingMatrix ? blueprintTotal : count;
+    setProgress({ completed: 0, total: planned, cached: 0, stage: 'preparing' });
     const abort = new AbortController(); generationAbort.current = abort;
     try {
       const distribution = difficulty === 'foundation' ? { recognition: 60, comprehension: 30, application: 10 } : difficulty === 'challenge' ? { recognition: 20, comprehension: 30, application: 50 } : { recognition: 40, comprehension: 40, application: 20 };
-      const result = await streamGeneration({ documentId, mode: 'ai_analyze', questionCount: count, types, difficultyDistribution: distribution }, abort.signal, setProgress);
+      const usedTypes = types.filter(t => cells.some(c => c.type === t));
+      const body = usingMatrix
+        ? { documentId, mode: 'ai_generate', questionCount: blueprintTotal, types: usedTypes, matrix: cells }
+        : { documentId, mode: 'ai_analyze', questionCount: count, types, difficultyDistribution: distribution };
+      const result = await streamGeneration(body, abort.signal, setProgress);
       setQuestions(result.questions); setWarnings(result.warnings ?? []); setSavedId(''); requestId.current = crypto.randomUUID(); setSaveNotice(''); setReviewPage(0); setFilter('all'); move(2);
     } catch (err) { setError(abort.signal.aborted ? 'Đã dừng. Các nhóm đã hoàn tất được giữ lại; bấm thử lại để tiếp tục.' : (err as Error).message); } finally { generationAbort.current = null; setBusy(false); }
   }
@@ -242,7 +262,7 @@ export function LucianQuizBuilder() {
   }
 
   return <div className={`ux quiz-studio ${mode === 'code_editor' && step === 1 ? 'wide-studio' : ''}`}>
-    <div className="studio-heading"><div><span className="studio-eyebrow">STUDYFORGE AI · TẠO ĐỀ</span><h1>Từ tài liệu đến bài kiểm tra</h1><p>Đúng dạng câu. Rõ lời giải. Có căn cứ để kiểm chứng.</p></div><span className="studio-mark" aria-hidden="true">✦</span></div>
+    <div className="studio-heading"><div><span className="studio-eyebrow">STUDYFORGE AI · TẠO ĐỀ</span><h1>Từ tài liệu đến bài kiểm tra</h1><p>Đúng dạng câu. Rõ lời giải. Có căn cứ để kiểm chứng.</p></div><span className="studio-mark" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg></span></div>
     <div className={`u042${step === 3 ? ' is-last' : ''}`}>
       <ol className="u042-steps" aria-label="Các bước tạo bài kiểm tra">
         <li className="u042-line" aria-hidden="true" style={{ '--p': step / 3 } as CSSProperties}><i/></li>
@@ -256,7 +276,7 @@ export function LucianQuizBuilder() {
         {step === 0 && <>
           <p>Chọn tài liệu từ thư viện, tiếp tục bản nháp hoặc mở trình biên soạn mới.</p>
           {examDrafts.length > 0 && <div className="studio-analysis"><b>Bản soạn gần đây</b><div className="studio-draft-list">{examDrafts.slice(0, 5).map(draft => <a key={draft.id} href={`/quizzes/create?draftId=${draft.id}`}>{draft.title}<small>{new Date(draft.updatedAt).toLocaleString('vi')}</small><span>Tiếp tục →</span></a>)}</div></div>}
-          {docsLoading ? <p role="status">Đang tải thư viện…</p> : documents.length === 0 ? !error && <div className="studio-empty"><b>Thư viện của bạn chưa có tài liệu</b><p>Bạn có thể tải tài liệu lên hoặc biên soạn trực tiếp.</p><div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 12 }}><Link href="/documents" className="sf-btn sf-btn-primary sf-btn-sm">Tải tài liệu lên →</Link><button type="button" className="code-studio-btn code-studio-btn-primary" onClick={() => { setMode('code_editor'); move(1); }}>Mở trình biên soạn đề thi</button></div></div> : <>
+          {docsLoading ? <div role="status" aria-label="Đang tải thư viện" style={{ display: 'grid', gap: 10, marginTop: 8 }}><div className="sf-skel" style={{ width: 180, height: 12 }} /><div className="sf-skel" style={{ height: 46, borderRadius: 12 }} /><div className="sf-skel" style={{ height: 120, borderRadius: 16, opacity: 0.7 }} /></div> : documents.length === 0 ? !error && <div className="studio-empty"><b>Thư viện của bạn chưa có tài liệu</b><p>Bạn có thể tải tài liệu lên hoặc biên soạn trực tiếp.</p><div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 12 }}><Link href="/documents" className="sf-btn sf-btn-primary sf-btn-sm">Tải tài liệu lên →</Link><button type="button" className="code-studio-btn code-studio-btn-primary" onClick={() => { setMode('code_editor'); move(1); }}>Mở trình biên soạn đề thi</button></div></div> : <>
             <label className="studio-label" htmlFor="source-document">Tài liệu trong thư viện</label>
             <select id="source-document" className="studio-input" value={documentId} onChange={event => { const id = event.target.value; setDocumentId(id); setTitle(`Bài kiểm tra: ${documents.find(d => d.id === id)?.title ?? ''}`.slice(0, 200)); setError(''); }}>
               <option value="" disabled>Chọn tài liệu</option>
@@ -304,37 +324,44 @@ export function LucianQuizBuilder() {
                   </div>
                 </fieldset>
 
+                <span className="studio-label">Nguồn câu hỏi</span>
+                <div className="studio-source" role="radiogroup" aria-label="Nguồn câu hỏi">
+                  <button type="button" role="radio" aria-checked={source === 'analyze'} onClick={() => setSource('analyze')}><b>Phân tích đề có sẵn</b><small>Lấy câu trong tài liệu, giữ đáp án gốc, AI giải câu còn thiếu.</small></button>
+                  <button type="button" role="radio" aria-checked={source === 'matrix'} onClick={() => setSource('matrix')}><b>Sinh câu mới theo ma trận</b><small>Đặt số câu cho từng dạng × mức độ, AI soạn câu mới từ kiến thức trong tài liệu.</small></button>
+                </div>
+                {source === 'matrix' && <MatrixEditor types={types} matrix={matrix} onChange={setMatrix} />}
+
                 <div className="studio-grid">
-                  <label className="studio-label">
+                  {source === 'analyze' ? <label className="studio-label">
                     Số câu hỏi cần tạo
                     <input className="studio-input" type="number" min={1} max={100} required value={count || ''} onChange={event => setCount(Number(event.target.value))}/>
-                  </label>
+                  </label> : <div className="studio-label">Tổng số câu theo ma trận<div className="studio-input" style={{ display: 'flex', alignItems: 'center', fontWeight: 800 }}>{blueprintTotal} câu</div></div>}
                   <label className="studio-label">
                     Thời gian làm bài (phút)
                     <input className="studio-input" type="number" min={1} max={1440} required value={minutes || ''} onChange={event => setMinutes(Number(event.target.value))}/>
                   </label>
                 </div>
 
-                <label className="studio-label" htmlFor="difficulty">Mức độ phân bố đề</label>
+                {source === 'analyze' && <><label className="studio-label" htmlFor="difficulty">Mức độ phân bố đề</label>
                 <select id="difficulty" className="studio-input" value={difficulty} onChange={event => setDifficulty(event.target.value)}>
                   <option value="balanced">Cân bằng · 40% nhận biết / 40% thông hiểu / 20% vận dụng</option>
                   <option value="foundation">Củng cố · 60% nhận biết / 30% thông hiểu / 10% vận dụng</option>
                   <option value="challenge">Thử thách · 20% nhận biết / 30% thông hiểu / 50% vận dụng</option>
-                </select>
+                </select></>}
 
-                <div className="studio-analysis">
-                  <b>🧠 Cơ chế tự động giải thông minh</b>
+                {source === 'analyze' && <div className="studio-analysis">
+                  <b>Cơ chế tự động giải và đối chiếu nguồn</b>
                   <p>Hệ thống sẽ rà soát toàn bộ tài liệu đã chọn. Nếu câu hỏi đã có sẵn đáp án thì giữ nguyên căn cứ; nếu <b>chưa có đáp án</b>, AI sẽ tự động giải đáp án, nêu rõ bước giải chi tiết và trích dẫn trang tài liệu liên quan.</p>
-                </div>
+                </div>}
               </fieldset>
 
               {busy && (
                 <div className="studio-working" role="status">
                   <span aria-hidden="true"/>
                   <div>
-                    <b>{progress?.completed ?? 0}/{progress?.total ?? count} câu đã phân tích xong · {elapsed}s</b>
+                    <b>{progress?.completed ?? 0}/{progress?.total ?? (source === 'matrix' ? blueprintTotal : count)} câu đã {source === 'matrix' ? 'soạn' : 'phân tích'} xong · {elapsed}s</b>
                     <div>AI đang đánh giá dạng câu và tự động giải các đáp án còn thiếu...</div>
-                    <progress aria-label="Tiến độ tạo đề" value={progress?.completed ?? 0} max={progress?.total || count}/>
+                    <progress aria-label="Tiến độ tạo đề" value={progress?.completed ?? 0} max={progress?.total || (source === 'matrix' ? blueprintTotal : count)}/>
                     <button type="button" className="studio-back" onClick={() => generationAbort.current?.abort()}>Dừng và giữ tiến độ</button>
                   </div>
                 </div>
@@ -343,7 +370,7 @@ export function LucianQuizBuilder() {
               <div className="u042-foot">
                 <button type="button" className="u042-b u042-prev" disabled={busy} onClick={() => move(0)}>Quay lại</button>
                 <button className="u042-b u042-next" type="submit" disabled={!valid || busy}>
-                  {busy ? 'Đang phân tích & giải…' : error ? 'Thử tạo lại →' : '✦ Bắt đầu phân tích & tạo đề'}
+                  {busy ? (source === 'matrix' ? 'Đang soạn câu theo ma trận…' : 'Đang phân tích & giải…') : error ? 'Thử tạo lại →' : source === 'matrix' ? `✦ Sinh ${blueprintTotal} câu theo ma trận` : '✦ Bắt đầu phân tích & tạo đề'}
                 </button>
               </div>
             </form>
@@ -381,23 +408,28 @@ export function LucianQuizBuilder() {
         {step === 2 && <>
           <p className="studio-review-intro">{questions.length} câu · {minutes} phút · Đã duyệt {reviewed}/{questions.length}. Kiểm tra cả đáp án và lời giải của từng câu.</p>
           {warnings.map(warning => <div className="studio-analysis" role="status" key={warning}>{warning}</div>)}
-          <div className="studio-filters" role="group" aria-label="Lọc dạng câu"><button aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Tất cả ({questions.length})</button>{typeInfo.filter(item => questions.some(q => q.type === item.type)).map(item => <button key={item.type} aria-pressed={filter === item.type} onClick={() => setFilter(item.type)}>{item.title} ({questions.filter(q => q.type === item.type).length})</button>)}</div>
+          <div className="studio-filters" role="group" aria-label="Lọc dạng câu"><button aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Tất cả ({questions.length})</button>{Object.keys(TYPE_LABELS).filter(type => questions.some(q => q.type === type)).map(type => <button key={type} aria-pressed={filter === type} onClick={() => setFilter(type)}>{TYPE_LABELS[type]} ({questions.filter(q => q.type === type).length})</button>)}</div>
+          {docChunks.length > 0 && !savedId && <ManualQuestionComposer chunks={docChunks} onAdd={q => { setQuestions(list => [...list, q]); setSaveNotice(''); toast(`Đã thêm câu ${label(q.type).toLowerCase()} — hãy duyệt trước khi xuất bản.`, 'success'); }} />}
           <div className="studio-review-toolbar">
             <div className="studio-review-progress">
               <div className="studio-review-progress-label"><span>Tiến độ duyệt</span><strong>{reviewed}/{questions.length} câu</strong></div>
               <progress aria-label="Tiến độ duyệt câu hỏi" value={reviewed} max={questions.length}/>
               <small>{allReviewed ? 'Đã kiểm tra toàn bộ câu hỏi, đáp án và lời giải.' : `Còn ${questions.length - reviewed} câu chưa duyệt.`}</small>
             </div>
-            <button type="button" className="studio-bulk-review" aria-pressed={allReviewed} disabled={busy || !questions.length} onClick={setAllReviewed}>
+            <button type="button" className="studio-bulk-review" aria-pressed={allReviewed} disabled={busy || !questions.length} onClick={() => void setAllReviewed()}>
               <span aria-hidden="true">✓</span>{allReviewed ? 'Bỏ duyệt tất cả' : 'Duyệt tất cả'}
             </button>
           </div>
           {saveNotice && <p role="status">{saveNotice}</p>}
           {questions.filter(q => filter === 'all' || q.type === filter).slice(reviewPage * 10, reviewPage * 10 + 10).map((q, i) => <article className="studio-question studio-review-card" key={q.id}>
             <div className="studio-question-top"><b>Câu {reviewPage * 10 + i + 1} · {label(q.type)}</b><span>{q.answerOrigin === 'document' ? q.explanation.includes('Lời giải trong tài liệu:') ? 'Đáp án và lời giải gốc' : 'Đáp án gốc · Lời giải do AI đề xuất' : q.answerOrigin === 'teacher' ? 'Đáp án biên soạn trực tiếp' : 'AI đề xuất · Cần kiểm tra'}</span></div>
-            <h3><MathText text={q.stem} /></h3><div className="studio-options">{q.options.map((option, i) => <div className={q.correctOptionIds.includes(option.id) ? 'correct' : ''} key={option.id}><b>{q.type === 'boolean' ? '' : `${String.fromCharCode(65 + i)}. `}</b><MathText text={option.text} inline />{q.correctOptionIds.includes(option.id) && <strong> ✓</strong>}</div>)}</div>
+            <h3><MathText text={q.stem} /></h3>
+            {q.type === 'ordering' ? <div className="qx-shape" aria-label="Thứ tự đúng">{q.correctOptionIds.map((id, i) => <div key={id}><b>{i + 1}.</b><MathText text={q.options.find(o => o.id === id)?.text ?? ''} inline /></div>)}</div>
+              : q.type === 'matching' ? <div className="qx-shape" aria-label="Các cặp ghép đúng">{(q.pairs ?? []).map(p => <div key={p.leftId}><MathText text={q.options.find(o => o.id === p.leftId)?.text ?? ''} inline /><b>→</b><MathText text={q.options.find(o => o.id === p.rightId)?.text ?? ''} inline /></div>)}</div>
+              : <div className="studio-options">{q.options.map((option, i) => <div className={q.correctOptionIds.includes(option.id) ? 'correct' : ''} key={option.id}><b>{q.type === 'boolean' ? '' : `${String.fromCharCode(65 + i)}. `}</b><MathText text={option.text} inline />{q.correctOptionIds.includes(option.id) && <strong> ✓</strong>}</div>)}</div>}
+            {q.audioAssetId && <audio controls preload="none" src={`/api/media/${q.audioAssetId}`} style={{ width: '100%', height: 36, margin: '6px 0' }} />}
             {q.acceptedAnswers.length > 0 && <div className="studio-text-answer"><b>Đáp án chấp nhận: </b>{q.acceptedAnswers.join(' / ')}</div>}
-            <details className="studio-solution" open><summary>Lời giải chi tiết</summary><p>{q.explanation}</p>{q.sourceRefs.length > 0 && <><b>Căn cứ trong tài liệu</b>{q.sourceRefs.map((ref, i) => <blockquote key={`${ref.chunkId}-${i}`}>{ref.quote}</blockquote>)}</>}</details>
+            <details className="studio-solution" open><summary>Lời giải chi tiết</summary><div className="studio-solution-body"><MathText text={q.explanation} /></div>{q.sourceRefs.length > 0 && <><b>Căn cứ trong tài liệu</b>{q.sourceRefs.map((ref, i) => <blockquote key={`${ref.chunkId}-${i}`}>{ref.quote}</blockquote>)}</>}</details>
             <details className="studio-editor"><summary>Chỉnh câu hỏi, đáp án và lời giải</summary><fieldset disabled={busy} className="studio-fieldset">
               <StemFormulaToolbar
                 compact
@@ -409,8 +441,10 @@ export function LucianQuizBuilder() {
                 })}
               />
               <label className="studio-label">Nội dung câu hỏi<textarea className="studio-input" value={q.stem} onChange={event => edit(q.id, { stem: event.target.value })}/></label>
-              {q.options.length > 0 ? q.options.map(option => <div className="studio-edit-option" key={option.id}><label><input type={q.type === 'multiple' ? 'checkbox' : 'radio'} name={`answer-${q.id}`} checked={q.correctOptionIds.includes(option.id)} aria-label={`Đáp án đúng: ${option.text}`} onChange={() => edit(q.id, { answerOrigin: 'teacher', correctOptionIds: q.type === 'multiple' ? q.correctOptionIds.includes(option.id) ? q.correctOptionIds.filter(id => id !== option.id) : [...q.correctOptionIds, option.id] : [option.id] })}/></label><input className="studio-input" aria-label={`Phương án ${option.text}`} value={option.text} readOnly={q.type === 'boolean'} onChange={event => edit(q.id, { answerOrigin: 'teacher', options: q.options.map(o => o.id === option.id ? { ...o, text: event.target.value } : o) })}/></div>) : <label className="studio-label">Đáp án chấp nhận (mỗi dòng một cách trả lời)<textarea className="studio-input" value={q.acceptedAnswers.join('\n')} onChange={event => edit(q.id, { answerOrigin: 'teacher', acceptedAnswers: event.target.value.split('\n') })}/></label>}
-              <label className="studio-label">Lời giải<textarea className="studio-input studio-explanation-input" value={q.explanation} onChange={event => edit(q.id, { explanation: event.target.value })}/></label></fieldset></details>
+              {q.type === 'ordering' || q.type === 'matching' ? q.options.map((option, i) => <label className="studio-label" key={option.id}>{q.type === 'ordering' ? `Mục ${q.correctOptionIds.indexOf(option.id) + 1}` : (q.pairs ?? []).some(p => p.leftId === option.id) ? 'Cột trái' : 'Cột phải'}<input className="studio-input" value={option.text} onChange={event => edit(q.id, { answerOrigin: 'teacher', options: q.options.map(o => o.id === option.id ? { ...o, text: event.target.value } : o) })}/></label>)
+              : q.options.length > 0 ? q.options.map(option => <div className="studio-edit-option" key={option.id}><label><input type={q.type === 'multiple' ? 'checkbox' : 'radio'} name={`answer-${q.id}`} checked={q.correctOptionIds.includes(option.id)} aria-label={`Đáp án đúng: ${option.text}`} onChange={() => edit(q.id, { answerOrigin: 'teacher', correctOptionIds: q.type === 'multiple' ? q.correctOptionIds.includes(option.id) ? q.correctOptionIds.filter(id => id !== option.id) : [...q.correctOptionIds, option.id] : [option.id] })}/></label><input className="studio-input" aria-label={`Phương án ${option.text}`} value={option.text} readOnly={q.type === 'boolean'} onChange={event => edit(q.id, { answerOrigin: 'teacher', options: q.options.map(o => o.id === option.id ? { ...o, text: event.target.value } : o) })}/></div>) : <label className="studio-label">Đáp án chấp nhận (mỗi dòng một cách trả lời)<textarea className="studio-input" value={q.acceptedAnswers.join('\n')} onChange={event => edit(q.id, { answerOrigin: 'teacher', acceptedAnswers: event.target.value.split('\n') })}/></label>}
+              <label className="studio-label">Lời giải<textarea className="studio-input studio-explanation-input" value={q.explanation} onChange={event => edit(q.id, { explanation: event.target.value })}/></label>
+              <QuestionExtrasEditor question={q} onMeta={update => meta(q.id, update)} onEdit={update => edit(q.id, update)} /></fieldset></details>
             <label className="studio-review"><input type="checkbox" checked={q.reviewed} disabled={busy} onChange={event => { setSaveNotice(''); setQuestions(current => current.map(item => item.id === q.id ? { ...item, reviewed: event.target.checked } : item)); }}/>Tôi đã kiểm tra câu hỏi, đáp án và lời giải</label>
           </article>)}
           {questions.filter(q => filter === 'all' || q.type === filter).length > 10 && <nav className="studio-filters" aria-label="Trang duyệt câu hỏi"><button disabled={!reviewPage} onClick={() => setReviewPage(value => value - 1)}>← Trang trước</button><span>Trang {reviewPage + 1}/{Math.ceil(questions.filter(q => filter === 'all' || q.type === filter).length / 10)}</span><button disabled={(reviewPage + 1) * 10 >= questions.filter(q => filter === 'all' || q.type === filter).length} onClick={() => setReviewPage(value => value + 1)}>Trang sau →</button></nav>}
@@ -419,7 +453,8 @@ export function LucianQuizBuilder() {
         </>}
 
         {/* BƯỚC 3: DUYỆT THÀNH CÔNG */}
-        {step === 3 && published && <div className="u042-done u042-success-celebrate"><div className="u042-success-badge-wrap"><span className="u042-big u042-animated-check" aria-hidden="true"><svg viewBox="0 0 34 34"><path d="M9 17.5l5.5 5.5L25.5 12"/></svg></span><span className="u042-ring u042-ring-1" aria-hidden="true"/><span className="u042-ring u042-ring-2" aria-hidden="true"/></div><div className="u042-success-text"><div className="u042-success-tag">✓ Duyệt thành công</div><p className="u042-success-desc">Tất cả các câu hỏi đã được kiểm tra, xác thực và lưu vào ngân hàng đề thi của bạn.</p></div><div className="studio-links u042-actions"><Link href={`/quizzes/take?code=${published.shareCode}`} className="u042-action-btn u042-btn-primary">Làm thử bài kiểm tra →</Link><Link href="/quizzes" className="u042-action-btn u042-btn-secondary">Về ngân hàng đề</Link></div></div>}
+        {step === 3 && published && <div className="u042-done u042-success-celebrate"><div className="u042-success-badge-wrap"><span className="u042-big u042-animated-check" aria-hidden="true"><svg viewBox="0 0 34 34"><path d="M9 17.5l5.5 5.5L25.5 12"/></svg></span><span className="u042-ring u042-ring-1" aria-hidden="true"/><span className="u042-ring u042-ring-2" aria-hidden="true"/></div><div className="u042-success-text"><div className="u042-success-tag">✓ Duyệt thành công</div><p className="u042-success-desc">Tất cả các câu hỏi đã được kiểm tra, xác thực và lưu vào ngân hàng đề thi của bạn.</p></div><div className="studio-links u042-actions"><button type="button" className="u042-action-btn u042-btn-primary" onClick={() => setSharing(true)}>Chia sẻ mã & QR</button><Link href={`/quizzes/take?code=${published.shareCode}`} className="u042-action-btn u042-btn-secondary">Làm thử bài kiểm tra →</Link><Link href="/classes" className="u042-action-btn u042-btn-secondary">Giao cho lớp</Link><Link href="/quizzes" className="u042-action-btn u042-btn-secondary">Về ngân hàng đề</Link></div></div>}
+        {sharing && published && <ShareDialog code={published.shareCode} title={title} onClose={() => setSharing(false)} />}
       </section></div>
     </div>
   </div>;

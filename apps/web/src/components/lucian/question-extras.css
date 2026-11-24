@@ -1,0 +1,42 @@
+.qx-matrix { margin: 6px 0 4px; }
+.qx-matrix table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--ux-line-2); border-radius: 14px; overflow: hidden; font-size: 13px; }
+.qx-matrix th, .qx-matrix td { padding: 8px 10px; border-bottom: 1px solid var(--ux-line); text-align: center; }
+.qx-matrix thead th { background: var(--ux-surface-2); font-size: 11.5px; font-weight: 800; color: var(--ux-ink-3); letter-spacing: .02em; }
+.qx-matrix tbody th { text-align: left; font-weight: 750; color: var(--ux-ink); background: var(--ux-surface); }
+.qx-matrix tfoot th, .qx-matrix tfoot td { background: var(--ux-surface-2); border-bottom: 0; font-weight: 800; }
+.qx-matrix input { width: 64px; height: 34px; border-radius: 9px; border: 1px solid var(--ux-line-2); background: var(--ux-surface-2); color: var(--ux-ink); text-align: center; font: inherit; font-weight: 750; font-variant-numeric: tabular-nums; transition: border-color .2s var(--ux-ease-color), box-shadow .25s var(--ux-ease-out); }
+.qx-matrix input:focus { border-color: var(--ux-accent); box-shadow: var(--ux-ring); outline: none; background: var(--ux-surface); }
+.qx-sum { font-variant-numeric: tabular-nums; color: var(--ux-ink-2); font-weight: 750; }
+.qx-sum small { color: var(--ux-ink-3); font-weight: 650; }
+.qx-total { color: var(--ux-accent-text); font-size: 15px; }
+.qx-matrix p { margin: 10px 0 0; font-size: 12.5px; color: var(--ux-ink-3); line-height: 1.6; }
+.qx-composer { margin: 14px 0; border: 1px dashed color-mix(in srgb, var(--ux-accent) 45%, var(--ux-line-2)); border-radius: 16px; background: color-mix(in srgb, var(--ux-accent) 3%, var(--ux-surface)); }
+.qx-composer > summary { padding: 14px 16px; font-size: 13.5px; font-weight: 800; color: var(--ux-accent-text); cursor: pointer; list-style: none; }
+.qx-composer > summary::-webkit-details-marker { display: none; }
+.qx-body { display: grid; gap: 12px; padding: 0 16px 16px; }
+.qx-seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--ux-surface-2); border: 1px solid var(--ux-line); width: fit-content; }
+.qx-seg button { border: 0; border-radius: 8px; padding: 7px 14px; background: transparent; color: var(--ux-ink-2); font: inherit; font-size: 12.5px; font-weight: 750; cursor: pointer; transition: background-color .2s var(--ux-ease-color), color .2s var(--ux-ease-color); }
+.qx-seg button[aria-checked="true"] { background: var(--ux-surface); color: var(--ux-ink); box-shadow: var(--ux-elev-1); }
+.qx-field { display: grid; gap: 6px; font-size: 12px; font-weight: 750; color: var(--ux-ink-2); }
+.qx-field textarea, .qx-field input:not([type="file"]) { width: 100%; min-width: 0; border-radius: 11px; border: 1px solid var(--ux-line-2); background: var(--ux-surface-2); color: var(--ux-ink); padding: 9px 12px; font: inherit; font-size: 13.5px; font-weight: 500; line-height: 1.55; transition: border-color .2s var(--ux-ease-color), box-shadow .25s var(--ux-ease-out); }
+.qx-field textarea { min-height: 70px; resize: vertical; }
+.qx-field textarea:focus, .qx-field input:focus { border-color: var(--ux-accent); box-shadow: var(--ux-ring); outline: none; background: var(--ux-surface); }
+.qx-line { display: flex; align-items: center; gap: 8px; }
+.qx-line > span { flex: none; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: var(--ux-accent); color: var(--ux-accent-ink); font-size: 12px; font-weight: 800; }
+.qx-line > b { color: var(--ux-ink-3); }
+.qx-line > button { flex: none; width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--ux-line-2); background: var(--ux-surface); color: var(--ux-ink-3); cursor: pointer; }
+.qx-add { justify-self: start; border: 0; background: none; color: var(--ux-accent-text); font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; padding: 4px 0; }
+.qx-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.qx-points { width: 110px; }
+.qx-primary { min-height: 42px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--ux-accent); color: var(--ux-accent-ink); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 22px -12px var(--ux-brand-glow); transition: background-color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press); }
+.qx-primary:hover { background: var(--ux-accent-hover); }
+.qx-primary:active { transform: var(--ux-press); }
+.qx-error { margin: 0; color: var(--ux-danger); font-size: 12.5px; font-weight: 700; }
+.qx-extras { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--ux-line-2); }
+.qx-audio { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.qx-audio audio { height: 34px; flex: 1; min-width: 200px; }
+.qx-audio button { border: 1px solid var(--ux-line-2); background: var(--ux-surface); color: var(--ux-danger); border-radius: 9px; padding: 6px 12px; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.qx-shape { display: grid; gap: 6px; margin: 4px 0 8px; }
+.qx-shape div { display: flex; gap: 8px; align-items: baseline; padding: 9px 12px; border-radius: 11px; background: var(--ux-surface-2); border: 1px solid var(--ux-line); font-size: 14px; }
+.qx-shape b { color: var(--ux-accent-text); min-width: 18px; }
+@media (max-width: 640px) { .qx-matrix { overflow-x: auto; } .qx-matrix input { width: 52px; } .qx-pair { flex-wrap: wrap; } }

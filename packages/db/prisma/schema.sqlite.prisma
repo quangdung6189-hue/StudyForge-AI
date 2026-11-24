@@ -29,6 +29,12 @@ model User {
   attempts        Attempt[]
   googleAuthAttempts GoogleAuthAttempt[]
   documentUploads DocumentUpload[]
+  attemptRecords  AttemptRecord[]
+  reviewCards     ReviewCard[]
+  reviewLogs      ReviewLog[]
+  ownedClasses    Classroom[]
+  classMemberships ClassMember[]
+  mediaAssets     MediaAsset[]
 }
 
 // Short-lived, single-use state for Google OAuth; never stores Google passwords.
@@ -160,6 +166,12 @@ model Question {
   answerOrigin     String   @default("ai_suggested")
   sourceRefs       Json
   reviewed         Boolean  @default(false)
+  // matching: [{ leftId, rightId }] over this question's options
+  pairs            Json?
+  audioAssetId     String?
+  // Teacher rubric for AI-assisted grading of short/fill answers
+  rubric           String?
+  tags             Json?
   bank             QuestionBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
   options          QuestionOption[]
   @@unique([bankId, position])
@@ -186,12 +198,16 @@ model Quiz {
   isPublished       Boolean  @default(false)
   shareCode         String?  @unique
   publishedVersion  Int      @default(0)
+  opensAt           DateTime?
+  maxAttempts       Int?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   owner             User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   bank              QuestionBank @relation(fields: [bankId], references: [id], onDelete: Restrict)
   versions          QuizVersion[]
   attempts          Attempt[]
+  records           AttemptRecord[]
+  assignments       Assignment[]
   @@index([ownerId, createdAt])
 }
 
@@ -237,8 +253,129 @@ model AttemptAnswer {
   questionId String
   values     Json
   savedAt    DateTime @default(now())
+  // Practice mode: set once the learner checks this answer; it is then locked.
+  checkedAt  DateTime?
   attempt    Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   @@unique([attemptId, questionId])
+}
+
+// Immutable log of every submission (a retry reuses Attempt, never this row).
+model AttemptRecord {
+  id            String   @id @default(uuid())
+  attemptId     String
+  userId        String
+  quizId        String
+  quizVersionId String
+  score         Float
+  totalPoints   Float
+  passed        Boolean
+  startedAt     DateTime
+  submittedAt   DateTime @default(now())
+  // Decoded answers keyed by real question id (never exposed to other students)
+  answers       Json
+  result        Json
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  overrides     GradingOverride[]
+  @@index([userId, submittedAt])
+  @@index([quizId, submittedAt])
+}
+
+// AI-suggested or teacher-confirmed points for one text answer of one submission.
+model GradingOverride {
+  id           String   @id @default(uuid())
+  recordId     String
+  questionId   String
+  points       Float
+  feedback     String   @default("")
+  origin       String   @default("ai_suggested")
+  status       String   @default("suggested")
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  record       AttemptRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  @@unique([recordId, questionId])
+}
+
+// Spaced-repetition card with an immutable content snapshot.
+model ReviewCard {
+  id           String   @id @default(uuid())
+  userId       String
+  sourceKey    String
+  deck         String
+  front        String
+  back         String
+  explanation  String   @default("")
+  citation     String   @default("")
+  easeFactor   Float    @default(2.5)
+  intervalDays Int      @default(0)
+  repetitions  Int      @default(0)
+  lapses       Int      @default(0)
+  dueAt        DateTime @default(now())
+  lastReviewedAt DateTime?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs         ReviewLog[]
+  @@unique([userId, sourceKey])
+  @@index([userId, dueAt])
+  @@index([userId, deck])
+}
+
+model ReviewLog {
+  id         String   @id @default(uuid())
+  cardId     String
+  userId     String
+  rating     Int
+  reviewedAt DateTime @default(now())
+  card       ReviewCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, reviewedAt])
+}
+
+model Classroom {
+  id        String   @id @default(uuid())
+  ownerId   String
+  name      String
+  joinCode  String   @unique
+  createdAt DateTime @default(now())
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members   ClassMember[]
+  assignments Assignment[]
+  @@index([ownerId, createdAt])
+}
+
+model ClassMember {
+  classId  String
+  userId   String
+  joinedAt DateTime @default(now())
+  classroom Classroom @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([classId, userId])
+  @@index([userId])
+}
+
+model Assignment {
+  id        String   @id @default(uuid())
+  classId   String
+  quizId    String
+  dueAt     DateTime?
+  note      String   @default("")
+  createdAt DateTime @default(now())
+  classroom Classroom @relation(fields: [classId], references: [id], onDelete: Cascade)
+  quiz      Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  @@unique([classId, quizId])
+  @@index([classId, createdAt])
+}
+
+// Small private media (question audio). Readable only by signed-in users via an unguessable id.
+model MediaAsset {
+  id        String   @id @default(uuid())
+  ownerId   String
+  mimeType  String
+  size      Int
+  content   Bytes
+  createdAt DateTime @default(now())
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@index([ownerId, createdAt])
 }
 
 model RateLimitBucket {

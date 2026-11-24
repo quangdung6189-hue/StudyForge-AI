@@ -1,5 +1,5 @@
 
-.u042{position:relative;width:350px;height:400px;display:flex;flex-direction:column;padding:22px 20px 18px;border-radius:28px;background:var(--ux-surface);box-shadow:0 0 0 1px var(--ux-line),0 30px 60px -36px var(--ux-shadow-strong)}
+.u042{position:relative;width:350px;height:400px;display:flex;flex-direction:column;padding:22px 20px 18px;border-radius:28px;background:var(--ux-surface);box-shadow:0 0 0 1px var(--ux-line),0 30px 60px -36px var(--ux-shadow-strong-c)}
 .u042-steps{position:relative;display:flex;justify-content:space-between;margin:0 6px;padding:0;list-style:none}
 .u042-line{position:absolute;left:17px;right:17px;top:16px;height:3px;border-radius:2px;background:var(--ux-surface-3)}
 .u042-line i{position:absolute;inset:0;border-radius:inherit;background:var(--ux-grad);transform-origin:0 50%;transform:scaleX(var(--p,0));transition:transform .6s var(--ux-ease)}

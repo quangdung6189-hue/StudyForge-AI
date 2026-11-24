@@ -111,8 +111,10 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
           border: 0;
           padding: 24px;
           border-radius: 26px;
-          background: var(--ux-surface);
-          box-shadow: 0 4px 20px var(--ux-shadow);
+          background:
+            radial-gradient(50% 90% at 50% 0%, color-mix(in srgb, var(--ux-accent) 8%, transparent), transparent 72%),
+            var(--ux-surface);
+          box-shadow: var(--ux-elev-2), var(--ux-highlight);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -120,14 +122,30 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
           text-align: center;
           color: var(--ux-ink);
           cursor: pointer;
-          transition: transform .4s var(--ux-spring), background-color .3s var(--ux-ease);
+          transition: transform .45s var(--ux-spring-pop), background-color .3s var(--ux-ease-color), box-shadow .35s var(--ux-ease-out);
         }
-        .u032-zone:hover {
-          transform: translateY(-2px);
+        @media (hover: hover) and (pointer: fine) {
+          .u032-zone:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--ux-elev-3), var(--ux-highlight);
+          }
+          .u032-zone:hover .u032-orb {
+            transform: translateY(-3px) rotate(-6deg);
+          }
+        }
+        .u032-zone:active:not(:disabled) {
+          transform: var(--ux-press-card);
+        }
+        .u032-zone:disabled {
+          cursor: progress;
         }
         .u032.is-over .u032-zone {
           transform: scale(1.02);
           background: var(--ux-accent-soft);
+          box-shadow: 0 0 0 4px color-mix(in srgb, var(--ux-accent) 18%, transparent), var(--ux-elev-3);
+        }
+        .u032.is-over .u032-orb {
+          transform: translateY(-6px) scale(1.08);
         }
         .u032-zone svg.u032-dash {
           position: absolute;
@@ -159,9 +177,9 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
           display: grid;
           place-items: center;
           color: #fff;
-          background: var(--ux-grad);
-          box-shadow: 0 10px 20px -8px var(--ux-accent);
-          transition: transform .4s var(--ux-spring);
+          background: var(--ux-brand-grad);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 12px 24px -10px var(--ux-brand-glow);
+          transition: transform .5s var(--ux-spring-pop);
         }
         .u032-orb svg {
           width: 26px;
@@ -212,10 +230,10 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
           background: var(--ux-surface);
           box-shadow: 0 0 0 1px var(--ux-line);
           overflow: hidden;
-          animation: u032-in .4s var(--ux-spring);
+          animation: sf-fade-in .3s var(--ux-ease-out) backwards, u032-in .55s var(--ux-spring-entrance) backwards;
         }
         @keyframes u032-in {
-          from { transform: translateY(-8px); opacity: 0; }
+          from { transform: translateY(-8px); }
         }
         .u032-ic {
           width: 36px;
@@ -250,8 +268,9 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
           left: 0;
           bottom: 0;
           height: 3px;
-          background: var(--ux-accent);
-          transition: width .3s ease;
+          background: var(--ux-brand-grad);
+          border-radius: 0 3px 3px 0;
+          transition: width .5s var(--ux-ease-out);
         }
         .u032-row.done .u032-bar {
           background: var(--ux-mint);
@@ -271,6 +290,11 @@ export function LucianUpload({ onUploadSuccess }: LucianUploadProps) {
           color: var(--ux-mint-ink);
           font-size: 13px;
           font-weight: 800;
+          animation: sf-pop-in .45s var(--ux-spring-pop);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .u032-row, .u032-st.ok { animation: sf-fade-in .2s ease-out backwards; }
+          .u032-zone:hover .u032-dash rect, .u032.is-over .u032-dash rect { animation: none; }
         }
         .u032-spin {
           width: 18px;

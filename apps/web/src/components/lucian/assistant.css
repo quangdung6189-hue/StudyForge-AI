@@ -20,19 +20,21 @@
   height: 54px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 18px;
-  background: var(--ux-grad);
+  background: var(--ux-brand-grad);
   color: #FFFFFF;
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 10px 26px -6px color-mix(in srgb, var(--ux-accent) 55%, transparent);
-  transition: transform 0.28s var(--ux-ease-spring), box-shadow 0.25s ease, filter 0.2s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 12px 28px -8px var(--ux-brand-glow);
+  transition: transform 0.4s var(--ux-spring-press), translate 0.45s var(--ux-spring-pop), box-shadow 0.3s var(--ux-ease-out), filter 0.2s var(--ux-ease-color);
 }
 
-.u215-ln:hover {
-  transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 14px 32px -6px color-mix(in srgb, var(--ux-accent) 65%, transparent);
-  filter: brightness(1.06);
+@media (hover: hover) and (pointer: fine) {
+  .u215-ln:hover {
+    translate: 0 -2px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 16px 34px -8px var(--ux-brand-glow);
+    filter: brightness(1.06);
+  }
 }
 
 .u215-ln:active {
@@ -43,7 +45,7 @@
   position: absolute;
   width: 24px;
   height: 24px;
-  transition: transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1), opacity 0.2s;
+  transition: transform 0.3s var(--ux-ease-out), opacity 0.15s var(--ux-ease-out), filter 0.3s var(--ux-ease-out);
 }
 
 .u215-ln .x {
@@ -92,19 +94,22 @@
   flex-direction: column;
   border-radius: 26px;
   background: var(--ux-surface);
-  box-shadow: 0 0 0 1px var(--ux-line), 0 30px 60px -24px var(--ux-shadow-strong);
+  box-shadow: 0 0 0 1px var(--ux-line), 0 30px 60px -24px var(--ux-shadow-strong-c);
   overflow: hidden;
   transform-origin: calc(100% - 28px) calc(100% + 68px);
-  transform: scale(0.1);
+  transform: scale(0.8);
   opacity: 0;
+  filter: blur(4px);
   pointer-events: none;
-  transition: transform 0.42s cubic-bezier(0.3, 1.15, 0.4, 1), opacity 0.25s;
+  transition: transform 0.2s var(--ux-ease-out), opacity 0.2s var(--ux-ease-out), filter 0.2s var(--ux-ease-out);
 }
 
 .u215.is-open .u215-wg {
   transform: none;
   opacity: 1;
+  filter: none;
   pointer-events: auto;
+  transition: transform 0.45s var(--ux-spring-pop), opacity 0.3s var(--ux-ease-out), filter 0.3s var(--ux-ease-out);
 }
 
 /* Lucian #215 Signature Header (Clean Minimalist Surface) */
@@ -677,12 +682,15 @@
     border-radius: 26px 26px 0 0;
     transform: translateY(105%);
     transform-origin: center bottom;
+    filter: none;
     padding-bottom: env(safe-area-inset-bottom);
+    transition: transform 0.2s cubic-bezier(0.33, 0.17, 0.67, 0.5), opacity 0.2s var(--ux-ease-out);
   }
 
   .u215.is-open .u215-wg {
     transform: translateY(0);
     pointer-events: auto;
+    transition: transform 0.4s var(--ux-ease-soft), opacity 0.3s var(--ux-ease-out);
   }
 
   .assistant-drag-handle {

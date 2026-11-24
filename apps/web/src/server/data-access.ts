@@ -10,6 +10,7 @@ import {
   assertCitations,
 } from '@studyforge/core';
 import { QuestionListSchema } from '@studyforge/contracts';
+import { isPracticeQuiz, practiceFeedback } from './practice';
 import type {
   UserDTO,
   DocumentDTO,
@@ -24,6 +25,33 @@ export class DalError extends Error {
     super(message);
     this.name = 'DalError';
   }
+}
+
+/** DB row → question DTO, including the optional shapes (matching pairs, audio, rubric, tags). */
+export function toQuestionDTO(q: {
+  id: string; type: string; stem: string; options: { id: string; text: string }[]; correctOptionIds: unknown; acceptedAnswers: unknown;
+  explanation: string; points: number; difficulty: string; topic: string; answerOrigin: string; sourceRefs: unknown; reviewed: boolean;
+  pairs?: unknown; audioAssetId?: string | null; rubric?: string | null; tags?: unknown;
+}): FullQuestionDTO {
+  return {
+    id: q.id,
+    type: q.type as FullQuestionDTO['type'],
+    stem: q.stem,
+    options: q.options.map(o => ({ id: o.id, text: o.text })),
+    correctOptionIds: q.correctOptionIds as string[],
+    acceptedAnswers: q.acceptedAnswers as string[],
+    explanation: q.explanation,
+    points: q.points,
+    difficulty: q.difficulty as FullQuestionDTO['difficulty'],
+    topic: q.topic,
+    answerOrigin: q.answerOrigin as FullQuestionDTO['answerOrigin'],
+    sourceRefs: q.sourceRefs as FullQuestionDTO['sourceRefs'],
+    reviewed: q.reviewed,
+    ...(Array.isArray(q.pairs) && q.pairs.length ? { pairs: q.pairs as NonNullable<FullQuestionDTO['pairs']> } : {}),
+    ...(q.audioAssetId ? { audioAssetId: q.audioAssetId } : {}),
+    ...(q.rubric ? { rubric: q.rubric } : {}),
+    ...(Array.isArray(q.tags) && q.tags.length ? { tags: q.tags as string[] } : {}),
+  };
 }
 
 // ==================== DOCUMENTS DAL ====================
@@ -207,11 +235,15 @@ export async function listUserQuizzes(userId: string) {
       shareCode: true,
       allowReview: true,
       deadline: true,
+      opensAt: true,
+      maxAttempts: true,
       createdAt: true,
     },
   });
 
   return quizzes.map(q => ({
+    opensAt: q.opensAt ? q.opensAt.toISOString() : null,
+    maxAttempts: q.maxAttempts,
     id: q.id,
     title: q.title,
     description: q.description,
@@ -243,21 +275,7 @@ export async function getOwnedQuiz(userId: string, quizId: string) {
 
   if (!quiz) throw new DalError('NOT_FOUND', 'Bài kiểm tra không tồn tại hoặc bạn không có quyền truy cập');
 
-  const questions: FullQuestionDTO[] = quiz.bank.questions.map(q => ({
-    id: q.id,
-    type: q.type as any,
-    stem: q.stem,
-    options: q.options.map(o => ({ id: o.id, text: o.text })),
-    correctOptionIds: q.correctOptionIds as string[],
-    acceptedAnswers: q.acceptedAnswers as string[],
-    explanation: q.explanation,
-    points: q.points,
-    difficulty: q.difficulty as any,
-    topic: q.topic,
-    answerOrigin: q.answerOrigin as any,
-    sourceRefs: q.sourceRefs as any,
-    reviewed: q.reviewed,
-  }));
+  const questions: FullQuestionDTO[] = quiz.bank.questions.map(toQuestionDTO);
 
   return {
     id: quiz.id,
@@ -267,6 +285,9 @@ export async function getOwnedQuiz(userId: string, quizId: string) {
     durationMinutes: quiz.durationMinutes,
     isPublished: quiz.isPublished,
     shareCode: quiz.shareCode,
+    allowReview: quiz.allowReview,
+    opensAt: quiz.opensAt ? quiz.opensAt.toISOString() : null,
+    maxAttempts: quiz.maxAttempts,
     createdAt: quiz.createdAt.toISOString(),
     questions,
   };
@@ -297,7 +318,7 @@ export async function updateOwnedQuizQuestions(
       where: { bankId: quiz.bankId },
     });
 
-    await tx.question.createMany({ data: questions.map(({ options, ...q }, position) => ({ ...q, bankId: quiz.bankId, position })) });
+    await tx.question.createMany({ data: questions.map(({ options, ...q }, position) => ({ ...q, bankId: quiz.bankId, position })) as any });
     const options = questions.flatMap(q => q.options.map((option, position) => ({ ...option, questionId: q.id, position })));
     if (options.length) await tx.questionOption.createMany({ data: options });
     if (settings) await tx.quiz.update({ where: { id: quiz.id }, data: settings });
@@ -317,6 +338,8 @@ export async function updateOwnedQuizSettings(
     deadline?: string | null;
     isPublished?: boolean;
     mode?: 'exam' | 'practice';
+    opensAt?: string | null;
+    maxAttempts?: number | null;
   }
 ) {
   const quiz = await db.quiz.findFirst({
@@ -340,6 +363,8 @@ export async function updateOwnedQuizSettings(
   if (settings.allowReview !== undefined) updateData.allowReview = settings.allowReview;
   if (settings.deadline !== undefined) updateData.deadline = settings.deadline ? new Date(settings.deadline) : null;
   if (settings.isPublished !== undefined) updateData.isPublished = settings.isPublished;
+  if (settings.opensAt !== undefined) updateData.opensAt = settings.opensAt ? new Date(settings.opensAt) : null;
+  if (settings.maxAttempts !== undefined) updateData.maxAttempts = settings.maxAttempts && settings.maxAttempts > 0 ? settings.maxAttempts : null;
 
   const updated = await db.quiz.update({
     where: { id: quiz.id },
@@ -399,21 +424,7 @@ export async function publishOwnedQuiz(
     const deadlineDate = options.deadline ? new Date(options.deadline) : null;
     const duration = options.durationMinutes ?? quiz.durationMinutes;
 
-    const questions: FullQuestionDTO[] = quiz.bank.questions.map(q => ({
-      id: q.id,
-      type: q.type as any,
-      stem: q.stem,
-      options: q.options.map(o => ({ id: o.id, text: o.text })),
-      correctOptionIds: q.correctOptionIds as string[],
-      acceptedAnswers: q.acceptedAnswers as string[],
-      explanation: q.explanation,
-      points: q.points,
-      difficulty: q.difficulty as any,
-      topic: q.topic,
-      answerOrigin: q.answerOrigin as any,
-      sourceRefs: q.sourceRefs as any,
-      reviewed: q.reviewed,
-    }));
+    const questions: FullQuestionDTO[] = quiz.bank.questions.map(toQuestionDTO);
 
     if (!QuestionListSchema.safeParse(questions).success) throw new DalError('CONFLICT', 'Câu hỏi hoặc đáp án chưa hợp lệ');
     const chunks = await tx.documentChunk.findMany({ where: { documentId: quiz.bank.documentId } });
@@ -485,12 +496,19 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
 
   const latestVersion = quiz.versions[0];
   const snapshot = latestVersion.snapshot as unknown as QuizSnapshot;
-  const isPracticeMode = quiz.description.includes('[mode:practice]') || snapshot.description?.includes('[mode:practice]');
+  const isPracticeMode = isPracticeQuiz(quiz.description, snapshot);
 
   const now = new Date();
   if (snapshot.deadline && new Date(snapshot.deadline).getTime() <= now.getTime()) {
     throw new DalError('EXPIRED', 'Đề thi đã quá thời hạn làm bài');
   }
+  if (quiz.opensAt && quiz.opensAt.getTime() > now.getTime()) {
+    const opens = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(quiz.opensAt);
+    throw new DalError('FORBIDDEN', `Phòng thi sẽ mở lúc ${opens}.`);
+  }
+  const attemptsUsed = await db.attemptRecord.count({ where: { userId: user.id, quizId: quiz.id } });
+  const limitReached = quiz.maxAttempts != null && attemptsUsed >= quiz.maxAttempts;
+  const limits = { maxAttempts: quiz.maxAttempts, attemptsUsed };
 
   // Check if student already started an attempt for this version
   const existingAttempt = await db.attempt.findUnique({
@@ -504,8 +522,11 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
   });
 
   if (existingAttempt) {
-    // If student already submitted and requested retry (or in practice mode):
-    if ((params.retry || isPracticeMode) && existingAttempt.status === 'submitted') {
+    if (params.retry && existingAttempt.status === 'submitted' && limitReached) {
+      throw new DalError('CONFLICT', `Bạn đã dùng hết ${quiz.maxAttempts} lượt làm bài của đề này.`);
+    }
+    // If student already submitted and requested retry (or in practice mode, while attempts remain):
+    if ((params.retry || isPracticeMode) && existingAttempt.status === 'submitted' && !limitReached) {
       await db.attemptAnswer.deleteMany({ where: { attemptId: existingAttempt.id } });
       const newSeed = randomBytes(32).toString('hex');
       const startedAt = now;
@@ -536,13 +557,18 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
         answers: {},
         isSubmitted: false,
         isPracticeMode,
+        ...limits,
       };
     }
 
     const questions = studentQuestions(snapshot, existingAttempt.seed);
     const answers: AnswerMap = {};
+    const checked: Record<string, ReturnType<typeof practiceFeedback>> = {};
     for (const a of existingAttempt.answers) {
       answers[a.questionId] = a.values as string[];
+      if (isPracticeMode && a.checkedAt && existingAttempt.status !== 'submitted') {
+        try { checked[a.questionId] = practiceFeedback(snapshot, existingAttempt.seed, a.questionId, a.values as string[]); } catch {}
+      }
     }
     return {
       attemptId: existingAttempt.id,
@@ -558,8 +584,12 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
       passed: existingAttempt.passed ?? undefined,
       details: (existingAttempt.status === 'submitted' && snapshot.allowReview) ? (existingAttempt.result as any) : undefined,
       isPracticeMode,
+      checked,
+      ...limits,
     };
   }
+
+  if (limitReached) throw new DalError('CONFLICT', `Bạn đã dùng hết ${quiz.maxAttempts} lượt làm bài của đề này.`);
 
   const seed = randomBytes(32).toString('hex');
   const startedAt = now;
@@ -590,6 +620,7 @@ export async function startQuizAttempt(user: UserDTO, params: { quizId?: string;
     answers: {},
     isSubmitted: false,
     isPracticeMode,
+    ...limits,
   };
 }
 
@@ -608,11 +639,12 @@ export async function saveAttemptAnswers(userId: string, attemptId: string, answ
     studentQuestions(snapshot, attempt.seed).map(q => q.id)
   );
 
+  const locked = new Set((await db.attemptAnswer.findMany({ where: { attemptId, checkedAt: { not: null } }, select: { questionId: true } })).map(a => a.questionId));
   const operations = [];
   const now = new Date();
   for (const [questionId, values] of Object.entries(answers)) {
-    if (!validQuestionIds.has(questionId)) {
-      continue; // Prevent unknown question IDs from poisoning the attempt
+    if (!validQuestionIds.has(questionId) || locked.has(questionId)) {
+      continue; // Unknown ids never poison the attempt; checked practice answers stay locked
     }
     const valArray = Array.isArray(values) ? values : [String(values)];
     operations.push(
@@ -674,11 +706,13 @@ export async function submitQuizAttempt(userId: string, attemptId: string, answe
 
     // Merge answers from database and submitted argument (only merge submitted answers if NOT expired)
     const answerMap: AnswerMap = {};
+    const locked = new Set<string>();
     for (const a of attempt.answers) {
       answerMap[a.questionId] = a.values as string[];
+      if (a.checkedAt) locked.add(a.questionId);
     }
     if (answers && !expired) {
-      Object.assign(answerMap, answers);
+      for (const [questionId, values] of Object.entries(answers)) if (!locked.has(questionId)) answerMap[questionId] = values;
     }
 
     // Decode student answers from transient IDs to real IDs
@@ -699,8 +733,26 @@ export async function submitQuizAttempt(userId: string, attemptId: string, answe
       },
     });
 
+    // Immutable history row: retries reuse the Attempt, never this record.
+    const record = await tx.attemptRecord.create({
+      data: {
+        attemptId: attempt.id,
+        userId,
+        quizId: attempt.quizId,
+        quizVersionId: attempt.quizVersionId,
+        score,
+        totalPoints,
+        passed,
+        startedAt: attempt.startedAt,
+        submittedAt: now,
+        answers: decodedAnswers as any,
+        result: details as any,
+      },
+    });
+
     return {
       attemptId: attempt.id,
+      recordId: record.id,
       submittedAt: now.toISOString(),
       score,
       totalPoints,

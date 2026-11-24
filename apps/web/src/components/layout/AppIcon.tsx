@@ -14,7 +14,10 @@ export type AppIconName =
   | 'forge'
   | 'theme'
   | 'check'
-  | 'close';
+  | 'close'
+  | 'bank'
+  | 'classes'
+  | 'progress';
 
 interface AppIconProps extends SVGProps<SVGSVGElement> {
   name: AppIconName;
@@ -136,6 +139,33 @@ export function AppIcon({ name, active, className = '', ...props }: AppIconProps
         <>
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
+        </>
+      )}
+
+      {name === 'bank' && (
+        <>
+          {/* Bank: các lớp câu hỏi xếp chồng */}
+          <path className="icon-part icon-a" d="M12 3.5 21 8l-9 4.5L3 8l9-4.5Z" />
+          <path className="icon-part icon-b" d="m3 12.5 9 4.5 9-4.5" />
+          <path className="icon-part icon-c" d="m3 16.5 9 4.5 9-4.5" />
+        </>
+      )}
+
+      {name === 'classes' && (
+        <>
+          {/* Classes: nhóm học sinh */}
+          <circle className="icon-part icon-a" cx="9" cy="8" r="3.2" />
+          <path className="icon-part icon-b" d="M3.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" />
+          <path className="icon-part icon-c" d="M15.5 5.2a3 3 0 0 1 0 5.6M17.2 14.7c1.9.6 3 2.2 3.3 4.8" />
+        </>
+      )}
+
+      {name === 'progress' && (
+        <>
+          {/* Progress: đường tiến bộ đi lên */}
+          <path className="icon-part icon-a" d="M3.5 20.5h17" />
+          <path className="icon-part icon-b" d="m4.5 15.5 4.5-4.5 3.5 3 6.5-7" />
+          <path className="icon-part icon-c" d="M15.5 7h3.5v3.5" />
         </>
       )}
     </svg>

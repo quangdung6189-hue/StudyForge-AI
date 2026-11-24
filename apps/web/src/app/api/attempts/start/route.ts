@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const attempt = await startQuizAttempt(user, { quizId, shareCode, retry });
     return NextResponse.json(attempt);
   } catch (err: any) {
-    const status = err.code === 'UNAUTHORIZED' ? 401 : err.code === 'NOT_FOUND' ? 404 : err.code === 'EXPIRED' ? 410 : 500;
+    const status = err.code === 'UNAUTHORIZED' ? 401 : err.code === 'FORBIDDEN' ? 403 : err.code === 'NOT_FOUND' ? 404 : err.code === 'CONFLICT' ? 409 : err.code === 'EXPIRED' ? 410 : 500;
     return NextResponse.json({ error: { code: err.code || 'ERROR', message: err.message } }, { status });
   }
 }

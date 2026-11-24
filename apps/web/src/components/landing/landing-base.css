@@ -1,48 +1,252 @@
-/* StudyForge landing base — Midnight Sapphire & Luminous Indigo · UI/UX Pro Max Optimized */
-.sf-landing{--sf-bg:#090F1E;--sf-ink:#F8FAFC;--sf-ink-2:#CBD5E1;--sf-ink-3:#94A3B8;--sf-accent:#818CF8;--sf-accent-2:#38BDF8;--sf-mint:#34D399;--sf-line:rgba(148,163,184,.16);--sf-line-2:rgba(148,163,184,.28);--sf-card:rgba(17,25,44,.86);position:relative;min-height:100vh;background:var(--sf-bg);color:var(--sf-ink);overflow:clip;font-family:'Be Vietnam Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
-.sf-scroll-progress{position:fixed;inset:0 0 auto 0;height:2.5px;z-index:100;background:linear-gradient(90deg,#6366F1,#38BDF8,#34D399);transform-origin:0 50%;pointer-events:none}
-.sf-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.sf-bg-grid{position:absolute;inset:-64px;background-image:linear-gradient(rgba(129,140,248,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(129,140,248,.06) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(72% 58% at 50% 30%,black 30%,transparent 75%);-webkit-mask-image:radial-gradient(72% 58% at 50% 30%,black 30%,transparent 75%)}
-.sf-bg-glow{position:absolute;left:50%;top:-220px;width:960px;height:560px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(99,102,241,.24),rgba(56,189,248,.08) 48%,transparent 75%);filter:blur(18px)}
-.sf-bg-glow2{position:absolute;left:50%;top:340px;width:760px;height:360px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(56,189,248,.14),rgba(52,211,153,.06) 50%,transparent 72%)}
-.sf-beam{position:absolute;border-radius:999px;filter:blur(1px);opacity:.45}
-.sf-beam-x{left:-10%;right:-10%;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,.45) 20%,rgba(56,189,248,.65) 50%,transparent 80%)}
-.sf-beam-y{top:-10%;bottom:-10%;width:1px;background:linear-gradient(180deg,transparent,rgba(129,140,248,.4) 40%,rgba(52,211,153,.35) 75%,transparent)}
-@media(prefers-reduced-motion:no-preference){
-  .sf-bg-grid{animation:sf-grid-pan 22s linear infinite;will-change:transform}
-  .sf-beam-x{animation:sf-beam-x 7s ease-in-out infinite}
-  .sf-beam-y{animation:sf-beam-y 9s ease-in-out infinite}
+/* StudyForge Editorial Swiss Landing Base — Adaptive Light & Dark Theme (--ux-*) */
+.sf-landing {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--ux-page);
+  color: var(--ux-ink);
+  overflow-x: clip;
+  font-family: var(--font-sans, 'Be Vietnam Pro'), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
-.sf-bg[data-paused="true"] .sf-bg-grid,.sf-bg[data-paused="true"] .sf-beam{animation-play-state:paused}
-@keyframes sf-beam-x{0%,100%{transform:translate3d(0,120px,0);opacity:0}25%{opacity:.5}50%{transform:translate3d(0,300px,0);opacity:.3}75%{opacity:.5}}
-@keyframes sf-beam-y{0%,100%{transform:translate3d(-220px,0,0);opacity:0}30%{opacity:.5}60%{transform:translate3d(240px,0,0);opacity:.2}}
-@keyframes sf-grid-pan{to{transform:translate3d(44px,44px,0)}}
-@keyframes sf-shine-sweep{to{transform:translate3d(340%,0,0) skewX(-18deg)}}
-@keyframes sf-pop-in{from{opacity:0;transform:translate3d(0,10px,0) scale(.92)}to{opacity:1;transform:none}}
-@keyframes sf-float{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-8px,0)}}
-/* nav */
-.sf-nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:rgba(9,15,30,.82);border-bottom:1px solid var(--sf-line)}
-.sf-nav-inner{max-width:1160px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:16px}
-.sf-brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--sf-ink);margin-right:auto}
-.sf-brand-name{font-weight:800;font-size:17px;letter-spacing:-.02em;line-height:1.15}
-.sf-brand-name small{display:block;font-size:10.5px;font-weight:600;color:var(--sf-accent);letter-spacing:.08em;text-transform:uppercase}
-.sf-nav-links{display:flex;gap:4px}
-.sf-nav-links a{color:var(--sf-ink-2);text-decoration:none;font-size:13.5px;font-weight:600;padding:8px 13px;border-radius:999px;transition:color .2s ease,background-color .2s ease}
-.sf-nav-cta{display:flex;gap:10px;align-items:center}
-@media(hover:hover) and (pointer:fine){.sf-nav-links a:hover{color:var(--sf-ink);background:rgba(129,140,248,.12)}}
-/* logo */
-.sf-logo{display:inline-flex;align-items:center}
-.sf-logo-mark{position:relative;width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#4F46E5 0%,#2563EB 55%,#0EA5E9 100%);display:flex;align-items:center;justify-content:center;gap:1px;color:#FFFFFF;font-weight:900;font-size:19px;letter-spacing:-.03em;box-shadow:0 8px 24px -6px rgba(79,70,229,.65),inset 0 1px 0 rgba(255,255,255,.35);overflow:hidden;cursor:default;touch-action:none;animation:sf-pop-in .6s cubic-bezier(.2,.8,.2,1) both}
-.sf-logo-mark::after{content:"";position:absolute;inset:0;left:-80%;width:60%;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.4) 50%,transparent 70%);transform:skewX(-18deg);animation:sf-shine-sweep 3.4s ease-in-out infinite;pointer-events:none}
-.sf-logo-l{display:inline-block;transform:translateY(var(--y,0px));will-change:transform}
-/* buttons */
-.sf-btn{position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:999px;font-weight:700;text-decoration:none;overflow:hidden;white-space:nowrap;transition:transform var(--ux-motion-fast) var(--ux-ease),box-shadow .2s ease,background-color .2s ease,filter .2s ease}
-.sf-btn:active{transform:scale(0.975)}
-.sf-btn-primary{background:linear-gradient(135deg,#4F46E5 0%,#2563EB 100%);color:#FFFFFF;box-shadow:0 10px 26px -6px rgba(79,70,229,.6),inset 0 1px 0 rgba(255,255,255,.22);border:1px solid rgba(165,180,252,.3)}
-.sf-btn-primary:hover{filter:brightness(1.08);box-shadow:0 14px 32px -6px rgba(79,70,229,.72)}
-.sf-btn-ghost{background:rgba(148,163,184,.10);color:var(--sf-ink);border:1px solid var(--sf-line-2)}
-.sf-btn-lg{padding:14px 32px;font-size:15.5px}
-.sf-btn-sm{padding:9px 18px;font-size:13.5px}
-@media(hover:hover) and (pointer:fine){.sf-btn-ghost:hover{background:rgba(129,140,248,.16);border-color:rgba(129,140,248,.4)}}
-@media(max-width:720px){.sf-nav-links{display:none}}
-@media(prefers-reduced-motion:reduce){.sf-bg-grid,.sf-beam,.sf-logo-mark::after{animation:none!important}}
+
+.sf-skip-link:focus-visible {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 120;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--ux-ink);
+  color: var(--ux-page);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--ux-shadow-strong);
+}
+
+/* Subtle architectural paper grid — calm, non-distracting */
+.sf-bg {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 820px;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.sf-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--ux-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--ux-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.52;
+  mask-image: radial-gradient(ellipse 84% 72% at 50% 10%, #000 24%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 84% 72% at 50% 10%, #000 24%, transparent 80%);
+}
+
+.sf-bg-wash {
+  position: absolute;
+  left: 50%;
+  top: -190px;
+  width: 960px;
+  height: 460px;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, var(--ux-accent-soft), transparent 78%);
+  opacity: 0.82;
+}
+
+/* Clean Sticky Top Navigation */
+.sf-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: color-mix(in oklab, var(--ux-surface) 88%, transparent);
+  border-bottom: 1px solid var(--ux-line);
+}
+
+.sf-nav-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sf-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ux-ink);
+  margin-right: auto;
+  min-width: 0;
+}
+
+.sf-logo-clean {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--ux-ink);
+  color: var(--ux-page);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: transform 150ms ease-out, background-color 150ms ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sf-brand:hover .sf-logo-clean {
+    transform: translateY(-1px);
+    background: var(--ux-accent);
+    color: var(--ux-accent-ink);
+  }
+}
+
+.sf-brand-name {
+  font-weight: 800;
+  font-size: 15.5px;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--ux-ink);
+}
+
+.sf-brand-name small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ux-ink-3);
+  letter-spacing: 0;
+  margin-top: 2px;
+}
+
+.sf-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sf-nav-links a {
+  color: var(--ux-ink-2);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 8px;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sf-nav-links a:hover {
+    color: var(--ux-ink);
+    background: var(--ux-surface-2);
+  }
+}
+
+.sf-nav-cta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Clean Minimalist Buttons — Single solid tone, crisp borders, tactile press */
+.sf-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+
+.sf-btn:active {
+  transform: scale(0.98);
+}
+
+.sf-btn:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 3px;
+}
+
+.sf-btn-primary {
+  background: var(--ux-ink);
+  color: var(--ux-page);
+  border: 1px solid var(--ux-ink);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sf-btn-primary:hover {
+    background: var(--ux-accent);
+    border-color: var(--ux-accent);
+    color: var(--ux-accent-ink);
+    box-shadow: 0 8px 20px -8px color-mix(in oklab, var(--ux-accent) 45%, transparent);
+  }
+}
+
+.sf-btn-ghost {
+  background: var(--ux-surface);
+  color: var(--ux-ink);
+  border: 1px solid var(--ux-line-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sf-btn-ghost:hover {
+    background: var(--ux-surface-2);
+    border-color: var(--ux-ink-3);
+  }
+}
+
+.sf-btn-lg {
+  min-height: 46px;
+  padding: 0 22px;
+  font-size: 14.5px;
+}
+
+.sf-btn-md {
+  min-height: 42px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+.sf-btn-sm {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+@media (max-width: 820px) {
+  .sf-nav-links {
+    display: none;
+  }
+  .sf-nav-inner {
+    padding: 10px 16px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .sf-brand-name small {
+    display: none;
+  }
+  .sf-nav-cta .sf-btn-ghost {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-btn,
+  .sf-logo-clean {
+    transition: none;
+  }
+}

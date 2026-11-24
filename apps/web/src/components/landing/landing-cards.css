@@ -1,16 +1,671 @@
-/* StudyForge landing features + footer — Midnight Sapphire & Luminous Indigo */
-.sf-features{max-width:1120px;margin:70px auto 0;padding:0 24px 30px;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
-.sf-card{position:relative;border-radius:22px;padding:28px;background:var(--sf-card);border:1px solid var(--sf-line);overflow:hidden;text-align:left;transition:border-color .25s ease,box-shadow .25s ease,transform .25s ease}
-.sf-card::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,.48),rgba(56,189,248,.42),transparent)}
-.sf-card-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:23px;background:rgba(99,102,241,.16);border:1px solid rgba(129,140,248,.34);color:#C7D2FE;margin-bottom:16px}
-.sf-card h3{margin:0 0 8px;font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--sf-ink)}
-.sf-card p{margin:0;font-size:13.8px;line-height:1.65;color:var(--sf-ink-2)}
-.sf-card-num{position:absolute;top:18px;right:20px;font-size:12px;font-weight:800;color:#818CF8;letter-spacing:.1em}
-.sf-stats{display:flex;gap:26px;margin-top:18px}
-.sf-stats b{display:block;font-size:22px;font-weight:800;color:var(--sf-ink)}
-.sf-stats span{font-size:12px;color:var(--sf-ink-3)}
-@media(hover:hover) and (pointer:fine){.sf-card:hover{border-color:rgba(129,140,248,.46);transform:translateY(-2px);box-shadow:0 20px 60px -20px rgba(2,6,23,.8),0 0 32px -14px rgba(99,102,241,.28)}}
-.sf-footer{border-top:1px solid var(--sf-line);margin-top:40px}
-.sf-footer-inner{max-width:1120px;margin:0 auto;padding:22px 24px 40px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--sf-ink-3)}
-.sf-footer-inner a{color:#A5B4FC}
-.sf-footer-inner .sf-sp{flex:1}
+/* StudyForge Editorial Swiss Sections — Lucian #214 Living Bento, Workflow, CTA Banner & Footer */
+.sf-sections-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 48px 24px 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+}
+
+.sf-section-head {
+  max-width: 660px;
+  margin-bottom: 30px;
+}
+
+.sf-eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ux-accent-text);
+  margin-bottom: 8px;
+}
+
+.sf-section-head h2 {
+  margin: 0 0 10px;
+  font-size: clamp(1.55rem, 1.15rem + 1.35vw, 2.15rem);
+  font-weight: 850;
+  letter-spacing: -0.028em;
+  color: var(--ux-ink);
+  line-height: 1.22;
+  text-wrap: balance;
+}
+
+.sf-section-head p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.66;
+  color: var(--ux-ink-2);
+}
+
+/* ========================================================
+   Lucian UX/UI Prompt #214 — Responsive Living Bento Grid
+   MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#214
+   ======================================================== */
+.sf-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.u214-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-line);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--ux-shadow);
+  transition: transform 0.3s var(--ux-ease), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .u214-tile:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--ux-accent) 45%, var(--ux-line-2));
+    box-shadow: var(--ux-shadow-strong);
+  }
+}
+
+.u214-tile:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 2px;
+  border-color: var(--ux-accent);
+}
+
+.u214-kicker {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ux-ink-3);
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.u214-tile h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ux-ink);
+  line-height: 1.35;
+}
+
+.u214-tile p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: var(--ux-ink-2);
+}
+
+/* Bento Grid Placement */
+.u214-a {
+  grid-column: 1 / 8;
+  min-height: 224px;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.u214-b {
+  grid-column: 8 / 13;
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.u214-c {
+  grid-column: 1 / 5;
+  min-height: 228px;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.u214-d {
+  grid-column: 5 / 8;
+  min-height: 228px;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.u214-e {
+  grid-column: 1 / 13;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 120px;
+}
+
+/* Tile A: Subject Chips + Live Formula Typing */
+.u214-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.u214-chips {
+  display: flex;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.u214-chips i {
+  display: inline-grid;
+  place-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 750;
+  border: 2px solid var(--ux-surface);
+  background: var(--ux-surface-2);
+  color: var(--ux-ink-2);
+  margin-left: -8px;
+  transition: transform 0.42s var(--ux-spring), background-color 0.2s ease, color 0.2s ease;
+}
+
+.u214-chips i:first-child {
+  margin-left: 0;
+}
+
+.u214-a.is-on .u214-chips i {
+  margin-left: 4px;
+  background: var(--ux-accent-soft);
+  color: var(--ux-accent-text);
+}
+
+.u214-ty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--ux-surface-2);
+  border: 1px solid var(--ux-line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ux-ink);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.u214-ty-tag {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-line-2);
+  color: var(--ux-accent-text);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.u214-ty-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.u214-ty-text::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 13px;
+  margin-left: 3px;
+  vertical-align: -2px;
+  background: var(--ux-accent);
+}
+
+/* Tile B: Search Query & Citation Bars */
+.u214-sb {
+  margin-top: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--ux-surface-2);
+  border: 1px solid var(--ux-line);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ux-ink);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.u214-sb svg {
+  flex: none;
+  color: var(--ux-ink-3);
+}
+
+.u214-rs {
+  margin-top: auto;
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.u214-rs-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.u214-rs-pg {
+  flex: none;
+  width: 42px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ux-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.u214-rs-row i {
+  flex: 1;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--ux-surface-3);
+  transform-origin: left center;
+  transform: scaleX(0.42);
+  opacity: 0.72;
+  transition: transform 0.45s var(--ux-spring), opacity 0.25s ease, background-color 0.25s ease;
+}
+
+.u214-rs-row:first-child i {
+  background: color-mix(in oklab, var(--ux-accent) 52%, transparent);
+}
+
+.u214-rs-row:nth-child(2) i { transition-delay: 50ms; }
+.u214-rs-row:nth-child(3) i { transition-delay: 100ms; }
+.u214-rs-row:nth-child(4) i { transition-delay: 150ms; }
+
+.u214-b.is-on .u214-rs-row i {
+  transform: scaleX(var(--w, 0.85));
+  opacity: 1;
+}
+
+/* Tile C: Bloom Difficulty Matrix Bars */
+.u214-br {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  align-items: end;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.u214-br-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.u214-br-track {
+  width: 100%;
+  height: 54px;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 6px;
+  background: var(--ux-surface-2);
+  overflow: hidden;
+  padding: 2px;
+}
+
+.u214-br-track i {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--ux-mint) 64%, var(--ux-accent));
+  transform-origin: bottom center;
+  transform: scaleY(calc(var(--h) * 0.55));
+  transition: transform 0.48s var(--ux-spring);
+  transition-delay: calc(var(--i) * 40ms);
+}
+
+.u214-c.is-on .u214-br-track i {
+  transform: scaleY(var(--h));
+}
+
+.u214-br-col span {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ux-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tile D: Security Shield Pulse */
+.u214-sh {
+  position: relative;
+  align-self: flex-end;
+  width: 44px;
+  height: 48px;
+  margin-top: auto;
+  color: var(--ux-accent);
+  display: grid;
+  place-items: center;
+}
+
+.u214-sh::before,
+.u214-sh::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.u214-d.is-on .u214-sh::before {
+  animation: u214-pulse 1.5s ease-out infinite;
+}
+
+.u214-d.is-on .u214-sh::after {
+  animation: u214-pulse 1.5s ease-out 0.75s infinite;
+}
+
+@keyframes u214-pulse {
+  0% { transform: scale(0.7); opacity: 0.55; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+.u214-sh svg {
+  position: relative;
+  width: 34px;
+  height: 38px;
+}
+
+/* Tile E: Multi-format Marquee */
+.u214-e-copy {
+  max-width: 430px;
+}
+
+.u214-lg {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+
+.u214-lt {
+  display: flex;
+  gap: 10px;
+  width: max-content;
+  animation: u214-marquee 18s linear infinite;
+  animation-play-state: paused;
+}
+
+.u214-e.is-on .u214-lt {
+  animation-play-state: running;
+}
+
+@keyframes u214-marquee {
+  to { transform: translateX(-50%); }
+}
+
+.u214-lt i {
+  flex: none;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--ux-surface-2);
+  border: 1px solid var(--ux-line-2);
+  display: inline-grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--ux-ink-2);
+}
+
+/* 3-Step Editorial Workflow Strip */
+.sf-workflow-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.sf-workflow-item {
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-line);
+  box-shadow: var(--ux-shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.sf-workflow-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sf-workflow-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: var(--ux-surface-2);
+  border: 1px solid var(--ux-line-2);
+  font-size: 11.5px;
+  font-weight: 750;
+  color: var(--ux-ink);
+}
+
+.sf-workflow-num {
+  font-size: 22px;
+  font-weight: 850;
+  color: var(--ux-line-2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.sf-workflow-item h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--ux-ink);
+  line-height: 1.38;
+}
+
+.sf-workflow-item p {
+  margin: 0;
+  font-size: 13.8px;
+  line-height: 1.65;
+  color: var(--ux-ink-2);
+}
+
+/* Calm CTA Banner */
+.sf-cta-banner {
+  border-radius: 18px;
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-line-2);
+  padding: 36px;
+  box-shadow: var(--ux-shadow);
+}
+
+.sf-cta-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.sf-cta-copy {
+  max-width: 580px;
+}
+
+.sf-cta-banner h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.3rem, 1.05rem + 0.8vw, 1.65rem);
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  color: var(--ux-ink);
+  line-height: 1.25;
+}
+
+.sf-cta-banner p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ux-ink-2);
+}
+
+.sf-cta-banner-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Minimal Footer */
+.sf-footer {
+  border-top: 1px solid var(--ux-line);
+  background: var(--ux-surface);
+}
+
+.sf-footer-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 24px 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.sf-footer-brand strong {
+  display: block;
+  font-size: 14.5px;
+  color: var(--ux-ink);
+  margin-bottom: 3px;
+}
+
+.sf-footer-brand span {
+  font-size: 12.5px;
+  color: var(--ux-ink-3);
+}
+
+.sf-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.sf-footer-links a {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ux-ink-2);
+  text-decoration: none;
+}
+
+.sf-footer-links a:hover {
+  color: var(--ux-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 960px) {
+  .u214-a { grid-column: 1 / 13; }
+  .u214-b { grid-column: 1 / 13; grid-row: auto; }
+  .u214-c { grid-column: 1 / 7; }
+  .u214-d { grid-column: 7 / 13; }
+  .u214-e { grid-column: 1 / 13; flex-direction: column; align-items: stretch; }
+}
+
+@media (max-width: 760px) {
+  .u214-c,
+  .u214-d {
+    grid-column: 1 / 13;
+  }
+  .u214-top {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .sf-workflow-grid {
+    grid-template-columns: 1fr;
+  }
+  .sf-sections-wrap {
+    padding: 32px 16px 52px;
+    gap: 56px;
+  }
+  .sf-cta-banner {
+    padding: 24px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u214-tile,
+  .u214-chips i,
+  .u214-rs-row i,
+  .u214-br-track i {
+    transition: none;
+  }
+  .u214-rs-row i {
+    transform: scaleX(var(--w, 0.85));
+    opacity: 1;
+  }
+  .u214-br-track i {
+    transform: scaleY(var(--h));
+  }
+  .u214-lt {
+    animation: none;
+  }
+  .u214-d.is-on .u214-sh::before,
+  .u214-d.is-on .u214-sh::after {
+    animation: none;
+  }
+}
+
+/* ===================== UX upgrade layer: landing (tokens only) ===================== */
+.u214-tile {
+  box-shadow: var(--ux-elev-1), var(--ux-highlight);
+  transition: transform 0.4s var(--ux-spring-press), translate 0.45s var(--ux-spring-pop), border-color 0.25s var(--ux-ease-color), box-shadow 0.35s var(--ux-ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .u214-tile:hover {
+    box-shadow: var(--ux-elev-3), var(--ux-highlight);
+  }
+}
+.sf-workflow-item {
+  box-shadow: var(--ux-elev-1), var(--ux-highlight);
+  transition: translate 0.45s var(--ux-spring-pop), box-shadow 0.35s var(--ux-ease-out), border-color 0.25s var(--ux-ease-color);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sf-workflow-item:hover {
+    translate: 0 -3px;
+    box-shadow: var(--ux-elev-3), var(--ux-highlight);
+    border-color: color-mix(in srgb, var(--ux-accent) 24%, var(--ux-line-2));
+  }
+}
+.sf-workflow-num {
+  background: var(--ux-brand-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

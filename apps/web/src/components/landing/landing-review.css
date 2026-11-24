@@ -29,7 +29,7 @@
 .sf-review-tab[aria-selected="true"] .sf-review-badge{background:var(--ux-accent);color:var(--ux-accent-ink);border-color:transparent}
 
 /* Stage card */
-.sf-review-stage{border-radius:22px;border:1px solid var(--ux-line);background:linear-gradient(180deg,var(--ux-surface),var(--ux-surface-2));padding:26px;min-height:300px;display:grid;gap:16px;box-shadow:0 1px 3px var(--ux-shadow)}
+.sf-review-stage{border-radius:22px;border:1px solid var(--ux-line);background:linear-gradient(180deg,var(--ux-surface),var(--ux-surface-2));padding:26px;min-height:300px;display:grid;gap:16px;box-shadow:0 1px 3px var(--ux-shadow-c)}
 .sf-review-empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;color:var(--ux-ink-2);text-align:center}
 .sf-review-empty .sf-empty-icon{font-size:44px;margin-bottom:12px;opacity:.6}
 .sf-review-empty h3{margin:0 0 6px;font-size:18px;font-weight:800;color:var(--ux-ink)}

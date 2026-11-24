@@ -1,0 +1,25 @@
+.bank-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.bank-filters .sf-field { flex: 1; min-width: 150px; }
+.bank-summary { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; font-weight: 700; color: var(--ux-ink-3); }
+.bank-list { display: grid; gap: 10px; padding-bottom: 80px; }
+.bank-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 16px 18px; border-radius: 18px; background: var(--ux-surface); border: 1px solid var(--ux-line); box-shadow: var(--ux-elev-1); content-visibility: auto; contain-intrinsic-size: auto 150px; transition: border-color .2s var(--ux-ease-color), background-color .2s var(--ux-ease-color), box-shadow .3s var(--ux-ease-out); }
+.bank-item:hover { border-color: color-mix(in srgb, var(--ux-accent) 25%, var(--ux-line-2)); box-shadow: var(--ux-elev-2); }
+.bank-item[data-selected="true"] { border-color: var(--ux-accent); background: color-mix(in srgb, var(--ux-accent) 5%, var(--ux-surface)); box-shadow: 0 0 0 1px var(--ux-accent); }
+.bank-check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--ux-accent); cursor: pointer; }
+.bank-meta { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.bank-src { margin-left: 4px; font-size: 11.5px; font-weight: 650; color: var(--ux-ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 360px; }
+.bank-stem { margin: 8px 0 4px; font-size: 14.5px; font-weight: 650; line-height: 1.6; color: var(--ux-ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.bank-answer { font-size: 13px; color: var(--ux-ink-2); }
+.bank-answer summary { font-size: 12px; font-weight: 750; color: var(--ux-ink-3); cursor: pointer; }
+.bank-tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.bank-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px; background: var(--ux-accent-soft); color: var(--ux-accent-text); font-size: 11.5px; font-weight: 750; animation: sf-pop-in .3s var(--ux-spring-pop); }
+.bank-tag button { width: 18px; height: 18px; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; font-size: 13px; line-height: 1; display: grid; place-items: center; }
+.bank-tag button:hover { background: color-mix(in srgb, var(--ux-accent) 18%, transparent); }
+.bank-tag-input { width: 110px; height: 26px; border-radius: 999px; border: 1px dashed var(--ux-line-2); background: transparent; color: var(--ux-ink); padding: 0 10px; font: inherit; font-size: 11.5px; transition: border-color .2s var(--ux-ease-color), width .25s var(--ux-ease-out); }
+.bank-tag-input:focus { outline: none; border-style: solid; border-color: var(--ux-accent); width: 160px; }
+.bank-dock { position: fixed; left: 0; right: 0; bottom: 24px; margin: 0 auto; width: fit-content; z-index: 85; display: flex; align-items: center; gap: 14px; padding: 9px 10px 9px 16px; border-radius: 14px; background: var(--ux-ink); color: var(--ux-page); box-shadow: var(--ux-elev-4); font-size: 13px; font-weight: 650; }
+.bank-dock b { font-variant-numeric: tabular-nums; }
+.bank-dock button { border: 0; border-radius: 9px; padding: 8px 14px; background: var(--ux-page); color: var(--ux-ink); font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; transition: transform .4s var(--ux-spring-press), opacity .2s; }
+.bank-dock button:active:not(:disabled) { transform: var(--ux-press); }
+.bank-dock button:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 768px) { .bank-dock { bottom: calc(80px + env(safe-area-inset-bottom)); width: calc(100vw - 32px); justify-content: space-between; } }

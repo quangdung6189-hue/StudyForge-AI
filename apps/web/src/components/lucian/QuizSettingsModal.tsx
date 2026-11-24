@@ -1,7 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useFeedback } from '@/components/ui/Feedback';
+
+/** ISO → value for <input type="datetime-local"> in the viewer's local time. */
+const toLocalInput = (iso?: string | null) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 
 interface QuizSettingsModalProps {
   quiz: any;
@@ -22,6 +31,22 @@ export function QuizSettingsModal({ quiz, onClose, onSaved }: QuizSettingsModalP
   const [allowReview, setAllowReview] = useState(quiz.allowReview !== undefined ? quiz.allowReview : true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [opensAt, setOpensAt] = useState(toLocalInput(quiz.opensAt));
+  const [closesAt, setClosesAt] = useState(toLocalInput(quiz.deadline));
+  const [maxAttempts, setMaxAttempts] = useState<string>(quiz.maxAttempts ? String(quiz.maxAttempts) : '');
+  const { confirm, toast } = useFeedback();
+
+  // Escape closes the dialog (unless a save is in flight)
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !saving) {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [saving, onClose]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -36,10 +61,14 @@ export function QuizSettingsModal({ quiz, onClose, onSaved }: QuizSettingsModalP
           mode,
           durationMinutes: unlimited ? 1440 : Number(durationMinutes) || 15,
           allowReview,
+          opensAt: opensAt ? new Date(opensAt).toISOString() : null,
+          deadline: closesAt ? new Date(closesAt).toISOString() : null,
+          maxAttempts: maxAttempts ? Math.max(1, Math.min(50, Number(maxAttempts) || 1)) : null,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || 'Chưa lưu được tùy chỉnh.');
+      toast('Đã lưu tuỳ chỉnh đề thi.', 'success');
       onSaved();
     } catch (err: any) {
       setError(err.message || 'Lỗi lưu tùy chỉnh đề thi.');
@@ -49,7 +78,7 @@ export function QuizSettingsModal({ quiz, onClose, onSaved }: QuizSettingsModalP
   };
 
   const handleUnpublish = async () => {
-    if (!window.confirm('Chuyển bài thi về bản nháp? Học sinh sẽ tạm thời không thể truy cập đề này.')) return;
+    if (!(await confirm({ title: 'Chuyển đề về bản nháp?', message: 'Học sinh sẽ tạm thời không vào được phòng thi này cho đến khi bạn xuất bản lại.', confirmLabel: 'Chuyển về nháp', tone: 'danger' }))) return;
     setSaving(true);
     setError('');
     try {
@@ -121,7 +150,7 @@ export function QuizSettingsModal({ quiz, onClose, onSaved }: QuizSettingsModalP
                 className={`qz-mode-card${mode === 'exam' ? ' active' : ''}`}
                 onClick={() => setMode('exam')}
               >
-                <span className="qz-mode-title">📝 Bài kiểm tra</span>
+                <span className="qz-mode-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><line x1="8" y1="10" x2="16" y2="10" /><line x1="8" y1="14" x2="13" y2="14" /></svg>Bài kiểm tra</span>
                 <span className="qz-mode-desc">
                   Thi chính thức, tính giờ nghiêm ngặt, mỗi học sinh làm 1 lượt theo quy chế.
                 </span>
@@ -132,7 +161,7 @@ export function QuizSettingsModal({ quiz, onClose, onSaved }: QuizSettingsModalP
                 className={`qz-mode-card${mode === 'practice' ? ' active' : ''}`}
                 onClick={() => setMode('practice')}
               >
-                <span className="qz-mode-title">🔄 Bài luyện tập</span>
+                <span className="qz-mode-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></svg>Bài luyện tập</span>
                 <span className="qz-mode-desc">
                   <strong>Được làm đi làm lại nhiều lần</strong>, xem ngay giải thích chi tiết và trích dẫn để ôn tập.
                 </span>
@@ -205,6 +234,26 @@ export function QuizSettingsModal({ quiz, onClose, onSaved }: QuizSettingsModalP
               />
               <span>Cho phép học sinh xem lại đáp án và lời giải chi tiết sau khi nộp bài</span>
             </label>
+          </div>
+
+          {/* Lịch mở phòng & giới hạn lượt làm (kiểm tra ở máy chủ khi vào thi) */}
+          <div className="qz-form-group">
+            <span className="qz-form-label">Lịch mở phòng & số lượt làm</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+              <label style={{ display: 'grid', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--ux-ink-2)' }}>
+                Mở phòng lúc
+                <input className="qz-form-input" type="datetime-local" value={opensAt} onChange={e => setOpensAt(e.target.value)} />
+              </label>
+              <label style={{ display: 'grid', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--ux-ink-2)' }}>
+                Đóng phòng lúc
+                <input className="qz-form-input" type="datetime-local" value={closesAt} min={opensAt || undefined} onChange={e => setClosesAt(e.target.value)} />
+              </label>
+              <label style={{ display: 'grid', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--ux-ink-2)' }}>
+                Số lượt tối đa
+                <input className="qz-form-input" type="number" min={1} max={50} placeholder="Không giới hạn" value={maxAttempts} onChange={e => setMaxAttempts(e.target.value)} />
+              </label>
+            </div>
+            <small style={{ fontSize: 12, color: 'var(--ux-ink-3)' }}>Để trống nếu không giới hạn. Học sinh vào sớm hoặc dùng hết lượt sẽ nhận thông báo rõ ràng.</small>
           </div>
 
           {/* Chỉnh sửa câu hỏi trong Editor */}

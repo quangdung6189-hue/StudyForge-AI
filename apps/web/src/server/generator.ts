@@ -23,6 +23,8 @@ type Params = {
   chunks: Array<{ id: string; chunkIndex: number; content: string }>;
   mode: 'extract_existing' | 'ai_generate' | 'source_only' | 'ai_analyze'; questionCount: number; types: QuestionType[];
   difficultyDistribution?: { recognition: number; comprehension: number; application: number };
+  /** ai_generate blueprint: exact number of questions per (type, level) cell. */
+  matrix?: { type: QuestionType; difficulty: FullQuestionDTO['difficulty']; count: number }[];
   signal?: AbortSignal; onProgress?: (progress: GenerationProgress) => void; cacheScope?: string;
   batchSource?: SourceQuestion[]; plannedTypes?: QuestionType[]; plannedDifficulties?: FullQuestionDTO['difficulty'][];
 };
@@ -42,14 +44,18 @@ export async function generateQuizQuestions(params: Params): Promise<FullQuestio
   if (!params.chunks.length || params.chunks.some(chunk => chunk.content.length > 160_000)) throw new AIGatewayError('INVALID_OUTPUT', 'Văn bản chưa đọc được hoặc chưa được chia đoạn. Hãy đọc lại tài liệu.');
   const source = params.mode === 'extract_existing' ? selectSourceQuestions(detectSourceQuestions(params.rawText ?? params.chunks.map(c => c.content).join('\n')), params.types, params.questionCount) : [];
   if (params.mode === 'extract_existing' && !source.length) throw new AIGatewayError('INVALID_OUTPUT', 'Chưa nhận diện được câu có sẵn thuộc dạng đã chọn. Hãy kiểm tra phần phân loại trong Tài liệu học tập.');
-  const total = params.mode === 'extract_existing' ? source.length : params.questionCount;
-  const types = source.length ? source.map(q => q.type) : Array.from({ length: total }, (_, i) => params.types[i % params.types.length]);
+  // A matrix fixes every slot's type and level exactly; otherwise types rotate and levels follow the distribution.
+  const blueprint = params.mode === 'ai_generate' && params.matrix?.some(cell => cell.count > 0)
+    ? params.matrix.flatMap(cell => Array.from({ length: cell.count }, () => ({ type: cell.type, difficulty: cell.difficulty })))
+    : null;
+  const total = params.mode === 'extract_existing' ? source.length : blueprint ? blueprint.length : params.questionCount;
+  const types = source.length ? source.map(q => q.type) : blueprint ? blueprint.map(slot => slot.type) : Array.from({ length: total }, (_, i) => params.types[i % params.types.length]);
   const distribution = params.difficultyDistribution ?? { recognition: 40, comprehension: 40, application: 20 };
   const levels = ['recognition', 'comprehension', 'application'] as const;
   const quotas = levels.map(level => total * distribution[level] / 100), counts = quotas.map(Math.floor);
   const rank = quotas.map((q, i) => ({ i, fraction: q - counts[i] })).sort((a, b) => b.fraction - a.fraction);
   for (let i = 0, rest = total - counts.reduce((a, b) => a + b, 0); i < rest; i++) counts[rank[i].i]++;
-  const difficulties = levels.flatMap((level, i) => Array.from({ length: counts[i] }, () => level));
+  const difficulties = blueprint ? blueprint.map(slot => slot.difficulty) : levels.flatMap((level, i) => Array.from({ length: counts[i] }, () => level));
   const batches = Array.from({ length: Math.ceil(total / 3) }, (_, i) => ({ start: i * 3, count: Math.min(3, total - i * 3) }));
   const output: FullQuestionDTO[][] = new Array(batches.length);
   let completed = 0, cached = 0, cursor = 0, failed = false;

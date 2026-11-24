@@ -79,7 +79,7 @@ export function LucianTabs({ tabs, activeId, onChange }: LucianTabsProps) {
           background: var(--ux-surface);
           border: 1px solid var(--ux-line-2);
           transform: translateX(var(--x, 4px));
-          box-shadow: 0 2px 8px -2px var(--ux-shadow);
+          box-shadow: 0 2px 8px -2px var(--ux-shadow-c);
           transition: transform .35s var(--ux-ease-spring), width .35s var(--ux-ease-spring);
           pointer-events: none;
         }

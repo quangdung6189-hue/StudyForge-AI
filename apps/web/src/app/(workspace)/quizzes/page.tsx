@@ -2,7 +2,16 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { motion } from 'motion/react';
+import { ReducedMotionConfig, spring, useTempoTransition } from '@animate-ui/react/utils/motion';
 import { QuizSettingsModal } from '@/components/lucian/QuizSettingsModal';
+import { ShareDialog } from '@/components/ui/ShareDialog';
+
+const FILTERS = [
+  { id: 'all', label: 'Tất cả' },
+  { id: 'published', label: 'Đã phát hành' },
+  { id: 'draft', label: 'Bản nháp' },
+] as const;
 
 export default function QuizzesListPage() {
   const [quizzes, setQuizzes] = useState<any[]>([]);
@@ -11,6 +20,7 @@ export default function QuizzesListPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const tabGlide = useTempoTransition(spring.selection);
 
   const fetchQuizzes = async () => {
     setLoading(true); setError('');
@@ -35,6 +45,7 @@ export default function QuizzesListPage() {
   };
 
   const [customQuiz, setCustomQuiz] = useState<any | null>(null);
+  const [shareQuiz, setShareQuiz] = useState<{ code: string; title: string } | null>(null);
   const openCustomize = (quiz: any) => setCustomQuiz(quiz);
 
   const filteredQuizzes = useMemo(() => {
@@ -63,10 +74,19 @@ export default function QuizzesListPage() {
           flex-wrap: wrap;
           gap: 16px;
         }
-        .qz-title-group h1 {
-          font-size: 26px;
+        .qz-eyebrow {
+          display: inline-block;
+          font-size: 11px;
           font-weight: 800;
-          letter-spacing: -0.02em;
+          letter-spacing: .14em;
+          color: var(--ux-accent-text);
+          margin-bottom: 8px;
+        }
+        .qz-title-group h1 {
+          font-size: clamp(24px, 2.4vw, 30px);
+          font-weight: 850;
+          letter-spacing: -0.035em;
+          line-height: 1.2;
           color: var(--ux-ink);
           margin: 0 0 6px;
         }
@@ -79,20 +99,31 @@ export default function QuizzesListPage() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 12px 22px;
-          border-radius: 14px;
-          background: var(--ux-accent);
-          color: var(--ux-accent-ink);
+          padding: 11px 20px;
+          border-radius: 11px;
+          background: var(--ux-ink);
+          color: var(--ux-page);
           text-decoration: none;
-          font-size: 14px;
+          font-size: 13.5px;
           font-weight: 700;
-          box-shadow: 0 4px 16px color-mix(in srgb, var(--ux-accent) 35%, transparent);
-          transition: all 0.2s var(--ux-ease);
+          box-shadow: var(--ux-elev-1);
+          transition: background-color .2s var(--ux-ease-color), color .2s var(--ux-ease-color), box-shadow .3s var(--ux-ease-out), transform .4s var(--ux-spring-press);
         }
-        .qz-create-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px color-mix(in srgb, var(--ux-accent) 45%, transparent);
-          filter: brightness(1.05);
+        .qz-create-btn svg {
+          transition: transform .45s var(--ux-spring-pop);
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .qz-create-btn:hover {
+            background: var(--ux-accent);
+            color: var(--ux-accent-ink);
+            box-shadow: 0 10px 24px -10px var(--ux-brand-glow);
+          }
+          .qz-create-btn:hover svg {
+            transform: rotate(90deg);
+          }
+        }
+        .qz-create-btn:active {
+          transform: var(--ux-press);
         }
 
         .qz-toolbar {
@@ -115,15 +146,48 @@ export default function QuizzesListPage() {
           border-radius: 12px;
           background: var(--ux-surface);
           border: 1px solid var(--ux-line);
-          padding: 0 14px 0 38px;
+          padding: 0 64px 0 38px;
           font-size: 13px;
           color: var(--ux-ink);
-          transition: border-color .2s;
+          box-shadow: var(--ux-elev-1);
+          transition: border-color .2s var(--ux-ease-color), box-shadow .25s var(--ux-ease-out);
         }
         .qz-search-input:focus {
           border-color: var(--ux-accent);
           outline: none;
-          box-shadow: 0 0 0 3px var(--ux-accent-soft);
+          box-shadow: var(--ux-ring);
+        }
+        .qz-search-tail {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .qz-search-clear {
+          width: 24px;
+          height: 24px;
+          border: 0;
+          border-radius: 7px;
+          display: grid;
+          place-items: center;
+          background: var(--ux-surface-2);
+          color: var(--ux-ink-3);
+          cursor: pointer;
+          animation: sf-pop-in .3s var(--ux-spring-pop) backwards;
+          transition: color .2s var(--ux-ease-color), background-color .2s var(--ux-ease-color);
+        }
+        .qz-search-clear:hover {
+          color: var(--ux-ink);
+          background: var(--ux-surface-3);
+        }
+        .qz-search-wrap:focus-within .sf-kbd {
+          opacity: 0;
+        }
+        .qz-search-wrap .sf-kbd {
+          transition: opacity .2s var(--ux-ease-out);
         }
         .qz-search-ic {
           position: absolute;
@@ -134,13 +198,14 @@ export default function QuizzesListPage() {
 
         .qz-tabs {
           display: flex;
-          gap: 6px;
+          gap: 4px;
           background: var(--ux-surface-2);
           padding: 4px;
           border-radius: 12px;
           border: 1px solid var(--ux-line);
         }
         .qz-tab {
+          position: relative;
           padding: 7px 14px;
           border-radius: 8px;
           border: 0;
@@ -149,12 +214,47 @@ export default function QuizzesListPage() {
           font-size: 12.5px;
           font-weight: 700;
           cursor: pointer;
-          transition: all .2s;
+          transition: color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press);
+        }
+        .qz-tab:hover {
+          color: var(--ux-ink);
+        }
+        .qz-tab:active {
+          transform: var(--ux-press);
         }
         .qz-tab.active {
-          background: var(--ux-surface);
           color: var(--ux-ink);
-          box-shadow: 0 2px 8px var(--ux-shadow);
+        }
+        .qz-tab-label {
+          position: relative;
+          z-index: 1;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .qz-tab-count {
+          min-width: 20px;
+          height: 18px;
+          padding: 0 6px;
+          border-radius: 999px;
+          display: inline-grid;
+          place-items: center;
+          font-size: 10.5px;
+          font-variant-numeric: tabular-nums;
+          background: var(--ux-surface-3);
+          color: var(--ux-ink-3);
+          transition: background-color .2s var(--ux-ease-color), color .2s var(--ux-ease-color);
+        }
+        .qz-tab.active .qz-tab-count {
+          background: var(--ux-accent-soft);
+          color: var(--ux-accent-text);
+        }
+        .qz-tab-hl {
+          position: absolute;
+          inset: 0;
+          border-radius: 8px;
+          background: var(--ux-surface);
+          box-shadow: 0 1px 2px var(--ux-shadow-c), 0 4px 12px -6px var(--ux-shadow-c), var(--ux-highlight);
         }
 
         .qz-grid {
@@ -163,23 +263,57 @@ export default function QuizzesListPage() {
           gap: 20px;
         }
         .qz-card {
-          padding: 24px;
-          border-radius: 20px;
+          padding: 22px;
+          border-radius: 18px;
           background: var(--ux-surface);
           border: 1px solid var(--ux-line);
-          box-shadow: 0 6px 20px var(--ux-shadow);
+          box-shadow: var(--ux-elev-1), var(--ux-highlight);
           display: flex;
           flex-direction: column;
           gap: 14px;
           content-visibility: auto;
           contain-intrinsic-size: auto 220px;
-          transition: transform .25s var(--ux-ease), box-shadow .25s ease, border-color .25s ease;
+          transition: box-shadow .35s var(--ux-ease-out), border-color .25s var(--ux-ease-color), translate .45s var(--ux-spring-pop);
           position: relative;
         }
-        .qz-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 12px 36px var(--ux-shadow-strong);
-          border-color: color-mix(in srgb, var(--ux-accent) 30%, transparent);
+        @media (hover: hover) and (pointer: fine) {
+          .qz-card:hover {
+            translate: 0 -3px;
+            box-shadow: var(--ux-elev-3), var(--ux-highlight);
+            border-color: color-mix(in srgb, var(--ux-accent) 22%, var(--ux-line-2));
+          }
+        }
+        .qz-skel-card {
+          padding: 22px;
+          border-radius: 18px;
+          background: var(--ux-surface);
+          border: 1px solid var(--ux-line);
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          min-height: 228px;
+        }
+        .qz-empty {
+          padding: 56px 24px;
+          text-align: center;
+          background:
+            radial-gradient(60% 80% at 50% 0%, color-mix(in srgb, var(--ux-accent) 8%, transparent), transparent 70%),
+            var(--ux-surface);
+          border-radius: 24px;
+          border: 1px dashed var(--ux-line-2);
+        }
+        .qz-empty-ic {
+          width: 56px;
+          height: 56px;
+          margin: 0 auto 16px;
+          border-radius: 18px;
+          background: var(--ux-surface);
+          border: 1px solid var(--ux-line-2);
+          display: grid;
+          place-items: center;
+          color: var(--ux-accent-text);
+          box-shadow: var(--ux-elev-2), var(--ux-highlight);
+          animation: sf-pop-in .5s var(--ux-spring-pop) .1s backwards;
         }
         .qz-card-head {
           display: flex;
@@ -267,13 +401,43 @@ export default function QuizzesListPage() {
           gap: 5px;
           padding: 4px 8px;
           border-radius: 6px;
-          transition: all 0.2s;
+          transition: color .2s var(--ux-ease-color), background-color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press);
         }
         .share-pill-btn:hover {
           color: var(--ux-accent);
           background: var(--ux-surface);
         }
+        .share-pill-btn:active {
+          transform: var(--ux-press);
+        }
+        .share-pill-btn[data-copied="true"] {
+          color: var(--ux-mint);
+        }
 
+        .qz-card-tools {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .qz-tool {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 10px;
+          border-radius: 9px;
+          border: 1px solid var(--ux-line);
+          background: var(--ux-surface);
+          color: var(--ux-ink-2);
+          font: inherit;
+          font-size: 12px;
+          font-weight: 700;
+          text-decoration: none;
+          cursor: pointer;
+          transition: color .2s var(--ux-ease-color), border-color .2s var(--ux-ease-color), background-color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press);
+        }
+        .qz-tool:hover { color: var(--ux-accent-text); border-color: color-mix(in srgb, var(--ux-accent) 40%, var(--ux-line-2)); background: var(--ux-accent-soft); }
+        .qz-tool:active { transform: var(--ux-press); }
+        .qz-limits { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11.5px; font-weight: 650; color: var(--ux-ink-3); }
         .qz-card-foot {
           margin-top: auto;
           display: flex;
@@ -295,11 +459,23 @@ export default function QuizzesListPage() {
           text-decoration: none;
           font-size: 13.5px;
           font-weight: 700;
-          transition: all 0.2s var(--ux-ease);
+          box-shadow: 0 6px 16px -8px var(--ux-brand-glow), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+          transition: background-color .2s var(--ux-ease-color), box-shadow .3s var(--ux-ease-out), transform .4s var(--ux-spring-press);
         }
-        .qz-btn-take:hover {
-          filter: brightness(1.08);
-          transform: translateY(-1px);
+        .qz-btn-take svg {
+          transition: transform .45s var(--ux-spring-pop);
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .qz-btn-take:hover {
+            background: var(--ux-accent-hover);
+            box-shadow: 0 10px 24px -8px var(--ux-brand-glow), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+          }
+          .qz-btn-take:hover svg {
+            transform: translateX(2px) scale(1.08);
+          }
+        }
+        .qz-btn-take:active {
+          transform: var(--ux-press);
         }
         .qz-btn-edit {
           display: inline-flex;
@@ -314,11 +490,23 @@ export default function QuizzesListPage() {
           font-size: 13px;
           font-weight: 700;
           border: 1px solid var(--ux-line-2);
-          transition: all 0.2s;
+          cursor: pointer;
+          transition: border-color .2s var(--ux-ease-color), color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press);
+        }
+        .qz-btn-edit svg {
+          transition: transform .6s var(--ux-spring-pop);
         }
         .qz-btn-edit:hover {
           border-color: var(--ux-accent);
           color: var(--ux-accent);
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .qz-btn-edit:hover svg {
+            transform: rotate(45deg);
+          }
+        }
+        .qz-btn-edit:active {
+          transform: var(--ux-press);
         }
 
         .badge-practice {
@@ -356,7 +544,7 @@ export default function QuizzesListPage() {
           align-items: center;
           justify-content: center;
           padding: 16px;
-          animation: qzFadeIn 0.2s ease-out;
+          animation: sf-fade-in .3s var(--ux-ease-soft) backwards;
         }
         .qz-modal {
           width: 100%;
@@ -366,10 +554,14 @@ export default function QuizzesListPage() {
           background: var(--ux-surface);
           border: 1px solid var(--ux-line);
           border-radius: 24px;
-          box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5);
+          box-shadow: var(--ux-elev-4), var(--ux-highlight);
           display: flex;
           flex-direction: column;
-          animation: qzScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          scrollbar-width: thin;
+          animation: sf-fade-in .3s var(--ux-ease-soft) backwards, sf-dialog-in .6s var(--ux-spring-entrance) backwards;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .qz-modal { animation: sf-fade-in .2s ease-out backwards; }
         }
         @keyframes qzFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes qzScaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -398,11 +590,12 @@ export default function QuizzesListPage() {
           place-items: center;
           cursor: pointer;
           font-size: 18px;
-          transition: background 0.2s;
+          transition: background-color .2s var(--ux-ease-color), color .2s var(--ux-ease-color), transform .45s var(--ux-spring-pop);
         }
         .qz-modal-close:hover {
           background: var(--ux-surface-3);
           color: var(--ux-ink);
+          transform: rotate(90deg);
         }
 
         .qz-modal-body {
@@ -423,13 +616,16 @@ export default function QuizzesListPage() {
           background: var(--ux-surface-2);
           cursor: pointer;
           text-align: left;
-          transition: all 0.2s;
+          transition: border-color .2s var(--ux-ease-color), background-color .2s var(--ux-ease-color), box-shadow .3s var(--ux-ease-out), transform .4s var(--ux-spring-press);
           display: flex;
           flex-direction: column;
           gap: 6px;
         }
         .qz-mode-card:hover {
-          border-color: var(--ux-accent);
+          border-color: color-mix(in srgb, var(--ux-accent) 55%, var(--ux-line));
+        }
+        .qz-mode-card:active {
+          transform: var(--ux-press-card);
         }
         .qz-mode-card.active {
           border-color: var(--ux-accent);
@@ -470,8 +666,13 @@ export default function QuizzesListPage() {
           color: var(--ux-ink);
           font-family: inherit;
         }
+        .qz-form-input, .qz-form-textarea {
+          transition: border-color .2s var(--ux-ease-color), box-shadow .25s var(--ux-ease-out), background-color .2s var(--ux-ease-color);
+        }
         .qz-form-input:focus, .qz-form-textarea:focus {
           border-color: var(--ux-accent);
+          background: var(--ux-surface);
+          box-shadow: var(--ux-ring);
           outline: none;
         }
         .qz-form-textarea {
@@ -530,7 +731,10 @@ export default function QuizzesListPage() {
           font-size: 13.5px;
           font-weight: 700;
           cursor: pointer;
+          transition: background-color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press);
         }
+        .qz-btn-cancel:hover { background: var(--ux-surface-2); }
+        .qz-btn-cancel:active, .qz-btn-unpub:active { transform: var(--ux-press); }
         .qz-btn-save {
           padding: 10px 22px;
           border-radius: 12px;
@@ -540,11 +744,14 @@ export default function QuizzesListPage() {
           font-size: 13.5px;
           font-weight: 700;
           cursor: pointer;
-          box-shadow: 0 4px 14px color-mix(in srgb, var(--ux-accent) 30%, transparent);
-          transition: transform 0.2s;
+          box-shadow: 0 10px 22px -10px var(--ux-brand-glow), inset 0 1px 0 rgba(255, 255, 255, .18);
+          transition: background-color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press);
         }
         .qz-btn-save:hover:not(:disabled) {
-          transform: translateY(-1px);
+          background: var(--ux-accent-hover);
+        }
+        .qz-btn-save:active:not(:disabled) {
+          transform: var(--ux-press);
         }
         .qz-btn-unpub {
           padding: 10px 14px;
@@ -555,12 +762,15 @@ export default function QuizzesListPage() {
           font-size: 12.5px;
           font-weight: 700;
           cursor: pointer;
+          transition: background-color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press);
         }
+        .qz-btn-unpub:hover { background: color-mix(in srgb, var(--ux-danger) 16%, transparent); }
       `}</style>
 
       {/* Header */}
       <div className="qz-header">
         <div className="qz-title-group">
+          <span className="qz-eyebrow">NGÂN HÀNG ĐỀ</span>
           <h1>Ngân hàng câu hỏi & Đề thi</h1>
           <p>Quản lý các bộ đề đã tạo, xuất bản bài thi và chia sẻ mã tham gia cho học sinh.</p>
         </div>
@@ -578,50 +788,85 @@ export default function QuizzesListPage() {
             className="qz-search-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && search) {
+                e.preventDefault();
+                setSearch('');
+              }
+            }}
             placeholder="Tìm theo tên đề thi hoặc mã tham gia…"
             aria-label="Tìm kiếm đề thi"
+            aria-keyshortcuts="/"
+            data-hotkey="/"
           />
+          <span className="qz-search-tail">
+            {search ? (
+              <button type="button" className="qz-search-clear" onClick={() => setSearch('')} aria-label="Xóa từ khóa tìm kiếm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            ) : (
+              <kbd className="sf-kbd" aria-hidden="true">/</kbd>
+            )}
+          </span>
         </div>
 
-        <div className="qz-tabs" role="tablist">
-          <button
-            type="button"
-            className={`qz-tab${filter === 'all' ? ' active' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            Tất cả ({counts.all})
-          </button>
-          <button
-            type="button"
-            className={`qz-tab${filter === 'published' ? ' active' : ''}`}
-            onClick={() => setFilter('published')}
-          >
-            Đã phát hành ({counts.published})
-          </button>
-          <button
-            type="button"
-            className={`qz-tab${filter === 'draft' ? ' active' : ''}`}
-            onClick={() => setFilter('draft')}
-          >
-            Bản nháp ({counts.draft})
-          </button>
-        </div>
+        <ReducedMotionConfig>
+          <div className="qz-tabs" role="tablist" aria-label="Lọc trạng thái đề thi">
+            {FILTERS.map((item) => {
+              const selected = filter === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  className={`qz-tab${selected ? ' active' : ''}`}
+                  onClick={() => setFilter(item.id)}
+                >
+                  {selected && <motion.span layoutId="qz-tab-hl" className="qz-tab-hl" transition={tabGlide} aria-hidden="true" />}
+                  <span className="qz-tab-label">
+                    {item.label}
+                    <span className="qz-tab-count">{counts[item.id]}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </ReducedMotionConfig>
       </div>
 
       {error && (
-        <div style={{ padding: '16px', borderRadius: '12px', background: 'color-mix(in srgb, var(--ux-danger) 10%, var(--ux-surface))', color: 'var(--ux-danger)', border: '1px solid var(--ux-danger)', marginBottom: '20px' }}>
+        <div className="sf-alert" role="alert" style={{ padding: '16px', borderRadius: '12px', background: 'color-mix(in srgb, var(--ux-danger) 10%, var(--ux-surface))', color: 'var(--ux-danger)', border: '1px solid var(--ux-danger)', marginBottom: '20px' }}>
           {error} <button style={{ marginLeft: '10px', textDecoration: 'underline', background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', fontWeight: 700 }} onClick={() => void fetchQuizzes()}>Thử tải lại</button>
         </div>
       )}
 
       {loading ? (
-        <div style={{ padding: '60px', textAlign: 'center', color: 'var(--ux-ink-3)', fontSize: '14px' }}>
-          Đang tải danh sách ngân hàng đề thi…
+        <div className="qz-grid" role="status" aria-label="Đang tải danh sách ngân hàng đề thi">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="qz-skel-card" aria-hidden="true">
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div className="sf-skel" style={{ width: 96, height: 22, borderRadius: 999 }} />
+                <div className="sf-skel" style={{ width: 54, height: 16 }} />
+              </div>
+              <div className="sf-skel" style={{ width: '78%', height: 20 }} />
+              <div className="sf-skel" style={{ width: '56%', height: 14, opacity: 0.7 }} />
+              <div className="sf-skel" style={{ height: 42, borderRadius: 12, opacity: 0.6 }} />
+              <div style={{ display: 'flex', gap: 10, marginTop: 'auto' }}>
+                <div className="sf-skel" style={{ flex: 1, height: 42, borderRadius: 12 }} />
+                <div className="sf-skel" style={{ width: 104, height: 42, borderRadius: 12 }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredQuizzes.length === 0 ? (
-        <div style={{ padding: '60px 24px', textAlign: 'center', background: 'var(--ux-surface)', borderRadius: '24px', border: '1px solid var(--ux-line)' }}>
-          <div style={{ width: '48px', height: '48px', margin: '0 auto 16px', borderRadius: '16px', background: 'var(--ux-surface-2)', display: 'grid', placeItems: 'center', color: 'var(--ux-ink-3)' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div className="qz-empty">
+          <div className="qz-empty-ic">
+            {search ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8.5" y1="11" x2="13.5" y2="11"/></svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>
+            )}
           </div>
           <b style={{ fontSize: '16px', color: 'var(--ux-ink)', display: 'block', marginBottom: '6px' }}>
             {search ? 'Không tìm thấy đề thi phù hợp' : 'Chưa có đề thi nào trong ngân hàng'}
@@ -634,12 +879,12 @@ export default function QuizzesListPage() {
           </Link>
         </div>
       ) : (
-        <div className="qz-grid">
+        <div className="qz-grid sf-stagger" key={`${filter}-${search ? 'q' : ''}`}>
           {filteredQuizzes.map((quiz) => {
             const isPractice = quiz.description?.includes('[mode:practice]');
             const displayDesc = (quiz.description || 'Bài kiểm tra ôn tập và đánh giá kiến thức.').replace(/\[mode:(?:practice|exam)\]\s*/g, '');
             return (
-            <div key={quiz.id} className="qz-card">
+            <div key={quiz.id} className="qz-card sf-spot">
               <div className="qz-card-head">
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <span className={quiz.isPublished ? 'badge-pub' : 'badge-draft'}>
@@ -648,7 +893,24 @@ export default function QuizzesListPage() {
                   </span>
                   {quiz.isPublished && (
                     <span className={isPractice ? 'badge-practice' : 'badge-exam'}>
-                      {isPractice ? '🔄 Luyện tập' : '📝 Bài kiểm tra'}
+                      {isPractice ? (
+                        <>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                            <path d="M21 3v5h-5" />
+                          </svg>
+                          Luyện tập
+                        </>
+                      ) : (
+                        <>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="16" rx="2" />
+                            <line x1="8" y1="10" x2="16" y2="10" />
+                            <line x1="8" y1="14" x2="13" y2="14" />
+                          </svg>
+                          Bài kiểm tra
+                        </>
+                      )}
                     </span>
                   )}
                 </div>
@@ -669,23 +931,51 @@ export default function QuizzesListPage() {
                   <button
                     type="button"
                     className="share-pill-btn"
+                    data-copied={copiedCode === quiz.shareCode}
                     onClick={() => copyToClipboard(quiz.shareCode)}
                     title="Sao chép mã đề thi"
                   >
                     {copiedCode === quiz.shareCode ? (
-                      <>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      <span key="copied" className="sf-title-swap" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
                         Đã chép!
-                      </>
+                      </span>
                     ) : (
-                      <>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                      <span key="copy" className="sf-title-swap" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                         Sao chép mã
-                      </>
+                      </span>
                     )}
                   </button>
                 </div>
               )}
+
+              {(quiz.maxAttempts || quiz.opensAt || quiz.deadline) && (
+                <div className="qz-limits">
+                  {quiz.opensAt && <span>Mở: {new Date(quiz.opensAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</span>}
+                  {quiz.deadline && <span>Đóng: {new Date(quiz.deadline).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</span>}
+                  {quiz.maxAttempts && <span>Tối đa {quiz.maxAttempts} lượt</span>}
+                </div>
+              )}
+
+              <div className="qz-card-tools">
+                {quiz.isPublished && quiz.shareCode && (
+                  <button type="button" className="qz-tool" onClick={() => setShareQuiz({ code: quiz.shareCode, title: quiz.title })}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3M21 14v7h-7" /></svg>
+                    Chia sẻ QR
+                  </button>
+                )}
+                {quiz.isPublished && (
+                  <Link className="qz-tool" href={`/quizzes/${quiz.id}/analytics`}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 21h18" /><rect x="5" y="11" width="3" height="7" /><rect x="10.5" y="7" width="3" height="11" /><rect x="16" y="13" width="3" height="5" /></svg>
+                    Thống kê
+                  </Link>
+                )}
+                <Link className="qz-tool" href={`/quizzes/${quiz.id}/print`}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9V2h12v7" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+                  In · Word
+                </Link>
+              </div>
 
               <div className="qz-card-foot">
                 {quiz.shareCode && (
@@ -720,6 +1010,8 @@ export default function QuizzesListPage() {
           })}
         </div>
       )}
+
+      {shareQuiz && <ShareDialog code={shareQuiz.code} title={shareQuiz.title} onClose={() => setShareQuiz(null)} />}
 
       {customQuiz && (
         <QuizSettingsModal

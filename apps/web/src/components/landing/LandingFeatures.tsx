@@ -1,46 +1,85 @@
-// StudyForge features — same Vietnamese copy, Tilt cards + scroll reveal + counters.
-'use client';
+// StudyForge features & workflow — Editorial Swiss Bento (Lucian #214) + 3-Step Workflow + Calm CTA Banner
+import React from 'react';
+import Link from 'next/link';
+import { LandingBento } from './LandingBento';
 
-import { Effect } from '@animate-ui/react/primitives/effects/effect';
-import { Tilt, TiltContent } from '@animate-ui/react/primitives/effects/tilt';
-import { CountingNumber } from '@animate-ui/react/primitives/texts/counting-number';
-import { ReducedMotionConfig } from '@animate-ui/react/utils/motion';
-
-const CARDS = [
-  { n: '01', icon: '📁', title: 'Trích xuất đa định dạng', desc: 'Hỗ trợ kéo thả PDF, DOCX, TXT. Giữ nguyên công thức, bảng biểu và dấu tiếng Việt chuẩn Unicode NFC.' },
-  { n: '02', icon: '🔍', title: 'Căn cứ & Dẫn nguồn chuẩn xác', desc: 'Phân biệt rõ ràng đáp án gốc trong tài liệu với đáp án AI đề xuất. Mọi câu hỏi đều có liên kết đối chiếu (sourceRefs) với đoạn trích.' },
-  { n: '03', icon: '⏱️', title: 'Phòng thi bảo mật cao', desc: 'Đảo phương án theo seed từng thí sinh, tự động lưu câu trả lời vào máy chủ, kiểm soát hạn chót tuyệt đối và không để lộ đáp án trước khi nộp.' },
+const WORKFLOW = [
+  {
+    num: '01',
+    step: 'Bước 1',
+    title: 'Tải tài liệu hoặc dán đề sẵn có',
+    desc: 'Chọn file PDF, Word, văn bản hoặc ảnh chụp đề giấy. Hệ thống tự động giữ cấu trúc phần, bảng biểu và công thức khoa học.',
+  },
+  {
+    num: '02',
+    step: 'Bước 2',
+    title: 'Kiểm tra, biên soạn & duyệt đáp án',
+    desc: 'Chỉnh sửa trực quan, chèn nhanh ký tự Toán – Lý – Hóa – Sinh và đối chiếu từng câu hỏi với đoạn trích dẫn trong tài liệu gốc.',
+  },
+  {
+    num: '03',
+    step: 'Bước 3',
+    title: 'Phát hành mã phòng thi & ôn luyện',
+    desc: 'Chia sẻ mã phòng ngắn gọn để học sinh vào làm bài ngay, chấm điểm tức thì và tự động lưu câu sai thành thẻ ôn tập.',
+  },
 ];
 
 export function LandingFeatures() {
   return (
-    <ReducedMotionConfig>
-      <section className="sf-features" aria-label="Tính năng chính">
-        {CARDS.map((c, i) => (
-          <Effect key={c.n} fade blur slide={{ direction: 'up', offset: 18 }} delay={i * 90}>
-            <Tilt maxTilt={7} perspective={900}>
-              <TiltContent className="sf-card" style={{ minHeight: 250, display: 'flex', flexDirection: 'column' }}>
-                <span className="sf-card-num">{c.n}</span>
-                <div className="sf-card-icon" aria-hidden="true">{c.icon}</div>
-                <h3>{c.title}</h3>
-                <p>{c.desc}</p>
-                {i === 0 ? (
-                  <div className="sf-stats">
-                    <div><b><CountingNumber number={3} fromNumber={0} /></b><span>định dạng file</span></div>
-                    <div><b><CountingNumber number={100} fromNumber={0} />%</b><span>giữ dấu TV</span></div>
-                  </div>
-                ) : null}
-                {i === 2 ? (
-                  <div className="sf-stats">
-                    <div><b><CountingNumber number={0} fromNumber={0} /></b><span>lộ đáp án sớm</span></div>
-                    <div><b>seed</b><span>đảo / thí sinh</span></div>
-                  </div>
-                ) : null}
-              </TiltContent>
-            </Tilt>
-          </Effect>
-        ))}
+    <div className="sf-sections-wrap">
+      <section className="sf-features-section" aria-labelledby="sf-features-heading">
+        <div className="sf-section-head">
+          <span className="sf-eyebrow">NỀN TẢNG KHẢO THÍ THÔNG MINH</span>
+          <h2 id="sf-features-heading">Tối giản trên bề mặt, chính xác ở từng chi tiết</h2>
+          <p>
+            Di chuột hoặc dùng phím Tab vào từng khối tính năng bên dưới để xem cách StudyForge AI
+            xử lý đề thi chuẩn hóa.
+          </p>
+        </div>
+
+        <LandingBento />
       </section>
-    </ReducedMotionConfig>
+
+      <section id="quy-trinh" className="sf-workflow-section" aria-labelledby="sf-workflow-heading">
+        <div className="sf-section-head">
+          <span className="sf-eyebrow">QUY TRÌNH 3 BƯỚC</span>
+          <h2 id="sf-workflow-heading">Gọn gàng, dễ tiếp cận cho cả giáo viên và học sinh</h2>
+          <p>Không cần cài đặt phức tạp — mọi thao tác từ tải tài liệu đến chấm bài diễn ra trên cùng một không gian.</p>
+        </div>
+
+        <ol className="sf-workflow-grid">
+          {WORKFLOW.map((item) => (
+            <li key={item.num} className="sf-workflow-item sf-spot sf-reveal">
+              <div className="sf-workflow-top">
+                <span className="sf-workflow-badge">{item.step}</span>
+                <span className="sf-workflow-num" aria-hidden="true">{item.num}</span>
+              </div>
+              <h3>{item.title}</h3>
+              <p>{item.desc}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="sf-cta-banner sf-reveal" aria-labelledby="sf-cta-heading">
+        <div className="sf-cta-banner-inner">
+          <div className="sf-cta-copy">
+            <span className="sf-eyebrow">SẴN SÀNG BẮT ĐẦU</span>
+            <h2 id="sf-cta-heading">Chuẩn hóa bộ tài liệu học tập của bạn ngay hôm nay</h2>
+            <p>
+              Đăng nhập để tải tài liệu đầu tiên hoặc nhập mã phòng thi từ giáo viên để bắt đầu làm bài.
+            </p>
+          </div>
+          <div className="sf-cta-banner-actions">
+            <Link href="/sign-in" className="sf-btn sf-btn-primary sf-btn-md">
+              Tạo tài khoản / Đăng nhập
+            </Link>
+            <Link href="/quizzes/take" className="sf-btn sf-btn-ghost sf-btn-md">
+              Vào phòng thi
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

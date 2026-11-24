@@ -12,6 +12,8 @@ const QuizUpdateSchema = z.object({
   deadline: z.string().nullable().optional(),
   isPublished: z.boolean().optional(),
   mode: z.enum(['exam', 'practice']).optional(),
+  opensAt: z.iso.datetime().nullable().optional(),
+  maxAttempts: z.number().int().min(1).max(50).nullable().optional(),
 }).refine(data => Object.keys(data).length > 0, 'No update fields provided');
 export async function GET(_req: Request, context: { params: Promise<{ id: string }> }) {
   try { const user = await requireUser(); return NextResponse.json(await getOwnedQuiz(user.id, (await context.params).id), { headers: { 'Cache-Control': 'no-store' } }); }
@@ -38,6 +40,8 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
         deadline: parsed.data.deadline,
         isPublished: parsed.data.isPublished,
         mode: parsed.data.mode,
+        opensAt: parsed.data.opensAt,
+        maxAttempts: parsed.data.maxAttempts,
       });
     }
     return NextResponse.json({ success: true });

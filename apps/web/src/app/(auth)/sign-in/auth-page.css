@@ -1,0 +1,316 @@
+/* StudyForge Editorial Split-Screen Authentication Layout — Adaptive Light & Dark (--ux-*) */
+.sf-auth-layout {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(420px, 1.04fr) minmax(440px, 1fr);
+  background: var(--ux-page);
+  color: var(--ux-ink);
+}
+
+/* Left Academic Editorial Showcase Panel */
+.sf-auth-aside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 36px 48px 40px;
+  background: var(--ux-surface-2);
+  border-right: 1px solid var(--ux-line);
+  overflow: hidden;
+}
+
+.sf-auth-aside-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--ux-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--ux-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.45;
+  mask-image: radial-gradient(ellipse 90% 80% at 30% 25%, #000 18%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 30% 25%, #000 18%, transparent 80%);
+}
+
+.sf-auth-aside-top,
+.sf-auth-aside-body,
+.sf-auth-aside-foot {
+  position: relative;
+  z-index: 1;
+}
+
+.sf-auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ux-ink);
+}
+
+.sf-auth-brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--ux-ink);
+  color: var(--ux-page);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.sf-auth-brand-text {
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.sf-auth-brand-text small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ux-ink-3);
+  margin-top: 2px;
+}
+
+.sf-auth-aside-body {
+  max-width: 480px;
+  margin: auto 0;
+  padding: 28px 0;
+}
+
+.sf-auth-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-line-2);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ux-ink-2);
+  margin-bottom: 18px;
+}
+
+.sf-auth-kicker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ux-mint);
+}
+
+.sf-auth-aside-body h1 {
+  margin: 0 0 14px;
+  font-size: clamp(1.65rem, 1.25rem + 1.2vw, 2.25rem);
+  font-weight: 850;
+  line-height: 1.22;
+  letter-spacing: -0.03em;
+  color: var(--ux-ink);
+  text-wrap: balance;
+}
+
+.sf-auth-aside-body > p {
+  margin: 0 0 26px;
+  font-size: 14.5px;
+  line-height: 1.66;
+  color: var(--ux-ink-2);
+}
+
+.sf-auth-points {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sf-auth-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  font-size: 13.5px;
+  line-height: 1.52;
+  color: var(--ux-ink-2);
+}
+
+.sf-auth-point-ic {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-line-2);
+  color: var(--ux-accent-text);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.sf-auth-points strong {
+  color: var(--ux-ink);
+  font-weight: 700;
+}
+
+/* Compact Sample Academic Card */
+.sf-auth-sample {
+  border-radius: 14px;
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-line-2);
+  padding: 16px 18px;
+  box-shadow: var(--ux-shadow);
+}
+
+.sf-auth-sample-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ux-ink-3);
+}
+
+.sf-auth-sample-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--ux-mint) 14%, transparent);
+  color: var(--ux-mint);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.sf-auth-sample-stem {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ux-ink);
+  margin-bottom: 10px;
+}
+
+.sf-auth-sample-cite {
+  padding-top: 9px;
+  border-top: 1px solid var(--ux-line);
+  font-size: 11.8px;
+  color: var(--ux-ink-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sf-auth-aside-foot {
+  font-size: 12px;
+  color: var(--ux-ink-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Right Auth Workspace Column */
+.sf-auth-right {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--ux-page);
+}
+
+.sf-auth-topbar {
+  width: 100%;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sf-auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ux-ink-2);
+  text-decoration: none;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.sf-auth-back:hover {
+  color: var(--ux-ink);
+  background: var(--ux-surface-2);
+}
+
+.sf-auth-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px 40px;
+}
+
+@media (max-width: 960px) {
+  .sf-auth-layout {
+    grid-template-columns: 1fr;
+  }
+  .sf-auth-aside {
+    display: none;
+  }
+  .sf-auth-topbar {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 14px 16px;
+  }
+  .sf-auth-main {
+    padding: 8px 16px 32px;
+  }
+}
+
+/* ===================== UX upgrade layer: sign-in (tokens only) ===================== */
+.sf-auth-aside {
+  background:
+    radial-gradient(70% 55% at 0% 0%, var(--ux-aurora-1), transparent 70%),
+    radial-gradient(60% 50% at 100% 100%, var(--ux-aurora-2), transparent 70%),
+    var(--ux-surface-2);
+}
+.sf-auth-brand-mark {
+  background: var(--ux-brand-grad);
+  color: #FFFFFF;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 8px 18px -8px var(--ux-brand-glow);
+  transition: transform 0.45s var(--ux-spring-pop);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sf-auth-brand:hover .sf-auth-brand-mark {
+    transform: rotate(-6deg) translateY(-1px);
+  }
+}
+.sf-auth-points li {
+  animation: sf-fade-in 0.32s var(--ux-ease-out) backwards, sf-rise 0.6s var(--ux-spring-entrance) backwards;
+}
+.sf-auth-points li:nth-child(1) { animation-delay: 0.12s; }
+.sf-auth-points li:nth-child(2) { animation-delay: 0.18s; }
+.sf-auth-points li:nth-child(3) { animation-delay: 0.24s; }
+.sf-auth-point-ic {
+  box-shadow: var(--ux-highlight);
+}
+.sf-auth-sample {
+  box-shadow: var(--ux-elev-3), var(--ux-highlight);
+  animation: sf-fade-in 0.35s var(--ux-ease-out) 0.3s backwards, sf-auth-float-in 0.8s var(--ux-spring-entrance) 0.3s backwards;
+}
+@keyframes sf-auth-float-in {
+  from { transform: translate3d(0, 18px, 0) rotate(-1.5deg) scale(0.97); }
+}
+.sf-auth-main .u062 {
+  animation: sf-fade-in 0.3s var(--ux-ease-out) backwards, sf-rise-sm 0.6s var(--ux-spring-entrance) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sf-auth-points li,
+  .sf-auth-sample,
+  .sf-auth-main .u062 {
+    animation: sf-fade-in 0.2s ease-out backwards;
+  }
+}

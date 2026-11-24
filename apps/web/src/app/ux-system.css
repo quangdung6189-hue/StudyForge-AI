@@ -1,0 +1,377 @@
+/* ============================================================================
+   StudyForge AI — Motion & Surface System (layer on top of globals.css tokens)
+   - Every curve comes from the --ux-ease-* / --ux-spring-* tokens (animate-ui).
+   - Only transform, opacity and filter animate; reduced motion keeps fades only.
+   ============================================================================ */
+
+/* ---------- Typography rhythm ---------- */
+.ux :is(h1, h2, h3) {
+  text-wrap: balance;
+}
+.ux p {
+  text-wrap: pretty;
+}
+.ux :is(.tabular, [data-tabular]) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Focus ring eases into place instead of snapping ---------- */
+:where(.ux, .sf-landing) :focus-visible {
+  animation: sf-focus-in 0.28s var(--ux-ease-out);
+}
+/* Fields that draw their own --ux-ring halo + accent border don't need the outline on top */
+.ux :is(.join-input, .q-input, .qz-search-input, .qz-form-input, .qz-form-textarea, .study-select-input):focus-visible {
+  outline: none;
+}
+@keyframes sf-focus-in {
+  from {
+    outline-offset: 7px;
+    outline-color: transparent;
+  }
+}
+
+/* ---------- Ambient workspace backdrop (static: no loop, no repaint).
+   Painted as background layers, not positioned pseudo-elements: no new stacking context,
+   so page modals (z-index 1000+) still cover the sidebar. Top to bottom: aurora glows,
+   a page-coloured fade that hides the dot grid below 340px, the dot grid, the page colour. ---------- */
+.app-main {
+  background:
+    radial-gradient(55% 42% at 0% 0%, var(--ux-aurora-1), transparent 72%),
+    radial-gradient(42% 38% at 100% 0%, var(--ux-aurora-2), transparent 72%),
+    radial-gradient(48% 40% at 62% 100%, var(--ux-aurora-3), transparent 72%),
+    linear-gradient(180deg, transparent 0, var(--ux-page) 340px) no-repeat,
+    radial-gradient(circle at 1px 1px, var(--ux-grid-dot) 1px, transparent 0) 0 0 / 22px 22px,
+    var(--ux-page);
+}
+.app-content {
+  scrollbar-width: thin;
+}
+
+/* Header gains depth as the content scrolls under it (scroll-driven, no JS) */
+@supports (animation-timeline: scroll()) {
+  .app-main {
+    timeline-scope: --sf-content;
+  }
+  .app-content {
+    scroll-timeline: --sf-content block;
+  }
+  .app-header {
+    animation: sf-header-lift linear both;
+    animation-timeline: --sf-content;
+    animation-range: 0 72px;
+  }
+  @media (max-width: 768px) {
+    .app-header {
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+@keyframes sf-header-lift {
+  to {
+    border-bottom-color: var(--ux-line-2);
+    box-shadow: 0 10px 28px -20px var(--ux-shadow-strong-c);
+  }
+}
+
+/* ---------- Route frame: each page arrives (CSS, so it plays on first paint, no hydration wait,
+   and leaves no transform behind that would trap position:fixed docks and modals) ---------- */
+.sf-route-frame {
+  animation:
+    sf-fade-in 0.3s var(--ux-ease-out) backwards,
+    sf-rise-sm 0.6s var(--ux-spring-entrance) backwards;
+}
+
+/* ---------- Staggered entrance for a group's direct children ---------- */
+.sf-stagger > * {
+  animation:
+    sf-fade-in 0.32s var(--ux-ease-out) backwards,
+    sf-rise 0.6s var(--ux-spring-entrance) backwards;
+  animation-delay: calc(var(--sf-i, 0) * 55ms + 60ms);
+}
+.sf-stagger > :nth-child(2) { --sf-i: 1; }
+.sf-stagger > :nth-child(3) { --sf-i: 2; }
+.sf-stagger > :nth-child(4) { --sf-i: 3; }
+.sf-stagger > :nth-child(5) { --sf-i: 4; }
+.sf-stagger > :nth-child(6) { --sf-i: 5; }
+.sf-stagger > :nth-child(7) { --sf-i: 6; }
+.sf-stagger > :nth-child(8) { --sf-i: 7; }
+.sf-stagger > :nth-child(n + 9) { --sf-i: 8; }
+
+@keyframes sf-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sf-rise {
+  from {
+    transform: translate3d(0, 14px, 0);
+  }
+}
+@keyframes sf-rise-sm {
+  from {
+    transform: translate3d(0, 8px, 0);
+  }
+}
+@keyframes sf-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+/* ---------- Scroll reveal (scroll-driven; content stays visible without support) ---------- */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .sf-reveal {
+      animation: sf-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 24%;
+    }
+  }
+}
+@keyframes sf-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Pointer spotlight: a soft light and a lit border following the cursor.
+   --mx/--my are written by <UXEffects/> (one delegated, rAF-throttled listener). ---------- */
+:where(.sf-spot) {
+  position: relative;
+}
+.sf-spot {
+  isolation: isolate;
+}
+.sf-spot::before,
+.sf-spot::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.35s var(--ux-ease-color);
+}
+.sf-spot::before {
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    440px circle at var(--mx, 50%) var(--my, -20%),
+    color-mix(in srgb, var(--ux-accent) 9%, transparent),
+    transparent 44%
+  );
+}
+.sf-spot::after {
+  inset: 0;
+  z-index: 2;
+  padding: 1px;
+  background: radial-gradient(
+    240px circle at var(--mx, 50%) var(--my, -20%),
+    color-mix(in srgb, var(--ux-accent) 62%, transparent),
+    transparent 46%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+@media (hover: hover) and (pointer: fine) {
+  .sf-spot:hover::before,
+  .sf-spot:hover::after {
+    opacity: 1;
+  }
+}
+
+/* ---------- Shimmer skeleton ---------- */
+.sf-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--ux-surface-2);
+  border-radius: 8px;
+}
+.sf-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--ux-surface) 75%, transparent) 50%,
+    transparent 100%
+  );
+  animation: sf-shimmer 1.5s var(--ux-ease-inout) infinite;
+}
+@keyframes sf-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* ---------- Navigation progress bar ---------- */
+.sf-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2.5px;
+  z-index: 10000;
+  pointer-events: none;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  opacity: 0;
+  background: var(--ux-brand-grad);
+  box-shadow: 0 0 12px var(--ux-brand-glow);
+}
+.sf-progress[data-state="loading"] {
+  opacity: 1;
+  transform: scaleX(0.84);
+  transition:
+    transform 7s cubic-bezier(0.08, 0.7, 0.2, 1),
+    opacity 0.15s var(--ux-ease-out);
+}
+.sf-progress[data-state="done"] {
+  opacity: 0;
+  transform: scaleX(1);
+  transition:
+    transform 0.28s var(--ux-ease-out),
+    opacity 0.4s var(--ux-ease-out) 0.18s;
+}
+
+/* ---------- Status messages slide in when React inserts them (@starting-style) ---------- */
+:where(
+    .documents-error,
+    .documents-notice,
+    .join-error,
+    .studio-error,
+    .u062-auth-error,
+    .sf-alert
+  ) {
+  transition:
+    opacity 0.3s var(--ux-ease-out),
+    transform 0.45s var(--ux-spring-pop);
+}
+@starting-style {
+  :where(
+      .documents-error,
+      .documents-notice,
+      .join-error,
+      .studio-error,
+      .u062-auth-error,
+      .sf-alert
+    ) {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+/* ---------- Shared small pieces ---------- */
+.sf-kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 6px;
+  border: 1px solid var(--ux-line-2);
+  border-bottom-width: 2px;
+  background: var(--ux-surface);
+  color: var(--ux-ink-2);
+  font: 700 10.5px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0;
+}
+
+.sf-grad-text {
+  background: var(--ux-brand-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Dialog primitive used by the exam room confirmation */
+.sf-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--sf-slate-950) 55%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: sf-fade-in 0.3s var(--ux-ease-soft) backwards;
+}
+.sf-dialog {
+  width: min(440px, 100%);
+  padding: 26px 24px 20px;
+  border-radius: 20px;
+  background: var(--ux-surface);
+  border: 1px solid var(--ux-line);
+  box-shadow: var(--ux-elev-4), var(--ux-highlight);
+  animation:
+    sf-fade-in 0.3s var(--ux-ease-soft) backwards,
+    sf-dialog-in 0.6s var(--ux-spring-entrance) backwards;
+}
+@keyframes sf-dialog-in {
+  from {
+    transform: perspective(600px) rotateX(-12deg) scale(0.92) translate3d(0, 10px, 0);
+  }
+}
+
+/* Disclosures (<details>) unfold instead of snapping (transition.disclosure; Chrome 131+, others open at once) */
+.ux details {
+  interpolate-size: allow-keywords;
+}
+.ux details::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  opacity: 0;
+  transition:
+    block-size 0.35s var(--ux-ease-soft),
+    opacity 0.3s var(--ux-ease-out),
+    content-visibility 0.35s allow-discrete;
+}
+.ux details[open]::details-content {
+  block-size: auto;
+  opacity: 1;
+}
+.ux summary {
+  transition: color 0.2s var(--ux-ease-color);
+}
+.ux summary:hover {
+  color: var(--ux-accent-text);
+}
+
+/* View transitions (theme wipe) must never swallow clicks */
+::view-transition {
+  pointer-events: none;
+}
+
+/* ---------- Reduced motion: things still appear, nothing travels ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .sf-route-frame,
+  .sf-stagger > *,
+  .sf-dialog,
+  .sf-dialog-backdrop {
+    animation: sf-fade-in 0.2s var(--ux-ease-out) backwards !important;
+  }
+  .sf-skel::after {
+    animation: none;
+  }
+  .ux details::details-content {
+    transition: none;
+  }
+  :where(.ux, .sf-landing) :focus-visible {
+    animation: none;
+  }
+  .sf-progress[data-state] {
+    transition: opacity 0.2s linear;
+  }
+}

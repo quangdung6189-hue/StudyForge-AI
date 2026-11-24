@@ -16,9 +16,35 @@ const ICONS: Record<string, AppIconName> = {
   '/documents': 'documents',
   '/quizzes/create': 'create',
   '/quizzes': 'quizzes',
+  '/bank': 'bank',
+  '/classes': 'classes',
   '/quizzes/take': 'take',
   '/study': 'study',
+  '/history': 'progress',
 };
+
+const NAV_ITEMS = [
+  { href: '/dashboard', label: 'Tổng quan' },
+  { href: '/documents', label: 'Tài liệu' },
+  { href: '/quizzes/create', label: 'Tạo đề AI' },
+  { href: '/quizzes', label: 'Ngân hàng đề' },
+  { href: '/bank', label: 'Kho câu hỏi' },
+  { href: '/classes', label: 'Lớp học' },
+  { href: '/quizzes/take', label: 'Vào thi' },
+  { href: '/study', label: 'Ôn luyện' },
+  { href: '/history', label: 'Tiến bộ' },
+];
+// The notched mobile bar fits six destinations; the rest stay one tap away on the dashboard.
+const MOBILE_HREFS = ['/dashboard', '/documents', '/quizzes/create', '/classes', '/quizzes/take', '/study'];
+
+/** Longest matching route prefix, so nested pages (e.g. /quizzes/<id>/analytics) light their section. */
+function matchIndex(items: { href: string }[], path: string) {
+  let best = -1, length = -1;
+  items.forEach((item, i) => {
+    if ((path === item.href || path.startsWith(`${item.href}/`)) && item.href.length > length) { best = i; length = item.href.length; }
+  });
+  return best;
+}
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
@@ -26,18 +52,25 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const [isWide, setIsWide] = useState(false);
   const [active, setActive] = useState<string>(pathname);
 
-  const navItems = [
-    { href: '/dashboard', label: 'Tổng quan' },
-    { href: '/documents', label: 'Tài liệu' },
-    { href: '/quizzes/create', label: 'Tạo đề AI' },
-    { href: '/quizzes', label: 'Ngân hàng' },
-    { href: '/quizzes/take', label: 'Vào thi' },
-    { href: '/study', label: 'Ôn luyện' },
-  ];
+  const navItems = NAV_ITEMS;
+  const mobileItems = NAV_ITEMS.filter(item => MOBILE_HREFS.includes(item.href));
 
   useEffect(() => {
     setActive(pathname);
   }, [pathname]);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('sf-rail-wide') === '1') setIsWide(true);
+    } catch {}
+  }, []);
+
+  const setWide = (next: boolean) => {
+    setIsWide(next);
+    try {
+      localStorage.setItem('sf-rail-wide', next ? '1' : '0');
+    } catch {}
+  };
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -45,20 +78,22 @@ export function AppSidebar({ user }: AppSidebarProps) {
     router.refresh();
   };
 
-  const activeIndex = Math.max(
-    0,
-    navItems.findIndex(
-      (item) => item.href === active || (item.href !== '/quizzes' && active.startsWith(`${item.href}/`))
-    )
-  );
+  const activeIndex = Math.max(0, matchIndex(navItems, active));
+  const mobileIndex = matchIndex(mobileItems, active);
 
   return (
     <aside
       className="ux u040"
       data-wide={isWide}
-      style={{ '--active-index': activeIndex } as React.CSSProperties}
+      style={{ '--active-index': activeIndex, '--mobile-index': Math.max(0, mobileIndex), '--mobile-visible': mobileIndex >= 0 ? 1 : 0 } as React.CSSProperties}
     >
       <style>{`
+        @property --notch-x {
+          syntax: '<length>';
+          inherits: true;
+          initial-value: 0px;
+        }
+
         /* ========================================================
            Desktop Rail (Lucian #040)
            ======================================================== */
@@ -72,7 +107,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           display: flex;
           background: var(--ux-sidebar);
           border-right: 1px solid var(--ux-line);
-          transition: width .32s var(--ux-ease-spring), background-color .2s ease, border-color .2s ease;
+          transition: width .5s var(--ux-spring-glide), background-color .2s ease, border-color .2s ease;
           z-index: 40;
         }
         .u040[data-wide="true"] {
@@ -88,11 +123,17 @@ export function AppSidebar({ user }: AppSidebarProps) {
           color: var(--ux-ink);
           overflow-y: auto;
           overflow-x: hidden;
-          transition: width .32s var(--ux-ease-spring), background-color .2s ease;
+          transition: width .5s var(--ux-spring-glide), background-color .2s ease;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
           height: 100%;
+        }
+
+        @media (min-height: 720px) {
+          .u040:not([data-wide="true"]) .u040-rail {
+            overflow: visible;
+          }
         }
 
         /* Top Brand Header */
@@ -118,25 +159,25 @@ export function AppSidebar({ user }: AppSidebarProps) {
           cursor: pointer;
         }
         .u040-logo {
-          width: 38px;
-          height: 38px;
+          width: 36px;
+          height: 36px;
           flex: none;
-          border-radius: 12px;
-          background: var(--ux-grad);
+          border-radius: 11px;
+          background: var(--ux-brand-grad);
           color: #FFFFFF;
           display: grid;
           place-items: center;
-          box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--ux-accent) 45%, transparent);
-          transition: transform var(--ux-motion-fast) var(--ux-ease), box-shadow var(--ux-motion-fast) ease;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 6px 16px -6px var(--ux-brand-glow);
+          transition: transform .45s var(--ux-spring-pop), box-shadow .3s var(--ux-ease-color);
         }
         .u040-logo svg {
-          width: 22px;
-          height: 22px;
+          width: 20px;
+          height: 20px;
         }
         @media (hover: hover) and (pointer: fine) {
           .u040-brand:hover .u040-logo {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px -4px color-mix(in srgb, var(--ux-accent) 55%, transparent);
+            transform: translateY(-1px) rotate(-6deg);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 10px 22px -6px var(--ux-brand-glow);
           }
         }
 
@@ -150,11 +191,16 @@ export function AppSidebar({ user }: AppSidebarProps) {
           color: var(--ux-ink);
           display: none;
           opacity: 0;
-          transition: opacity .2s, color .2s ease;
+          transition: opacity .25s var(--ux-ease-out) .08s, display .25s allow-discrete, color .2s ease;
         }
         .u040[data-wide="true"] .u040-name {
           display: block;
           opacity: 1;
+        }
+        @starting-style {
+          .u040[data-wide="true"] .u040-name {
+            opacity: 0;
+          }
         }
 
         .u040-tog-header {
@@ -196,10 +242,10 @@ export function AppSidebar({ user }: AppSidebarProps) {
           top: 0;
           height: 48px;
           border-radius: 12px;
-          background: var(--ux-accent-soft);
-          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ux-accent) 24%, transparent);
+          background: linear-gradient(90deg, color-mix(in srgb, var(--ux-accent) 15%, transparent), var(--ux-accent-soft) 70%);
+          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ux-accent) 22%, transparent);
           transform: translateY(calc(var(--active-index) * 54px));
-          transition: transform .32s var(--ux-ease-spring), background-color .2s ease;
+          transition: transform .5s var(--ux-spring-glide), background-color .2s ease;
           pointer-events: none;
         }
         .u040-hl::before {
@@ -211,6 +257,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           width: 3px;
           border-radius: 0 3px 3px 0;
           background: var(--ux-accent-bar);
+          box-shadow: 0 0 12px 1px var(--ux-brand-glow);
         }
 
         .u040-it {
@@ -226,9 +273,43 @@ export function AppSidebar({ user }: AppSidebarProps) {
           background: none;
           color: var(--ux-ink-2);
           opacity: .92;
-          transition: opacity .2s, color .2s, background-color .2s, transform var(--ux-motion-fast) ease;
+          transition: opacity .2s, color .2s, background-color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press);
           cursor: pointer;
           text-decoration: none;
+        }
+        .u040-it::after {
+          content: attr(data-tip);
+          position: absolute;
+          left: calc(100% + 14px);
+          top: 50%;
+          padding: 6px 10px;
+          border-radius: 8px;
+          background: var(--ux-ink);
+          color: var(--ux-page);
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transform: translate3d(-6px, -50%, 0) scale(.92);
+          transform-origin: 0 50%;
+          box-shadow: var(--ux-elev-3);
+          transition: opacity .15s var(--ux-ease-out), transform .3s var(--ux-spring-pop);
+          z-index: 5;
+        }
+        .u040[data-wide="true"] .u040-it::after {
+          display: none;
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .u040-it:hover::after {
+            opacity: 1;
+            transform: translate3d(0, -50%, 0) scale(1);
+            transition-delay: .12s;
+          }
+        }
+        .u040-it:focus-visible::after {
+          opacity: 1;
+          transform: translate3d(0, -50%, 0) scale(1);
         }
         .u040[data-wide="true"] .u040-it {
           justify-content: flex-start;
@@ -254,7 +335,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
           width: 21px;
           height: 21px;
           flex: none;
-          transition: color var(--ux-motion-fast) ease, transform var(--ux-motion-base) var(--ux-spring);
+          transition: color var(--ux-motion-fast) ease, transform .45s var(--ux-spring-pop);
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .u040-it:hover svg {
+            transform: translateY(-1px);
+          }
         }
         .u040-it .icon-part {
           transform-box: fill-box;
@@ -278,14 +364,20 @@ export function AppSidebar({ user }: AppSidebarProps) {
           display: none;
           opacity: 0;
           transform: translateX(-6px);
-          transition: opacity .2s, transform .25s var(--ux-ease);
+          transition: opacity .14s var(--ux-ease-out), transform .2s var(--ux-ease-out), display .2s allow-discrete;
         }
         .u040[data-wide="true"] .u040-it span {
           display: block;
           opacity: 1;
           transform: none;
-          transition: opacity .22s var(--ux-ease), transform .32s var(--ux-spring);
-          transition-delay: calc(.06s + var(--i) * 20ms);
+          transition: opacity .26s var(--ux-ease-out), transform .45s var(--ux-spring-pop), display .26s allow-discrete;
+          transition-delay: calc(.08s + var(--i) * 24ms);
+        }
+        @starting-style {
+          .u040[data-wide="true"] .u040-it span {
+            opacity: 0;
+            transform: translateX(-8px);
+          }
         }
 
         /* Bottom Footer Area */
@@ -350,9 +442,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
           width: 34px;
           height: 34px;
           border-radius: 11px;
-          background: var(--ux-accent-soft);
+          background:
+            linear-gradient(var(--ux-surface), var(--ux-surface)) padding-box,
+            var(--ux-brand-grad) border-box;
           color: var(--ux-accent-text);
-          border: 1px solid color-mix(in srgb, var(--ux-accent) 26%, transparent);
+          border: 1.5px solid transparent;
           font-weight: 800;
           font-size: 13.5px;
           display: grid;
@@ -438,7 +532,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
             width: 100%;
             padding-bottom: env(safe-area-inset-bottom);
             --item-width: calc(100vw / 6);
-            --notch-x: calc(var(--item-width) * var(--active-index) + var(--item-width) / 2);
+            --notch-x: calc(var(--item-width) * var(--mobile-index) + var(--item-width) / 2);
+            transition: --notch-x .55s var(--ux-spring-glide);
           }
 
           /* Bar background with radial cutout notch */
@@ -450,25 +545,24 @@ export function AppSidebar({ user }: AppSidebarProps) {
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid var(--ux-line);
-            box-shadow: 0 -12px 32px -16px var(--ux-shadow-strong);
+            box-shadow: 0 -12px 32px -16px var(--ux-shadow-strong-c);
             -webkit-mask: radial-gradient(circle 34px at var(--notch-x) -4px, transparent 96%, #000 100%);
             mask: radial-gradient(circle 34px at var(--notch-x) -4px, transparent 96%, #000 100%);
-            transition: -webkit-mask-position .38s var(--ux-ease-spring), mask-position .38s var(--ux-ease-spring);
           }
 
           /* Floating Bubble indicator lifting out of notch */
           .u041-bub {
             position: absolute;
-            left: var(--notch-x);
+            left: 0;
             top: -16px;
             width: 48px;
             height: 48px;
             margin-left: -24px;
             border-radius: 50%;
-            background: var(--ux-accent);
-            box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--ux-line-2);
-            transition: left .38s var(--ux-ease-spring);
+            background: var(--ux-brand-grad);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 22px -8px var(--ux-brand-glow);
+            transform: translate3d(var(--notch-x), 0, 0) scale(var(--mobile-visible));
+            transition: transform .35s var(--ux-spring-pop);
             pointer-events: none;
             z-index: 2;
           }
@@ -508,8 +602,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
             outline: none;
             -webkit-tap-highlight-color: transparent;
           }
+          .u041-tab {
+            transition: transform .4s var(--ux-spring-press);
+          }
           .u041-tab:active {
-            transform: scale(0.96);
+            transform: scale(0.94);
           }
 
           .u041-ic {
@@ -555,7 +652,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           /* Active tab elevation into bubble */
           .u041-tab[aria-selected="true"] .u041-ic {
             transform: translateY(-24px);
-            color: var(--ux-accent-ink);
+            color: #FFFFFF;
           }
           .u041-tab[aria-selected="true"] .u041-ic svg {
             stroke-width: 2.3;
@@ -567,7 +664,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .u040, .u040-rail, .u040-hl, .u041-bub, .u041-ic, .u041-lab {
+          .u040, .u040-rail, .u040-hl, .u041-mobile-nav, .u041-bub, .u041-ic, .u041-lab, .u040-it span, .u040-it::after {
             transition: none !important;
           }
         }
@@ -582,7 +679,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
               className="u040-brand"
               title="StudyForge AI - Bảng điều khiển"
               onClick={() => {
-                if (!isWide) setIsWide(true);
+                if (!isWide) setWide(true);
               }}
             >
               <span className="u040-logo" aria-hidden="true">
@@ -600,7 +697,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 title="Thu gọn thanh bên"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsWide(false);
+                  setWide(false);
                 }}
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -613,7 +710,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <ul className="u040-nav">
             <li className="u040-hl" role="presentation" />
             {navItems.map((item, i) => {
-              const isActive = item.href === active;
+              const isActive = i === matchIndex(navItems, active);
               return (
                 <li key={item.href}>
                   <Link
@@ -621,7 +718,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
                     className="u040-it"
                     style={{ '--i': i } as React.CSSProperties}
                     aria-current={isActive ? 'page' : undefined}
-                    title={!isWide ? item.label : undefined}
+                    aria-label={item.label}
+                    data-tip={item.label}
                     onClick={() => {
                       setActive(item.href);
                     }}
@@ -642,7 +740,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             aria-expanded={isWide}
             aria-label={isWide ? 'Thu gọn thanh bên' : 'Mở rộng thanh bên'}
             title={isWide ? 'Thu gọn thanh bên' : 'Mở rộng thanh bên'}
-            onClick={() => setIsWide(!isWide)}
+            onClick={() => setWide(!isWide)}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               {isWide ? (
@@ -692,8 +790,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
         <div className="u041-bar" aria-hidden="true" />
         <span className="u041-bub" aria-hidden="true" />
         <ul className="u041-tabs" role="tablist">
-          {navItems.map((item) => {
-            const isSelected = item.href === active || (item.href !== '/quizzes' && active.startsWith(`${item.href}/`));
+          {mobileItems.map((item, i) => {
+            const isSelected = i === mobileIndex;
             return (
               <li key={item.href} role="none">
                 <Link

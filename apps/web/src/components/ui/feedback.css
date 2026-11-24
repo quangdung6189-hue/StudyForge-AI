@@ -1,0 +1,45 @@
+.sf-toasts { position: fixed; right: 20px; bottom: 20px; z-index: 1300; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; font-family: var(--font-sans, 'Be Vietnam Pro'), system-ui, sans-serif; }
+.sf-toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; max-width: min(420px, calc(100vw - 32px)); padding: 11px 12px 11px 14px; border-radius: 14px; background: var(--ux-ink); color: var(--ux-page); font-size: 13.5px; font-weight: 600; line-height: 1.45; box-shadow: var(--ux-elev-4); }
+.sf-toast svg:first-child { flex: none; }
+.sf-toast[data-tone="success"] svg:first-child { color: #34D399; }
+.sf-toast[data-tone="danger"] svg:first-child { color: #F87171; }
+.sf-toast[data-tone="info"] svg:first-child { color: #A5B4FC; }
+.sf-toast button { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 7px; background: transparent; color: inherit; opacity: .7; cursor: pointer; transition: opacity .2s var(--ux-ease-color), background-color .2s var(--ux-ease-color); }
+.sf-toast button:hover { opacity: 1; background: color-mix(in srgb, var(--ux-page) 14%, transparent); }
+.sf-confirm h2 { margin: 0; font-size: 18px; font-weight: 850; letter-spacing: -.02em; color: var(--ux-ink); }
+.sf-confirm p { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--ux-ink-2); white-space: pre-line; }
+.sf-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+.sf-confirm-btn { min-height: 42px; padding: 0 18px; border-radius: 12px; border: 1px solid var(--ux-line-2); background: var(--ux-surface); color: var(--ux-ink); font: inherit; font-size: 13.5px; font-weight: 750; cursor: pointer; transition: background-color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press); }
+.sf-confirm-btn:hover { background: var(--ux-surface-2); }
+.sf-confirm-btn:active { transform: var(--ux-press); }
+.sf-confirm-btn[data-tone="primary"] { background: var(--ux-accent); border-color: var(--ux-accent); color: var(--ux-accent-ink); }
+.sf-confirm-btn[data-tone="primary"]:hover { background: var(--ux-accent-hover); }
+.sf-confirm-btn[data-tone="danger"] { background: var(--ux-danger); border-color: var(--ux-danger); color: #fff; }
+.sf-confirm-btn[data-tone="danger"]:hover { filter: brightness(1.06); }
+.sf-netbar { position: fixed; top: 12px; left: 50%; z-index: 1250; display: inline-flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); padding: 9px 16px; border-radius: 999px; font-family: var(--font-sans, 'Be Vietnam Pro'), system-ui, sans-serif; font-size: 13px; font-weight: 700; background: color-mix(in srgb, var(--ux-warn) 14%, var(--ux-surface)); color: var(--ux-ink); border: 1px solid color-mix(in srgb, var(--ux-warn) 45%, transparent); box-shadow: var(--ux-elev-3); }
+.sf-netbar[data-online="true"] { background: color-mix(in srgb, var(--ux-mint) 14%, var(--ux-surface)); border-color: color-mix(in srgb, var(--ux-mint) 45%, transparent); }
+.sf-netbar-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ux-warn); flex: none; }
+.sf-netbar[data-online="true"] .sf-netbar-dot { background: var(--ux-mint); }
+@media (max-width: 768px) { .sf-toasts { right: 12px; left: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); align-items: stretch; } .sf-toast { max-width: none; } }
+.sf-share { width: min(620px, 100%); padding: 22px; font-family: var(--font-sans, 'Be Vietnam Pro'), system-ui, sans-serif; }
+.sf-share-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.sf-share-kicker { font-size: 11px; font-weight: 800; letter-spacing: .14em; color: var(--ux-accent-text); }
+.sf-share-head h2 { margin: 4px 0 0; font-size: 18px; font-weight: 850; letter-spacing: -.02em; color: var(--ux-ink); }
+.sf-share-close { flex: none; width: 32px; height: 32px; border: 0; border-radius: 10px; background: var(--ux-surface-2); color: var(--ux-ink-2); display: grid; place-items: center; cursor: pointer; transition: transform .45s var(--ux-spring-pop), background-color .2s var(--ux-ease-color); }
+.sf-share-close:hover { transform: rotate(90deg); background: var(--ux-surface-3); }
+.sf-share-body { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: start; }
+.sf-share-qr { padding: 10px; border-radius: 16px; background: #fff; border: 1px solid var(--ux-line); box-shadow: var(--ux-elev-2); animation: sf-pop-in .5s var(--ux-spring-pop) .05s backwards; }
+.sf-qr { display: block; border-radius: 6px; }
+.sf-share-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sf-share-label { font-size: 11.5px; font-weight: 750; color: var(--ux-ink-3); margin-top: 4px; }
+.sf-share-code { align-self: flex-start; border: 1px dashed color-mix(in srgb, var(--ux-accent) 50%, var(--ux-line-2)); background: var(--ux-accent-soft); color: var(--ux-accent-text); font: 800 22px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .12em; padding: 8px 14px; border-radius: 12px; cursor: pointer; transition: transform .4s var(--ux-spring-press); }
+.sf-share-code:active { transform: var(--ux-press); }
+.sf-share-link { display: flex; gap: 6px; }
+.sf-share-link input { flex: 1; min-width: 0; height: 38px; border-radius: 10px; border: 1px solid var(--ux-line-2); background: var(--ux-surface-2); color: var(--ux-ink); padding: 0 10px; font: inherit; font-size: 12.5px; }
+.sf-share-link button, .sf-share-actions button { height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--ux-line-2); background: var(--ux-surface); color: var(--ux-ink); font: inherit; font-size: 12.5px; font-weight: 750; cursor: pointer; transition: background-color .2s var(--ux-ease-color), transform .4s var(--ux-spring-press); }
+.sf-share-link button:hover, .sf-share-actions button:hover { background: var(--ux-surface-2); }
+.sf-share-link button:active, .sf-share-actions button:active { transform: var(--ux-press); }
+.sf-share-info p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--ux-ink-3); }
+.sf-share-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+@media (max-width: 560px) { .sf-share-body { grid-template-columns: 1fr; justify-items: center; } .sf-share-info { width: 100%; } }
+@media print { .sf-toasts, .sf-netbar { display: none !important; } }
