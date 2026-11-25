@@ -317,14 +317,17 @@ export function LucianDashboard({ docs, quizzes, greeting, userName, assignments
           justify-content: space-between;
         }
         .ld-quick-ic {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          background: var(--ux-surface-2);
-          border: 1px solid var(--ux-line);
+          flex: none;
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          background: linear-gradient(180deg, color-mix(in oklab, var(--ux-accent) 14%, var(--ux-surface)), color-mix(in oklab, var(--ux-accent) 6%, var(--ux-surface)));
+          border: 1px solid color-mix(in oklab, var(--ux-accent) 22%, var(--ux-line));
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
           color: var(--ux-accent-text);
           display: grid;
           place-items: center;
+          line-height: 0;
           transition: background-color .3s var(--ux-ease-color), color .3s var(--ux-ease-color), border-color .3s var(--ux-ease-color), transform .45s var(--ux-spring-pop);
         }
         @media (hover: hover) and (pointer: fine) {
@@ -336,8 +339,9 @@ export function LucianDashboard({ docs, quizzes, greeting, userName, assignments
           }
         }
         .ld-quick-ic svg {
-          width: 18px;
-          height: 18px;
+          display: block;
+          width: 20px;
+          height: 20px;
         }
         .ld-quick-arrow {
           color: var(--ux-ink-3);
@@ -357,7 +361,7 @@ export function LucianDashboard({ docs, quizzes, greeting, userName, assignments
           color: var(--ux-ink);
           margin-bottom: 3px;
         }
-        .ld-quick-card span {
+        .ld-quick-card span:not(.ld-quick-ic) {
           display: block;
           font-size: 12.5px;
           line-height: 1.52;
